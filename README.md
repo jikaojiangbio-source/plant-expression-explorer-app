@@ -49,14 +49,72 @@ python -m pytest
 
 ## Input validation
 
-Phase 1 checks required columns, unique and non-empty identifiers, numeric and
-finite expression values, matching expression/metadata samples, and valid
-numeric differential-expression fields. Missing differential-expression
-statistics are accepted because they occur in real precomputed results, but
-later analyses must report and exclude them where necessary.
+Phase 2 validates three preprocessed CSV tables before making a validated
+dataset bundle available to downstream pages.
 
-Normalized expression values are not restricted to non-negative numbers,
-because some valid transformed expression matrices contain negative values.
+### Expression matrix
+
+- Required column: `gene_id`.
+- At least two sample columns are required in addition to `gene_id`.
+- Gene identifiers must be non-empty and unique.
+- Expression values must be numeric or safely coercible to numeric values,
+  finite, and non-missing.
+- Negative expression values are permitted because transformed or centred
+  matrices may legitimately contain them. They produce a Warning, remain
+  unchanged, and are not treated as an Error.
+
+### Sample metadata
+
+- Required columns: `sample_id` and `condition`.
+- Sample identifiers must be non-empty and unique.
+- Condition values must be non-empty.
+- Additional columns are preserved but are not scientifically interpreted by
+  Phase 2 validation.
+
+### Precomputed differential-expression results
+
+- Required columns: `gene_id`, `log2FoldChange`, `pvalue`, and `padj`.
+- Gene identifiers must be non-empty and unique.
+- Non-missing statistic values must be numeric or safely coercible to numeric
+  values and finite.
+- Non-missing `pvalue` and `padj` values must be within the inclusive range
+  `[0, 1]`.
+- Partially missing statistics are preserved and reported as a Warning.
+- Missing `padj` values are never replaced with zero.
+- If every value in a required statistic column is missing, validation reports
+  `NO_USABLE_VALUES` as an Error. Non-numeric or infinite values are blocked by
+  their corresponding Errors.
+- Phase 2 does not classify genes as significant or non-significant.
+
+### Validation outcomes
+
+- Error — the validated dataset bundle is not made available to downstream
+  pages.
+- Warning — non-blocking, but requires user attention.
+- Information — non-blocking observation.
+
+Duplicate expression-matrix `gene_id`, metadata `sample_id`, and
+differential-expression `gene_id` values are Errors. Duplicate rows are
+reported but are not silently removed or aggregated.
+
+Safely coercible numeric strings are used only to determine validation
+outcomes. Validation does not silently rewrite the original values or change
+their stored data types.
+
+### Cross-file consistency
+
+Partial expression/metadata sample mismatches are reported in both directions;
+no sample overlap is reported as one blocking Error. Partial expression/DEG
+gene-coverage mismatches are reported in both directions as Warnings; no gene
+overlap is reported as one blocking Error.
+
+Cross-file checks compare identifier sets without changing the source tables.
+Validation does not trim identifiers, retain only intersections, remove rows,
+impute values, normalize values, or reorder either table.
+
+Phase 2 validation checks table structure, identifier consistency, and basic
+numeric constraints. Passing validation does not prove that the experimental
+design, statistical analysis, or biological data quality is appropriate.
 
 ## Scientific limitations
 
