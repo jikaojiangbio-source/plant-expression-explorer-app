@@ -13,7 +13,7 @@ The application accepts three CSV inputs:
 
 ## Current status
 
-Phases 1–4 provide:
+Phases 1–5 provide:
 
 - the Python project structure;
 - a Streamlit home page and navigation;
@@ -22,11 +22,13 @@ Phases 1–4 provide:
 - a **Load synthetic demo data** route;
 - one complete validated dataset bundle in the active Streamlit session;
 - explicit validation feedback, table previews, source status, and Reset Data;
+- descriptive, non-mutating sample quality-control summaries for the active
+  dataset;
 - placeholders for the later analysis pages;
 - automated tests.
 
-PCA, sample correlation, differential-expression filtering, volcano plots,
-gene lookup, and exports are not implemented yet.
+PCA, sample correlation, clustering, differential-expression filtering,
+volcano plots, gene lookup, and exports are not implemented yet.
 
 ## Setup
 
@@ -112,9 +114,48 @@ does not delete user files or bundled demo files from disk. Uploaded tables are
 retained in the active Streamlit session for application use; the application
 does not intentionally write uploaded tables to project files.
 
-Phase 4 performs data loading and validation only. It does not implement Sample
-QC, PCA, sample correlation, DEG filtering or significance classification,
-volcano plots, gene lookup, or export.
+Phase 4 performs data loading and validation only. Phase 5 consumes its single
+active validated dataset bundle without creating another session-state copy.
+
+## Phase 5 descriptive sample quality control
+
+The Sample Quality Control page describes the active expression matrix and its
+sample metadata. It reports gene, sample, expression-cell, condition, missing,
+non-finite, zero, and negative-value counts; whether metadata and expression
+sample orders correspond; constant sample columns; and zero-variance genes.
+
+For every sample, in expression-column order, it reports the mapped condition,
+gene count, missing/non-finite/zero/negative counts, minimum, first quartile,
+median, arithmetic mean, third quartile, maximum, standard deviation, and
+interquartile range. Quartiles use pandas linear interpolation. Standard
+deviation uses pandas sample standard deviation with `ddof=1`, and IQR is
+`Q3 - Q1`. For a one-gene matrix, the `ddof=1` standard deviation is undefined:
+the computational result retains `NaN`, while the page displays `N/A` from a
+separate display copy.
+
+A constant sample is a sample column whose expression values are exactly
+identical across all genes. A zero-variance gene is a gene row whose expression
+values are exactly identical across all samples. Both use exact equality. They
+are reported but never removed.
+
+Safely coercible numeric strings are converted only in a temporary numeric
+copy used for calculation. The active expression and metadata DataFrames,
+including their values, dtypes, indices, row order, and column order, are not
+modified. Missing, non-coercible, and infinite expression cells produce a
+controlled QC error; cells, genes, and samples are never silently skipped,
+imputed, trimmed, transformed, or discarded.
+
+The result is held in a frozen dataclass. Freezing prevents result fields from
+being rebound, but it does not make nested pandas DataFrames intrinsically
+immutable.
+
+These summaries are descriptive and do not establish biological validity.
+Mean, standard deviation, median, IQR, zero values, and negative values have
+scale-dependent interpretations, and uploaded matrices may already have been
+filtered upstream. The page does not assign quality scores, classify unusual
+samples, recommend exclusion, or automatically filter data. It performs no
+normalisation, PCA, correlation, clustering, batch correction, hypothesis
+testing, or differential-expression inference.
 
 ## Input validation
 

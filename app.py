@@ -33,10 +33,19 @@ st.markdown(
 """
 )
 
-st.header("Phase 4")
+st.header("Phase 5")
 st.write(
     "Validated synthetic-demo loading, three-file CSV upload, and session Reset "
-    "are available now. Analysis features are not implemented yet; their pages "
-    "remain visible as placeholders for the intended workflow."
+    "are available. Descriptive Sample Quality Control summaries are also "
+    "available for the active dataset."
+)
+st.info(
+    "PCA, sample correlation, clustering, differential-expression exploration, "
+    "volcano plots, gene lookup, and exports remain unimplemented."
 )
 st.page_link("pages/1_Upload_Data.py", label="Start with Upload Data", icon="📤")
+st.page_link(
+    "pages/2_Sample_Quality_Control.py",
+    label="Review Sample Quality Control",
+    icon="🧪",
+)
