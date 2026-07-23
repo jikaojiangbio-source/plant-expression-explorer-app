@@ -13,16 +13,17 @@ The application accepts three CSV inputs:
 
 ## Current status
 
-Phase 1 provides:
+Phases 1–3 provide:
 
 - the Python project structure;
 - a Streamlit home page and navigation;
 - CSV upload and foundational validation;
+- a bundled reproducible synthetic tomato-style demonstration dataset;
 - placeholders for the later analysis pages;
 - automated tests.
 
 PCA, sample correlation, differential-expression filtering, volcano plots,
-gene lookup, demo data, and exports are not implemented yet.
+gene lookup, a Load Demo button, and exports are not implemented yet.
 
 ## Setup
 
@@ -46,6 +47,27 @@ Run the tests:
 ```bash
 python -m pytest
 ```
+
+## Bundled synthetic demonstration data
+
+Phase 3 provides three reproducible CSV files in
+[`data/demo/`](data/demo/README.md). They contain fictional gene identifiers
+and synthetic log2-normalised expression-like values for three `Control` and
+three `High_nitrate` samples.
+
+Regenerate the files with the fixed default seed:
+
+```bash
+.venv/bin/python scripts/generate_demo_data.py
+```
+
+All values are synthetic and are for software testing and demonstration only.
+The expression values are not raw counts, and the p-values are directly
+constructed demonstration values. No personal or unpublished experimental data
+were used, no real tomato nitrate-response claims are made, and DESeq2, a
+t-test, or another fitted RNA-seq model was not run. A Load Demo button is not
+implemented yet; the files can be uploaded manually through the existing input
+workflow.
 
 ## Input validation
 
@@ -129,4 +151,3 @@ Plant Expression Explorer is a visualization and exploration tool. It does not:
 Users remain responsible for the upstream normalization, experimental design,
 statistical model, contrasts, covariates, and multiple-testing correction used
 to create the supplied files.
-
