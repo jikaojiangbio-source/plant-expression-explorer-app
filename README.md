@@ -13,17 +13,20 @@ The application accepts three CSV inputs:
 
 ## Current status
 
-Phases 1–3 provide:
+Phases 1–4 provide:
 
 - the Python project structure;
 - a Streamlit home page and navigation;
-- CSV upload and foundational validation;
+- a validated three-file CSV upload workflow;
 - a bundled reproducible synthetic tomato-style demonstration dataset;
+- a **Load synthetic demo data** route;
+- one complete validated dataset bundle in the active Streamlit session;
+- explicit validation feedback, table previews, source status, and Reset Data;
 - placeholders for the later analysis pages;
 - automated tests.
 
 PCA, sample correlation, differential-expression filtering, volcano plots,
-gene lookup, a Load Demo button, and exports are not implemented yet.
+gene lookup, and exports are not implemented yet.
 
 ## Setup
 
@@ -61,13 +64,57 @@ Regenerate the files with the fixed default seed:
 .venv/bin/python scripts/generate_demo_data.py
 ```
 
+Select **Load synthetic demo data** on the Upload Data page to read the three
+committed files through the same CSV reader and aggregate validation workflow
+used for uploaded data. Page loading never regenerates or rewrites these files.
+
 All values are synthetic and are for software testing and demonstration only.
-The expression values are not raw counts, and the p-values are directly
-constructed demonstration values. No personal or unpublished experimental data
-were used, no real tomato nitrate-response claims are made, and DESeq2, a
-t-test, or another fitted RNA-seq model was not run. A Load Demo button is not
-implemented yet; the files can be uploaded manually through the existing input
-workflow.
+The gene identifiers are fictional, the expression values are not raw counts,
+and the p-values are directly constructed demonstration values. No personal or
+unpublished experimental data were used, no real tomato nitrate-response
+claims are made, and DESeq2, a t-test, or another fitted RNA-seq model was not
+run.
+
+## Phase 4 data-loading workflow
+
+The Upload Data page provides two routes:
+
+1. Load the three bundled synthetic demo CSV files.
+2. Supply an expression matrix, sample metadata, and precomputed
+   differential-expression results.
+
+Uploaded files are not fully validated until all three required sources are
+present. Both routes use the existing CSV reader and the same Phase 2 aggregate
+validation API. CSV and header failures are presented as structured Errors
+rather than raw exception tracebacks.
+
+After successful validation, the application stores one complete current
+dataset bundle containing the three DataFrames, their source and source label,
+and the complete validation report. A frozen dataclass prevents bundle fields
+from being rebound, but it does not make nested pandas DataFrames intrinsically
+immutable. Application helpers and rendering therefore do not modify these
+DataFrames in place.
+
+Validation outcomes control activation as follows:
+
+- Error — the candidate does not become the current dataset.
+- Warning — shown to the user but does not block activation.
+- Information — shown to the user and does not block activation.
+
+If a valid dataset is already active and a replacement candidate fails, the
+previous successfully validated bundle remains active. The failed candidate is
+reported separately so its filenames or source are never presented as the
+active dataset.
+
+**Reset Data** removes the current bundle, failed-candidate feedback, uploader
+widget values, and legacy application data keys from the active session. It
+does not delete user files or bundled demo files from disk. Uploaded tables are
+retained in the active Streamlit session for application use; the application
+does not intentionally write uploaded tables to project files.
+
+Phase 4 performs data loading and validation only. It does not implement Sample
+QC, PCA, sample correlation, DEG filtering or significance classification,
+volcano plots, gene lookup, or export.
 
 ## Input validation
 

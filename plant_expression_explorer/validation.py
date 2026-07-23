@@ -19,8 +19,10 @@ class Severity(StrEnum):
 
 
 class IssueCode(StrEnum):
-    """Stable machine-readable identifiers for Phase 2 validation issues."""
+    """Stable machine-readable identifiers for loading and validation issues."""
 
+    CSV_READ_ERROR = "CSV_READ_ERROR"
+    DEMO_FILE_MISSING = "DEMO_FILE_MISSING"
     NOT_A_TABLE = "NOT_A_TABLE"
     EMPTY_TABLE = "EMPTY_TABLE"
     MISSING_REQUIRED_COLUMN = "MISSING_REQUIRED_COLUMN"

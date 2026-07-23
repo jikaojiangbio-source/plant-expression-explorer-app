@@ -33,10 +33,10 @@ st.markdown(
 """
 )
 
-st.header("Phase 1")
+st.header("Phase 4")
 st.write(
-    "CSV upload and validation are available now. The analysis pages are "
-    "visible as placeholders so the intended MVP structure is clear."
+    "Validated synthetic-demo loading, three-file CSV upload, and session Reset "
+    "are available now. Analysis features are not implemented yet; their pages "
+    "remain visible as placeholders for the intended workflow."
 )
 st.page_link("pages/1_Upload_Data.py", label="Start with Upload Data", icon="📤")
-
