@@ -27,25 +27,32 @@ st.markdown(
     """
 1. **Upload data** and check that the three input tables are compatible.
 2. Review **sample quality-control summaries**.
-3. Explore **PCA** and **sample correlation**.
-4. Filter supplied **differential-expression results**.
-5. Inspect **gene expression** and export selected results.
+3. Explore planned **PCA** views.
+4. Inspect descriptive **sample correlation** summaries.
+5. Explore planned supplied **differential-expression results**.
+6. Inspect planned **gene expression** views and dedicated exports.
 """
 )
 
-st.header("Phase 5")
+st.header("Phase 6")
 st.write(
     "Validated synthetic-demo loading, three-file CSV upload, and session Reset "
     "are available. Descriptive Sample Quality Control summaries are also "
-    "available for the active dataset."
+    "available, together with descriptive Pearson Sample Correlation summaries "
+    "for the active dataset."
 )
 st.info(
-    "PCA, sample correlation, clustering, differential-expression exploration, "
-    "volcano plots, gene lookup, and exports remain unimplemented."
+    "PCA, clustering, differential-expression exploration, volcano plots, gene "
+    "lookup, and dedicated exports remain unimplemented."
 )
 st.page_link("pages/1_Upload_Data.py", label="Start with Upload Data", icon="📤")
 st.page_link(
     "pages/2_Sample_Quality_Control.py",
     label="Review Sample Quality Control",
     icon="🧪",
+)
+st.page_link(
+    "pages/4_Sample_Correlation.py",
+    label="Review Sample Correlation",
+    icon="🔥",
 )

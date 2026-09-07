@@ -13,7 +13,7 @@ The application accepts three CSV inputs:
 
 ## Current status
 
-Phases 1–5 provide:
+Phases 1–6 provide:
 
 - the Python project structure;
 - a Streamlit home page and navigation;
@@ -24,11 +24,13 @@ Phases 1–5 provide:
 - explicit validation feedback, table previews, source status, and Reset Data;
 - descriptive, non-mutating sample quality-control summaries for the active
   dataset;
+- descriptive, non-mutating Pearson sample-correlation summaries for the active
+  dataset;
 - placeholders for the later analysis pages;
 - automated tests.
 
-PCA, sample correlation, clustering, differential-expression filtering,
-volcano plots, gene lookup, and exports are not implemented yet.
+PCA, clustering, differential-expression filtering, volcano plots, gene lookup,
+and dedicated exports are not implemented yet.
 
 ## Setup
 
@@ -156,6 +158,88 @@ filtered upstream. The page does not assign quality scores, classify unusual
 samples, recommend exclusion, or automatically filter data. It performs no
 normalisation, PCA, correlation, clustering, batch correction, hypothesis
 testing, or differential-expression inference.
+
+## Phase 6 descriptive sample correlation
+
+The Sample Correlation page calculates Pearson correlation between every pair
+of sample columns across all gene rows in the active expression matrix. Phase 6
+supports Pearson only: it does not silently select another correlation method
+and does not calculate correlation p-values or confidence intervals.
+
+For `n` expression samples, the correlation matrix is `n × n`. Both axes follow
+the original expression sample-column order; the matrix is never clustered or
+reordered by similarity. Non-constant sample diagonal values are `1.0`.
+A constant sample has exactly identical expression values across every gene,
+so its Pearson correlations, including its diagonal, are undefined and remain
+`NaN` in the computational result. Undefined correlations are never replaced
+with zero or one.
+
+The unique sample-pair summary excludes the diagonal and contains each unordered
+pair exactly once, for `n(n-1)/2` rows. Its deterministic order follows
+expression-column combinations: `(0,1), (0,2), …, (0,n-1), (1,2), …`.
+Undefined pairs remain present and are marked as undefined.
+
+The per-sample summary excludes self-correlation. It reports defined and
+undefined non-self pair counts plus minimum, median, mean, and maximum
+correlation calculated only from defined pairs. When no defined pair exists,
+the numerical summaries remain `NaN`.
+
+Condition-pair summaries follow condition first-appearance order while walking
+the expression-matrix sample columns. Metadata row order does not control this
+order. A condition with `n` samples has `n(n-1)/2` possible within-condition
+pairs; two different conditions of sizes `n_a` and `n_b` have `n_a * n_b`
+possible between-condition pairs. Defined and undefined pairs are counted
+separately, and medians use defined correlations only. These summaries do not
+perform a condition-comparison test or validate the experimental design.
+
+A helper called directly with one non-constant sample and at least two gene
+rows returns a `1 × 1` matrix containing `1.0`; a single constant sample returns
+a `1 × 1` matrix containing `NaN`. In either case there are no unique non-self
+pairs and the per-sample correlation statistics remain undefined. Although the
+validated application input contract normally requires more than one sample,
+these behaviours make the pure computation API explicit. A one-gene matrix
+cannot support Pearson correlation and produces a controlled
+`INSUFFICIENT_GENE_ROWS` error.
+
+Safely coercible numeric strings are converted only in a temporary deep copy.
+Missing, blank, boolean, complex, non-coercible, or infinite expression cells
+produce a controlled correlation error; booleans are not treated as the numbers
+zero or one. No pairwise deletion, imputation, normalisation, gene filtering,
+sample filtering, or transformation is performed. Conditions are mapped by
+exact sample ID even when metadata row order differs from expression column
+order.
+
+Expected input failures have a fixed priority: table types; expression row,
+column, and identifier structure; metadata columns, identifiers, and conditions;
+cross-table sample matching; then expression values in missing/blank,
+boolean/complex, non-coercible, and infinite order. This keeps the reported
+`CorrelationErrorReason` deterministic when more than one defect is present.
+
+Heatmap data contain exactly `row_sample`, `column_sample`, `correlation`,
+`defined`, and `correlation_label`. Observations are deterministic structural
+facts only; they do not assign strength, quality, anomaly, rank, or exclusion
+labels.
+
+The active expression and metadata DataFrames retain their values, dtypes,
+indices, and order. Result tables are newly constructed. The frozen result
+dataclass prevents field rebinding but does not make nested pandas DataFrames
+deeply immutable. Matrix and summary rounding, plus display of undefined values
+as `N/A`, occur only on separate presentation copies.
+
+Pearson correlations are descriptive. Correlation does not establish biological
+validity and does not imply causation. Input scale, transformation, gene
+filtering, and gene selection affect the result. High correlation does not
+prove replicate validity, while low or negative correlation alone does not
+prove that a sample is unsuitable. Unusual relationships may warrant review but
+are not automatic exclusion criteria. No samples or genes are modified or
+removed, and Phase 6 performs no PCA, clustering, distance analysis, batch
+correction, hypothesis testing, or differential-expression inference.
+
+No dedicated application export workflow is implemented. Streamlit components
+may expose framework-provided table or chart actions.
+
+The synthetic demo values, fictional gene IDs, and constructed p-values do not
+define real correlation thresholds or support tomato biological conclusions.
 
 ## Input validation
 
