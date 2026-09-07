@@ -130,6 +130,136 @@ def _constant_correlation_bundle(
     )
 
 
+def _one_sample_pca_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(
+        {"gene_id": ["g1", "g2", "g3"], "sample_a": ["1", "2", "3"]}
+    )
+    metadata = pd.DataFrame({"sample_id": ["sample_a"], "condition": ["control"]})
+    de_results = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3"],
+            "log2FoldChange": [0.0] * 3,
+            "pvalue": [0.5] * 3,
+            "padj": [0.5] * 3,
+        }
+    )
+    return build_dataset_bundle(
+        (expression, metadata, de_results),
+        source="uploaded",
+        source_label="One-sample PCA test bundle",
+        report=ValidationReport(),
+    )
+
+
+def _zero_gene_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(columns=["gene_id", "sample_a", "sample_b"])
+    metadata = pd.DataFrame(
+        {"sample_id": ["sample_a", "sample_b"], "condition": ["control", "treated"]}
+    )
+    de_results = pd.DataFrame(
+        columns=["gene_id", "log2FoldChange", "pvalue", "padj"]
+    )
+    return build_dataset_bundle(
+        (expression, metadata, de_results),
+        source="uploaded",
+        source_label="Zero-gene test bundle",
+        report=ValidationReport(),
+    )
+
+
+def _all_genes_constant_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3", "g4"],
+            "sample_a": [10, 20, 30, 40],
+            "sample_b": [10, 20, 30, 40],
+            "sample_c": [10, 20, 30, 40],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b", "sample_c"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+    de_results = pd.DataFrame(
+        {
+            "gene_id": expression["gene_id"],
+            "log2FoldChange": [0.0] * 4,
+            "pvalue": [0.5] * 4,
+            "padj": [0.5] * 4,
+        }
+    )
+    return build_dataset_bundle(
+        (expression, metadata, de_results),
+        source="uploaded",
+        source_label="All-genes-constant test bundle",
+        report=ValidationReport(),
+    )
+
+
+def _colinear_pca_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "sample_a": [1, 2],
+            "sample_b": [2, 4],
+            "sample_c": [5, 10],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b", "sample_c"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+    de_results = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "log2FoldChange": [0.0, 0.0],
+            "pvalue": [0.5, 0.5],
+            "padj": [0.5, 0.5],
+        }
+    )
+    return build_dataset_bundle(
+        (expression, metadata, de_results),
+        source="uploaded",
+        source_label="Colinear PCA test bundle",
+        report=ValidationReport(),
+    )
+
+
+def _large_finite_value_pca_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3"],
+            "sample_a": [1e300, 2.0, 3.0],
+            "sample_b": [-1e300, 4.0, 6.0],
+            "sample_c": [0.0, 5.0, 9.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b", "sample_c"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+    de_results = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3"],
+            "log2FoldChange": [0.0] * 3,
+            "pvalue": [0.5] * 3,
+            "padj": [0.5] * 3,
+        }
+    )
+    return build_dataset_bundle(
+        (expression, metadata, de_results),
+        source="uploaded",
+        source_label="Large finite value PCA test bundle",
+        report=ValidationReport(),
+    )
+
+
 def _run_qc_page(bundle: DatasetBundle | None = None) -> AppTest:
     app = AppTest.from_file("pages/2_Sample_Quality_Control.py")
     if bundle is not None:
@@ -150,6 +280,31 @@ def _correlation_session_keys(app: AppTest) -> list[str]:
         for key in app.session_state.filtered_state
         if "correlation" in str(key).lower()
     ]
+
+
+def _run_pca_page(bundle: DatasetBundle | None = None) -> AppTest:
+    app = AppTest.from_file("pages/3_PCA.py")
+    if bundle is not None:
+        app.session_state[CURRENT_DATASET_KEY] = bundle
+    return app.run()
+
+
+def _pca_session_keys(app: AppTest) -> list[str]:
+    return [
+        str(key)
+        for key in app.session_state.filtered_state
+        if "pca" in str(key).lower()
+    ]
+
+
+def _pca_scatter_chart_count(app: AppTest) -> int:
+    # st.bar_chart also renders as a vega_lite_chart element (mark "bar");
+    # the PC1-versus-PC2 scatter is the only one using a "circle" mark.
+    return sum(
+        1
+        for chart in app.get("vega_lite_chart")
+        if '"circle"' in chart.proto.spec
+    )
 
 
 def test_home_page_loads_and_describes_scope() -> None:
@@ -193,6 +348,70 @@ def test_home_page_workflow_order_matches_sidebar_page_sequence() -> None:
     )
 
 
+def test_home_page_no_longer_describes_pca_as_planned() -> None:
+    app = AppTest.from_file("app.py").run()
+
+    workflow_markdown = next(
+        element.value for element in app.markdown if "Upload data" in element.value
+    )
+    pca_line = next(
+        line for line in workflow_markdown.splitlines() if "PCA" in line
+    )
+    assert "planned" not in pca_line.lower()
+    assert "descriptive" in pca_line.lower()
+
+    info_text = " ".join(element.value for element in app.info)
+    assert "PCA" not in info_text
+
+
+def test_home_page_has_pca_page_link() -> None:
+    app = AppTest.from_file("app.py").run()
+
+    page_links = app.get("page_link")
+    matching = [link for link in page_links if link.proto.page == "PCA"]
+    assert len(matching) == 1
+    assert matching[0].proto.label == "Review PCA"
+
+
+def test_home_page_analysis_link_order_is_upload_qc_pca_correlation() -> None:
+    app = AppTest.from_file("app.py").run()
+
+    page_links = app.get("page_link")
+    pages_in_order = [link.proto.page for link in page_links]
+
+    assert pages_in_order == [
+        "Upload_Data",
+        "Sample_Quality_Control",
+        "PCA",
+        "Sample_Correlation",
+    ]
+
+
+def test_home_page_deg_and_gene_expression_remain_planned() -> None:
+    app = AppTest.from_file("app.py").run()
+
+    workflow_markdown = next(
+        element.value for element in app.markdown if "Upload data" in element.value
+    )
+    deg_line = next(
+        line
+        for line in workflow_markdown.splitlines()
+        if "differential-expression" in line.lower()
+    )
+    gene_expression_line = next(
+        line
+        for line in workflow_markdown.splitlines()
+        if "gene expression" in line.lower()
+    )
+    assert "planned" in deg_line.lower()
+    assert "planned" in gene_expression_line.lower()
+
+    info_text = " ".join(element.value for element in app.info).lower()
+    assert "differential-expression" in info_text
+    assert "gene lookup" in info_text
+    assert "dedicated exports" in info_text
+
+
 def test_upload_page_initial_state_and_synthetic_disclaimer() -> None:
     app = AppTest.from_file("pages/1_Upload_Data.py").run()
 
@@ -204,7 +423,25 @@ def test_upload_page_initial_state_and_synthetic_disclaimer() -> None:
     assert "gene IDs are fictional" in visible_text
     assert "p-values are constructed" in visible_text
     assert "DESeq2" in visible_text
-    assert "Analysis features are not implemented yet" in visible_text
+    assert "Sample Quality Control, PCA, and Sample Correlation are available" in visible_text
+    assert "not implemented yet" in visible_text
+
+
+def test_upload_page_no_longer_lists_implemented_features_as_unimplemented() -> None:
+    app = AppTest.from_file("pages/1_Upload_Data.py").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+
+    for unimplemented_phrase in (
+        "Sample QC, PCA, sample correlation",
+        "Analysis features are not implemented yet",
+    ):
+        assert unimplemented_phrase not in visible_text
+
+    assert "Sample Quality Control, PCA, and Sample Correlation are available" in visible_text
+    assert "DEG filtering, significance classification, volcano plots, gene " in visible_text
+    assert "lookup, and exports are not implemented yet" in visible_text
 
 
 def test_upload_page_demo_load_and_reset_are_repeatable() -> None:
@@ -523,5 +760,201 @@ def test_correlation_page_has_no_prohibited_classification_wording() -> None:
             "correlation passed",
             "correlation failed",
             "remove this sample",
+        ):
+            assert prohibited not in visible_text
+
+
+def test_pca_page_no_data_state_is_clear_and_has_no_side_effects() -> None:
+    app = _run_pca_page()
+
+    assert not app.exception
+    assert app.title[0].value == "📊 PCA"
+    visible_text = _visible_text(app)
+    assert "No validated dataset is currently loaded" in visible_text
+    assert "Upload Data" in visible_text
+    assert "Explained variance" not in visible_text
+    assert CURRENT_DATASET_KEY not in app.session_state
+    assert _pca_session_keys(app) == []
+
+
+def test_pca_page_demo_renders_scores_and_variance() -> None:
+    app = _run_pca_page(_demo_bundle())
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "Bundled synthetic demonstration data" in visible_text
+    assert "Source type:** demo" in visible_text
+    assert "120 genes and 6 samples" in visible_text
+    assert "Explained variance" in visible_text
+    assert "Sample scores" in visible_text
+    assert "PC1-versus-PC2 sample plot" in visible_text
+    assert len(app.dataframe) == 2
+    variance_table = app.dataframe[0].value
+    assert variance_table["component"].tolist() == ["PC1", "PC2", "PC3", "PC4", "PC5"]
+    score_table = app.dataframe[1].value
+    assert score_table["sample_id"].tolist() == [
+        "Control_1",
+        "Control_2",
+        "Control_3",
+        "High_nitrate_1",
+        "High_nitrate_2",
+        "High_nitrate_3",
+    ]
+    assert _pca_scatter_chart_count(app) == 1
+    assert "values are synthetic" in visible_text
+    assert "gene IDs are fictional" in visible_text
+    assert "p-values are constructed" in visible_text
+    assert "does not define real PCA structure" in visible_text
+    assert _pca_session_keys(app) == []
+
+
+def test_pca_page_uploaded_maps_conditions_preserves_bundle_and_omits_scatter() -> None:
+    bundle = _uploaded_bundle()
+    original_expression = bundle.expression.copy(deep=True)
+    original_metadata = bundle.metadata.copy(deep=True)
+
+    app = _run_pca_page(bundle)
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "User-uploaded CSV tables (test inputs)" in visible_text
+    assert "Source type:** uploaded" in visible_text
+    assert "4 genes and 2 samples" in visible_text
+    score_table = app.dataframe[1].value
+    assert score_table["sample_id"].tolist() == ["sample_b", "sample_a"]
+    assert score_table["condition"].tolist() == ["treated", "control"]
+    assert list(score_table.columns) == ["sample_id", "condition", "pc1"]
+    assert "Exactly two samples are present" in visible_text
+    assert "PC1-versus-PC2 plot is not shown" in visible_text
+    assert _pca_scatter_chart_count(app) == 0
+    assert "values are synthetic" not in visible_text
+    pd.testing.assert_frame_equal(bundle.expression, original_expression)
+    pd.testing.assert_frame_equal(bundle.metadata, original_metadata)
+    assert _pca_session_keys(app) == []
+
+
+def test_pca_page_all_genes_zero_variance_shows_only_controlled_error() -> None:
+    bundle = _all_genes_constant_bundle()
+    original_expression = bundle.expression.copy(deep=True)
+
+    app = _run_pca_page(bundle)
+
+    assert not app.exception
+    assert len(app.error) == 1
+    error_text = app.error[0].value
+    assert "ZERO_TOTAL_VARIANCE" in error_text
+    assert "no variation" in error_text.lower()
+    assert "invalid" not in error_text.lower()
+    assert "Traceback" not in error_text
+    assert len(app.dataframe) == 0
+    assert len(app.get("vega_lite_chart")) == 0
+    pd.testing.assert_frame_equal(bundle.expression, original_expression)
+    assert app.session_state[CURRENT_DATASET_KEY] is bundle
+    assert _pca_session_keys(app) == []
+
+
+def test_pca_page_large_finite_values_shows_only_controlled_numerical_range_error() -> None:
+    bundle = _large_finite_value_pca_bundle()
+    original_expression = bundle.expression.copy(deep=True)
+    original_metadata = bundle.metadata.copy(deep=True)
+
+    app = _run_pca_page(bundle)
+
+    assert not app.exception
+    assert len(app.error) == 1
+    error_text = app.error[0].value
+    assert "NUMERICAL_RANGE_ERROR" in error_text
+    assert "float64" in error_text
+    assert "not modified" in error_text
+    assert "Traceback" not in error_text
+    assert len(app.dataframe) == 0
+    assert len(app.get("vega_lite_chart")) == 0
+    pd.testing.assert_frame_equal(bundle.expression, original_expression)
+    pd.testing.assert_frame_equal(bundle.metadata, original_metadata)
+    assert app.session_state[CURRENT_DATASET_KEY] is bundle
+    assert _pca_session_keys(app) == []
+
+
+def test_pca_page_one_gene_renders_with_observation_not_error() -> None:
+    app = _run_pca_page(_uploaded_bundle(one_gene=True))
+
+    assert not app.exception
+    assert len(app.error) == 0
+    visible_text = _visible_text(app)
+    assert "Only one gene is present" in visible_text
+    assert len(app.dataframe) == 2
+    assert _pca_session_keys(app) == []
+
+
+def test_pca_page_one_sample_shows_only_controlled_error_without_traceback() -> None:
+    bundle = _one_sample_pca_bundle()
+    original_expression = bundle.expression.copy(deep=True)
+    original_metadata = bundle.metadata.copy(deep=True)
+
+    app = _run_pca_page(bundle)
+
+    assert not app.exception
+    assert len(app.error) == 1
+    error_text = app.error[0].value
+    assert "INSUFFICIENT_SAMPLE_COUNT" in error_text
+    assert "at least two sample columns" in error_text.lower()
+    assert "Traceback" not in error_text
+    assert len(app.dataframe) == 0
+    assert len(app.get("vega_lite_chart")) == 0
+    pd.testing.assert_frame_equal(bundle.expression, original_expression)
+    pd.testing.assert_frame_equal(bundle.metadata, original_metadata)
+    assert app.session_state[CURRENT_DATASET_KEY] is bundle
+    assert _pca_session_keys(app) == []
+
+
+def test_pca_page_zero_genes_shows_only_controlled_error() -> None:
+    bundle = _zero_gene_bundle()
+
+    app = _run_pca_page(bundle)
+
+    assert not app.exception
+    assert len(app.error) == 1
+    error_text = app.error[0].value
+    assert "EMPTY_EXPRESSION_TABLE" in error_text
+    assert "Traceback" not in error_text
+    assert len(app.dataframe) == 0
+    assert len(app.get("vega_lite_chart")) == 0
+    assert app.session_state[CURRENT_DATASET_KEY] is bundle
+    assert _pca_session_keys(app) == []
+
+
+def test_pca_page_component2_zero_variance_shows_plot_with_observation() -> None:
+    app = _run_pca_page(_colinear_pca_bundle())
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert _pca_scatter_chart_count(app) == 1
+    assert "Component 2 accounts for 0% of total variance" in visible_text
+    variance_table = app.dataframe[0].value
+    second_row = variance_table.loc[variance_table["component"] == "PC2"].iloc[0]
+    assert second_row["explained_variance_ratio"] == 0.0
+    assert _pca_session_keys(app) == []
+
+
+def test_pca_page_has_no_prohibited_classification_wording() -> None:
+    for bundle in (
+        _demo_bundle(),
+        _uploaded_bundle(),
+        _colinear_pca_bundle(),
+    ):
+        app = _run_pca_page(bundle)
+        assert not app.exception
+        visible_text = _visible_text(app).lower()
+        for prohibited in (
+            "confirmed outlier",
+            "failed sample",
+            "poor-quality sample",
+            "pca passed",
+            "pca failed",
+            "remove this sample",
+            "samples are clustered",
+            "cluster assignment",
+            "hypothesis test performed",
+            "confidence interval calculated",
         ):
             assert prohibited not in visible_text

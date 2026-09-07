@@ -1,3 +1,4 @@
 streamlit==1.60.0
 pandas==2.3.3
+numpy==2.5.3
 pytest==9.1.1

@@ -13,7 +13,7 @@ The application accepts three CSV inputs:
 
 ## Current status
 
-Phases 1–6 provide:
+Phases 1–7 provide:
 
 - the Python project structure;
 - a Streamlit home page and navigation;
@@ -26,11 +26,13 @@ Phases 1–6 provide:
   dataset;
 - descriptive, non-mutating Pearson sample-correlation summaries for the active
   dataset;
+- descriptive, non-mutating sample PCA (mean-centred, unscaled, SVD-based
+  sample scores and explained variance) for the active dataset;
 - placeholders for the later analysis pages;
 - automated tests.
 
-PCA, clustering, differential-expression filtering, volcano plots, gene lookup,
-and dedicated exports are not implemented yet.
+Clustering, differential-expression filtering, volcano plots, gene lookup, and
+dedicated exports are not implemented yet.
 
 ## Setup
 
@@ -240,6 +242,95 @@ may expose framework-provided table or chart actions.
 
 The synthetic demo values, fictional gene IDs, and constructed p-values do not
 define real correlation thresholds or support tomato biological conclusions.
+
+## Phase 7 descriptive sample PCA
+
+The PCA page calculates a descriptive, unsupervised principal component
+analysis of the active expression matrix. Samples are PCA observations and
+genes are PCA features. Output sample order follows the original expression
+sample-column order; the matrix is never clustered or reordered. Sample
+conditions are mapped by exact `sample_id` and are shown only as visual
+colour coding; they are never used to fit the components.
+
+Each gene is mean-centred across samples in a temporary numeric copy before
+singular value decomposition (SVD); the active expression matrix is never
+rewritten. Genes are not scaled to unit variance. This preserves the relative
+variance structure of the supplied preprocessed matrix and avoids adding a
+separate standardization step. Genes with larger variance in the supplied
+matrix consequently contribute more strongly to the components; this is a
+disclosed analysis policy, not a claim that such genes are more biologically
+informative, and not a claim that this is a universally superior PCA method.
+Upstream normalization, transformation, filtering, and gene selection
+materially affect the result. No log transformation, normalisation,
+filtering, trimming, aggregation, reordering, or imputation is performed. All
+gene features are retained, including constant genes.
+
+PCA uses NumPy's singular value decomposition directly (`numpy.linalg.svd`).
+The component count is `min(sample_count - 1, gene_count)`. At least two
+sample columns are required to estimate variance; exactly one sample column
+produces a controlled `INSUFFICIENT_SAMPLE_COUNT` error rather than a
+degenerate result. Exactly two samples produce exactly one component, and no
+PC1-versus-PC2 plot is shown. One non-constant gene with at least two samples
+is permitted and proceeds with a descriptive observation that no
+dimensionality reduction occurs. Some constant genes are permitted and
+retained provided total variance remains positive, with a descriptive
+observation reporting their count; if every gene is constant across samples,
+the temporary centred matrix has no variation and PCA produces a controlled
+`ZERO_TOTAL_VARIANCE` error rather than an apparently successful result or
+arbitrary components. Rank-deficient matrices with positive total variance
+remain permitted. A trailing component with zero explained variance remains
+in the variance table rather than being dropped, and is distinct from the
+all-genes-constant case.
+
+Finite expression values are otherwise accepted regardless of magnitude, but
+if they cannot be safely represented through the float64 PCA calculation
+(for example, extremely large or extremely small magnitudes that overflow or
+underflow during variance, decomposition, or ratio calculations), PCA
+produces a controlled `NUMERICAL_RANGE_ERROR` rather than an uncontrolled
+failure, a misclassified `ZERO_TOTAL_VARIANCE` result, or non-finite scores
+or ratios. Values are never automatically rescaled, clipped, or rewritten;
+the source and temporary centred matrices are unchanged.
+
+Explained variance for component `j` is `singular_value_j**2 / (sample_count
+- 1)`. Explained-variance ratios use the sum of the reported components'
+explained variances as the denominator, so they sum to `1.0` within a small
+floating-point tolerance, not exactly. Singular values at or below a
+numerical-noise tolerance (scaled to the largest singular value, matrix
+dimensions, and floating-point precision) are reported as exactly `0.0` in
+the derived scores and explained variance; this is treatment of derived
+decomposition output only, never a change to the source or temporary centred
+expression matrix.
+
+Component ordering follows NumPy's SVD convention: singular values are
+non-increasing. When singular values are distinct, this defines component
+order unambiguously. When singular values are equal or numerically
+indistinguishable, the individual axes within that tied subspace are not
+uniquely identified: different NumPy, BLAS, or platform combinations may
+return a different, equally valid, orthonormal basis for the same tied
+subspace, even though the components' explained variance and the
+sample-to-sample distances they represent remain the same. A deterministic
+sign convention (the sample with the largest-magnitude score on a component
+is positive, ties broken by expression sample-column order) resolves the
+positive/negative ambiguity for a single non-degenerate component only; it
+does not identify axes inside a tied subspace, and pinning the NumPy version
+does not guarantee identical floating-point coordinates across platforms or
+BLAS implementations.
+
+The active expression and metadata DataFrames retain their values, dtypes,
+indices, and order. Result tables are newly constructed. The frozen result
+dataclass prevents field rebinding but does not make nested pandas DataFrames
+deeply immutable. Score and variance-table rounding for display occurs only
+on separate presentation copies.
+
+PCA is descriptive and unsupervised. Proximity in a PCA plot does not prove
+biological similarity or replicate validity, and separation between groups
+does not prove a condition effect or establish statistical significance.
+PCA does not identify failed or low-quality samples, does not calculate a
+hypothesis test, a confidence interval, or a correlation p-value, and does
+not perform clustering or differential-expression inference. No samples or
+genes are modified or removed. The synthetic demo values and fictional gene
+IDs do not define real PCA structure or support tomato biological
+conclusions.
 
 ## Input validation
 

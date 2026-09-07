@@ -18,9 +18,20 @@ counts, correct batch effects, or perform differential-expression inference.
 - Add or update pytest tests whenever behavior changes.
 - Run `python -m pytest` before handing changes back for review.
 
-## Phase 1 boundary
+## Phase 1 boundary (historical)
 
 Phase 1 includes project setup, CSV upload and validation foundations, and
 placeholder navigation. PCA, correlation analysis, differential-expression
 exploration, volcano plots, gene lookup, and exports are intentionally deferred.
+
+## Current implementation boundary
+
+As of Phase 7, the application implements: project setup; a validated
+three-file CSV upload and data-loading workflow; a bundled reproducible
+synthetic demo dataset; descriptive, non-mutating sample quality-control
+summaries; descriptive, non-mutating Pearson sample-correlation summaries;
+and descriptive, non-mutating sample PCA (mean-centred, unscaled, SVD-based
+sample scores and explained variance). Differential-expression filtering and
+significance classification, volcano plots, gene lookup, and dedicated
+exports remain intentionally deferred.
 

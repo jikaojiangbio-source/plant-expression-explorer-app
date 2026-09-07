@@ -128,7 +128,7 @@ def _render_current_status() -> None:
     if current is None:
         st.warning("No validated dataset is currently active.")
         st.write(
-            "A validated dataset is not yet available for future downstream "
+            "A validated dataset is not yet available for the downstream "
             "analysis pages."
         )
     else:
@@ -141,10 +141,9 @@ def _render_current_status() -> None:
             f"{current.de_row_count:,} differential-expression rows."
         )
         st.write(
-            "A validated dataset is available for future downstream analysis pages."
+            "A validated dataset is available for the downstream analysis pages."
         )
 
-    st.caption("Analysis features are not implemented yet.")
     if isinstance(failed_report, ValidationReport) and failed_report.has_errors:
         if current is None:
             st.error(
@@ -306,9 +305,10 @@ st.caption(
     "not delete user files or bundled demo files from disk."
 )
 
-st.header("Phase 4 limitations")
+st.header("Upload Data page scope")
 st.info(
-    "Phase 4 loads and validates data only. Sample QC, PCA, sample correlation, "
-    "DEG filtering, significance classification, volcano plots, gene lookup, and "
-    "exports are not implemented yet."
+    "This page loads and validates data only. Sample Quality Control, PCA, and "
+    "Sample Correlation are available on their own pages for the active "
+    "dataset. DEG filtering, significance classification, volcano plots, gene "
+    "lookup, and exports are not implemented yet."
 )
