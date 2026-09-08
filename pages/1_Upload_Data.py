@@ -309,6 +309,7 @@ st.header("Upload Data page scope")
 st.info(
     "This page loads and validates data only. Sample Quality Control, PCA, and "
     "Sample Correlation are available on their own pages for the active "
-    "dataset. DEG filtering, significance classification, volcano plots, gene "
-    "lookup, and exports are not implemented yet."
+    "dataset. Descriptive exploratory threshold classification of supplied, "
+    "precomputed differential-expression results is also available. Volcano "
+    "plots, gene lookup, and dedicated exports are not implemented yet."
 )

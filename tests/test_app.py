@@ -1,8 +1,11 @@
 """Smoke test for the Streamlit home page."""
 
+from pathlib import Path
+
 import pandas as pd
 from streamlit.testing.v1 import AppTest
 
+from plant_expression_explorer.consistency import validate_input_tables
 from plant_expression_explorer.dataset import (
     CURRENT_DATASET_KEY,
     DE_RESULTS_UPLOAD_KEY,
@@ -13,7 +16,13 @@ from plant_expression_explorer.dataset import (
     build_dataset_bundle,
     load_demo_candidate,
 )
-from plant_expression_explorer.validation import ValidationReport
+from plant_expression_explorer.differential_expression import STATUS_COLUMN
+from plant_expression_explorer.validation import (
+    IssueCode,
+    Severity,
+    ValidationIssue,
+    ValidationReport,
+)
 
 
 def _visible_text(app: AppTest) -> str:
@@ -289,6 +298,107 @@ def _run_pca_page(bundle: DatasetBundle | None = None) -> AppTest:
     return app.run()
 
 
+def _de_uploaded_bundle(*, gene_mismatch: bool = False) -> DatasetBundle:
+    expression_gene_ids = ["g1", "g2", "g3", "g4", "g5"]
+    de_gene_ids = (
+        ["g1", "g2", "g3", "g4", "g6"]
+        if gene_mismatch
+        else expression_gene_ids
+    )
+    expression = pd.DataFrame(
+        {
+            "gene_id": expression_gene_ids,
+            "sample_a": [1, 2, 3, 4, 5],
+            "sample_b": [2, 3, 4, 5, 6],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b"],
+            "condition": ["control", "treated"],
+        }
+    )
+    de_results = pd.DataFrame(
+        {
+            "gene_id": de_gene_ids,
+            "annotation": ["a", "b", "c", "d", "e"],
+            "log2FoldChange": [1.0, -1.0, 0.5, None, 1.5],
+            "pvalue": [0.01, 0.02, 0.4, 0.8, None],
+            "padj": [0.05, 0.05, 0.5, 0.2, 0.03],
+        },
+        index=pd.Index([9, 4, 9, 2, 7], name="source_index"),
+    )
+    report = validate_input_tables(expression, metadata, de_results)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (expression, metadata, de_results),
+        source="uploaded",
+        source_label="User-uploaded CSV tables (Phase 8 test inputs)",
+        report=report,
+    )
+
+
+def _blocking_de_bundle() -> DatasetBundle:
+    bundle = _uploaded_bundle()
+    report = ValidationReport(
+        (
+            ValidationIssue(
+                code=IssueCode.VALUE_OUT_OF_RANGE,
+                severity=Severity.ERROR,
+                table="Differential-expression results",
+                column="padj",
+                message="Defensive blocking test Error.",
+            ),
+        )
+    )
+    return DatasetBundle(
+        expression=bundle.expression,
+        metadata=bundle.metadata,
+        de_results=bundle.de_results,
+        source=bundle.source,
+        source_label="Defensive differential-expression test bundle",
+        validation_report=report,
+    )
+
+
+def _high_precision_de_bundle() -> DatasetBundle:
+    bundle = _de_uploaded_bundle()
+    de_results = bundle.de_results.copy(deep=True)
+    de_results["log2FoldChange"] = [
+        1.0000001,
+        -1.0000001,
+        1.00000009,
+        -1.0000001,
+        None,
+    ]
+    de_results["padj"] = [
+        0.050000001,
+        0.050000001,
+        0.050000001,
+        0.0500000011,
+        0.03,
+    ]
+    report = validate_input_tables(bundle.expression, bundle.metadata, de_results)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (bundle.expression, bundle.metadata, de_results),
+        source="uploaded",
+        source_label="High-precision Phase 8 test inputs",
+        report=report,
+    )
+
+
+def _run_de_page(bundle: DatasetBundle | None = None) -> AppTest:
+    app = AppTest.from_file("pages/5_Differential_Expression.py")
+    if bundle is not None:
+        app.session_state[CURRENT_DATASET_KEY] = bundle
+    return app.run()
+
+
+def _metric_values(app: AppTest) -> dict[str, str]:
+    return {metric.label: metric.value for metric in app.metric}
+
+
 def _pca_session_keys(app: AppTest) -> list[str]:
     return [
         str(key)
@@ -373,7 +483,7 @@ def test_home_page_has_pca_page_link() -> None:
     assert matching[0].proto.label == "Review PCA"
 
 
-def test_home_page_analysis_link_order_is_upload_qc_pca_correlation() -> None:
+def test_home_page_analysis_link_order_includes_differential_expression() -> None:
     app = AppTest.from_file("app.py").run()
 
     page_links = app.get("page_link")
@@ -384,10 +494,11 @@ def test_home_page_analysis_link_order_is_upload_qc_pca_correlation() -> None:
         "Sample_Quality_Control",
         "PCA",
         "Sample_Correlation",
+        "Differential_Expression",
     ]
 
 
-def test_home_page_deg_and_gene_expression_remain_planned() -> None:
+def test_home_page_deg_is_available_and_later_features_remain_planned() -> None:
     app = AppTest.from_file("app.py").run()
 
     workflow_markdown = next(
@@ -403,11 +514,13 @@ def test_home_page_deg_and_gene_expression_remain_planned() -> None:
         for line in workflow_markdown.splitlines()
         if "gene expression" in line.lower()
     )
-    assert "planned" in deg_line.lower()
+    assert "planned" not in deg_line.lower()
+    assert "descriptive thresholds" in deg_line.lower()
     assert "planned" in gene_expression_line.lower()
 
     info_text = " ".join(element.value for element in app.info).lower()
-    assert "differential-expression" in info_text
+    assert "differential-expression exploration" not in info_text
+    assert "volcano plots" in info_text
     assert "gene lookup" in info_text
     assert "dedicated exports" in info_text
 
@@ -427,7 +540,7 @@ def test_upload_page_initial_state_and_synthetic_disclaimer() -> None:
     assert "not implemented yet" in visible_text
 
 
-def test_upload_page_no_longer_lists_implemented_features_as_unimplemented() -> None:
+def test_upload_page_lists_phase_8_exploration_as_available() -> None:
     app = AppTest.from_file("pages/1_Upload_Data.py").run()
 
     assert not app.exception
@@ -440,8 +553,9 @@ def test_upload_page_no_longer_lists_implemented_features_as_unimplemented() -> 
         assert unimplemented_phrase not in visible_text
 
     assert "Sample Quality Control, PCA, and Sample Correlation are available" in visible_text
-    assert "DEG filtering, significance classification, volcano plots, gene " in visible_text
-    assert "lookup, and exports are not implemented yet" in visible_text
+    assert "exploratory threshold classification" in visible_text
+    assert "supplied, precomputed differential-expression results" in visible_text
+    assert "Volcano plots, gene lookup, and dedicated exports are not implemented yet" in visible_text
 
 
 def test_upload_page_demo_load_and_reset_are_repeatable() -> None:
@@ -958,3 +1072,215 @@ def test_pca_page_has_no_prohibited_classification_wording() -> None:
             "confidence interval calculated",
         ):
             assert prohibited not in visible_text
+
+
+def test_de_page_no_data_state_is_clear_and_creates_no_analysis_state() -> None:
+    app = _run_de_page()
+
+    assert not app.exception
+    assert app.title[0].value == "🧬 Differential Expression"
+    assert "No validated dataset is currently loaded" in _visible_text(app)
+    assert CURRENT_DATASET_KEY not in app.session_state
+    assert len(app.number_input) == 0
+    assert len(app.dataframe) == 0
+
+
+def test_de_page_blocks_aggregate_validation_errors_before_controls() -> None:
+    bundle = _blocking_de_bundle()
+
+    app = _run_de_page(bundle)
+
+    assert not app.exception
+    assert len(app.error) == 2
+    assert "blocking validation Errors" in app.error[0].value
+    assert "VALUE_OUT_OF_RANGE" in app.error[1].value
+    assert len(app.number_input) == 0
+    assert len(app.dataframe) == 0
+    assert app.session_state[CURRENT_DATASET_KEY] is bundle
+
+
+def test_de_page_demo_defaults_have_exact_counts_and_views() -> None:
+    app = _run_de_page(_demo_bundle())
+
+    assert not app.exception
+    metrics = _metric_values(app)
+    assert metrics["Positive threshold matches"] == "20"
+    assert metrics["Negative threshold matches"] == "20"
+    assert metrics["Other evaluable rows"] == "80"
+    assert metrics["Not-evaluable rows"] == "0"
+    assert len(app.number_input) == 2
+    assert app.number_input[0].value == 0.05
+    assert app.number_input[1].value == 1.0
+    assert len(app.dataframe) == 6
+    annotated = app.dataframe[1].value
+    assert len(annotated.index) == 120
+    assert annotated[STATUS_COLUMN].value_counts().to_dict() == {
+        "DOES_NOT_MEET_COMBINED_THRESHOLDS": 80,
+        "POSITIVE_THRESHOLD_MATCH": 20,
+        "NEGATIVE_THRESHOLD_MATCH": 20,
+    }
+    assert len(app.dataframe[2].value.index) == 20
+    assert len(app.dataframe[3].value.index) == 20
+    assert len(app.dataframe[4].value.index) == 80
+    assert len(app.dataframe[5].value.index) == 0
+    assert "p-values are constructed" in _visible_text(app)
+
+
+def test_de_page_uploaded_data_preserves_extra_columns_and_shows_every_status() -> None:
+    bundle = _de_uploaded_bundle()
+
+    app = _run_de_page(bundle)
+
+    assert not app.exception
+    annotated = app.dataframe[1].value
+    assert annotated.columns.tolist() == [*bundle.de_results.columns, STATUS_COLUMN]
+    assert annotated.index.tolist() == bundle.de_results.index.tolist()
+    assert annotated["annotation"].tolist() == ["a", "b", "c", "d", "e"]
+    assert annotated[STATUS_COLUMN].tolist() == [
+        "POSITIVE_THRESHOLD_MATCH",
+        "NEGATIVE_THRESHOLD_MATCH",
+        "DOES_NOT_MEET_COMBINED_THRESHOLDS",
+        "NOT_EVALUABLE",
+        "POSITIVE_THRESHOLD_MATCH",
+    ]
+    assert app.dataframe[2].value["gene_id"].tolist() == ["g1", "g5"]
+    assert app.dataframe[3].value["gene_id"].tolist() == ["g2"]
+    assert app.dataframe[4].value["gene_id"].tolist() == ["g3"]
+    assert app.dataframe[5].value["gene_id"].tolist() == ["g4"]
+    assert "MISSING_DE_STATISTIC" in _visible_text(app)
+
+
+def test_de_page_inclusive_boundaries_and_threshold_widget_changes() -> None:
+    app = _run_de_page(_de_uploaded_bundle())
+
+    assert app.dataframe[2].value["gene_id"].tolist() == ["g1", "g5"]
+    assert app.dataframe[3].value["gene_id"].tolist() == ["g2"]
+
+    app.number_input[0].set_value(0.01).run()
+
+    assert not app.exception
+    metrics = _metric_values(app)
+    assert metrics["Positive threshold matches"] == "0"
+    assert metrics["Negative threshold matches"] == "0"
+    assert metrics["Other evaluable rows"] == "4"
+    assert metrics["Not-evaluable rows"] == "1"
+
+    app.number_input[0].set_value(0.05).run()
+    app.number_input[1].set_value(1.5).run()
+
+    assert not app.exception
+    assert app.dataframe[2].value["gene_id"].tolist() == ["g5"]
+    assert len(app.dataframe[3].value.index) == 0
+
+
+def test_de_page_displays_exact_high_precision_thresholds_used_for_classification() -> None:
+    app = _run_de_page(_high_precision_de_bundle())
+
+    app.number_input[0].set_value(0.050000001).run()
+    app.number_input[1].set_value(1.0000001).run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "padj ≤ 0.050000001" in visible_text
+    assert "log2FoldChange ≥ 1.0000001" in visible_text
+    assert "log2FoldChange ≤ -1.0000001" in visible_text
+    assert app.dataframe[2].value["gene_id"].tolist() == ["g1"]
+    assert app.dataframe[3].value["gene_id"].tolist() == ["g2"]
+    assert app.dataframe[4].value["gene_id"].tolist() == ["g3", "g4"]
+    assert app.dataframe[5].value["gene_id"].tolist() == ["g5"]
+
+
+def test_de_page_zero_fold_change_threshold_is_a_controlled_error() -> None:
+    app = _run_de_page(_de_uploaded_bundle())
+
+    app.number_input[1].set_value(0.0).run()
+
+    assert not app.exception
+    assert any(
+        "INVALID_ABSOLUTE_LOG2_FOLD_CHANGE_THRESHOLD" in error.value
+        for error in app.error
+    )
+    assert len(app.dataframe) == 0
+
+
+def test_de_page_renders_expression_deg_gene_mismatch_warnings() -> None:
+    app = _run_de_page(_de_uploaded_bundle(gene_mismatch=True))
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "DE_GENE_NOT_IN_EXPRESSION" in visible_text
+    assert "EXPRESSION_GENE_NOT_IN_DE" in visible_text
+    assert "The rows have been retained" in visible_text
+    assert "No expression rows were removed" in visible_text
+
+
+def test_de_page_repeated_runs_preserve_active_bundle_and_all_input_tables() -> None:
+    bundle = _de_uploaded_bundle()
+    originals = [
+        table.copy(deep=True)
+        for table in (bundle.expression, bundle.metadata, bundle.de_results)
+    ]
+    app = _run_de_page(bundle)
+
+    app.number_input[0].set_value(0.01).run()
+    app.number_input[1].set_value(2.0).run()
+    app.number_input[0].set_value(0.05).run()
+
+    assert not app.exception
+    assert app.session_state[CURRENT_DATASET_KEY] is bundle
+    for actual, expected in zip(
+        (bundle.expression, bundle.metadata, bundle.de_results),
+        originals,
+        strict=True,
+    ):
+        pd.testing.assert_frame_equal(actual, expected, check_exact=True)
+
+
+def test_de_page_has_required_scientific_wording_and_no_later_features() -> None:
+    for bundle in (_demo_bundle(), _de_uploaded_bundle()):
+        app = _run_de_page(bundle)
+        assert not app.exception
+        visible_text = _visible_text(app)
+        lower_text = visible_text.lower()
+        assert "user-selected exploratory thresholds" in lower_text
+        assert "does not fit a differential-expression model" in lower_text
+        assert "calculate or modify p-values" in lower_text
+        assert "infer the experimental contrast or reference level" in lower_text
+        assert "statistical significance or biological importance" in lower_text
+        assert "positive and negative labels refer only to the sign" in lower_text
+        assert "missing adjusted p-values remain missing" in lower_text
+        assert "not a claim of statistical significance" in lower_text
+        assert "no volcano plot, gene lookup, or dedicated export workflow" in lower_text
+        assert "upregulated" not in lower_text
+        assert "downregulated" not in lower_text
+        assert "deseq2 was run" not in lower_text
+        assert "fastq processing is available" not in lower_text
+        assert len(app.button) == 0
+        assert len(app.get("vega_lite_chart")) == 0
+
+
+def test_phase_8_navigation_and_documentation_keep_later_work_planned() -> None:
+    home = AppTest.from_file("app.py").run()
+    page_links = home.get("page_link")
+    assert [link.proto.page for link in page_links] == [
+        "Upload_Data",
+        "Sample_Quality_Control",
+        "PCA",
+        "Sample_Correlation",
+        "Differential_Expression",
+    ]
+    matching = [link for link in page_links if link.proto.page == "Differential_Expression"]
+    assert len(matching) == 1
+    assert matching[0].proto.label == "Explore Differential Expression"
+
+    repository = Path(__file__).parents[1]
+    readme = (repository / "README.md").read_text(encoding="utf-8")
+    guide = (repository / "AGENTS.md").read_text(encoding="utf-8")
+    assert "Phases 1–8 provide" in readme
+    assert "Phase 8 descriptive differential-expression exploration" in readme
+    assert "As of Phase 8" in guide
+    for text in (readme, guide):
+        normalized = " ".join(text.split())
+        assert "volcano plots" in normalized
+        assert "gene lookup" in normalized
+        assert "dedicated exports" in normalized

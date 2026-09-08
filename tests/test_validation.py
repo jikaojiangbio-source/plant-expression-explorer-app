@@ -1,5 +1,6 @@
 """Regression tests for Phase 2 single-table validation."""
 
+import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 import pytest
@@ -493,6 +494,53 @@ def test_de_reports_numeric_strings_and_rejects_infinite_values() -> None:
     assert IssueCode.COERCIBLE_NUMERIC_STRING in _codes(report)
     assert IssueCode.NON_FINITE_VALUE in _codes(report)
     assert report.has_errors
+
+
+@pytest.mark.parametrize("column", ["log2FoldChange", "pvalue", "padj"])
+def test_de_rejects_complex_statistics_without_raising_or_mutating(column: str) -> None:
+    de_results = pd.DataFrame(
+        {
+            "gene_id": ["g1"],
+            "log2FoldChange": [1.0],
+            "pvalue": [0.1],
+            "padj": [0.2],
+        }
+    )
+    de_results[column] = [1 + 2j]
+    original = de_results.copy(deep=True)
+
+    report = validate_de_results(de_results)
+
+    matching = [issue for issue in report.errors if issue.column == column]
+    assert [issue.code for issue in matching] == [IssueCode.NON_NUMERIC_VALUE]
+    assert report.has_errors is True
+    assert_frame_equal(de_results, original)
+
+
+@pytest.mark.parametrize("column", ["log2FoldChange", "pvalue", "padj"])
+@pytest.mark.parametrize("value", [np.bool_(False), np.bool_(True)])
+def test_de_rejects_numpy_boolean_statistics_without_coercing_or_mutating(
+    column: str, value: np.bool_
+) -> None:
+    de_results = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "log2FoldChange": [1.0, 2.0],
+            "pvalue": [0.1, 0.2],
+            "padj": [0.2, 0.3],
+        },
+        dtype="object",
+    )
+    de_results.loc[1, column] = value
+    original = de_results.copy(deep=True)
+
+    report = validate_de_results(de_results)
+
+    matching = [issue for issue in report.errors if issue.column == column]
+    assert [issue.code for issue in matching] == [IssueCode.NON_NUMERIC_VALUE]
+    assert matching[0].row_positions == (2,)
+    assert report.has_errors is True
+    assert_frame_equal(de_results, original)
 
 
 @pytest.mark.parametrize("value", [0.0, 1.0])

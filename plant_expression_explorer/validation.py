@@ -8,6 +8,7 @@ from math import isfinite
 from typing import Iterable
 
 import pandas as pd
+from pandas.api.types import is_bool, is_complex
 
 
 class Severity(StrEnum):
@@ -567,9 +568,11 @@ def _numeric_masks(
     series: pd.Series,
 ) -> tuple[pd.Series, pd.Series, pd.Series, pd.Series, pd.Series]:
     missing = _missing_mask(series)
-    numeric = pd.to_numeric(series, errors="coerce")
-    boolean = series.map(lambda value: isinstance(value, bool) if pd.notna(value) else False)
-    invalid = (numeric.isna() & ~missing) | boolean
+    complex_value = series.map(is_complex)
+    numeric_source = series.astype("object").mask(complex_value, other=None)
+    numeric = pd.to_numeric(numeric_source, errors="coerce")
+    boolean = series.map(is_bool)
+    invalid = (numeric.isna() & ~missing) | boolean | complex_value
     finite = numeric.map(lambda value: isfinite(value) if pd.notna(value) else True)
     non_finite = numeric.notna() & ~invalid & ~finite
     is_text = series.map(lambda value: isinstance(value, str))

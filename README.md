@@ -13,7 +13,7 @@ The application accepts three CSV inputs:
 
 ## Current status
 
-Phases 1–7 provide:
+Phases 1–8 provide:
 
 - the Python project structure;
 - a Streamlit home page and navigation;
@@ -28,11 +28,13 @@ Phases 1–7 provide:
   dataset;
 - descriptive, non-mutating sample PCA (mean-centred, unscaled, SVD-based
   sample scores and explained variance) for the active dataset;
+- descriptive, non-mutating threshold exploration of supplied, precomputed
+  differential-expression results;
 - placeholders for the later analysis pages;
 - automated tests.
 
-Clustering, differential-expression filtering, volcano plots, gene lookup, and
-dedicated exports are not implemented yet.
+Clustering, differential-expression modelling, volcano plots, gene lookup, and
+dedicated exports are not implemented.
 
 ## Setup
 
@@ -331,6 +333,35 @@ not perform clustering or differential-expression inference. No samples or
 genes are modified or removed. The synthetic demo values and fictional gene
 IDs do not define real PCA structure or support tomato biological
 conclusions.
+
+## Phase 8 descriptive differential-expression exploration
+
+The Differential Expression page displays the complete supplied, precomputed
+results table and assigns one exploratory status to every accepted row. Users
+choose an adjusted-p-value threshold in the inclusive range `[0, 1]` and an
+absolute `log2FoldChange` threshold strictly greater than zero. Comparisons are
+inclusive: positive matches require `padj` at or below the selected threshold
+and `log2FoldChange` at or above the positive threshold; negative matches use
+the corresponding negative boundary. Every other row with usable values is an
+other-evaluable row.
+
+A row is not evaluable when its supplied `padj` or `log2FoldChange` is missing
+or blank. Missing `pvalue` alone does not affect classification when the two
+classification fields are usable. Missing values remain missing, including
+`padj`; zero adjusted p-values remain valid zeros. Safely coercible numeric
+strings are converted only in temporary calculation Series. The original DEG
+table, its index, row and column order, values, dtypes, and additional columns
+are not rewritten. No identifier is trimmed, normalised, deduplicated, or
+silently intersected with expression data.
+
+These categories mean only that rows meet the current user-selected exploratory
+thresholds. Positive and negative labels refer solely to the sign of the
+supplied fold-change value because the application does not know the contrast
+direction or reference level. Threshold matches do not establish statistical
+significance or biological importance. Phase 8 does not calculate or modify
+p-values, run DESeq2 or another differential-expression model, process FASTQ
+files, create a volcano plot, perform gene lookup, or provide a dedicated
+export workflow.
 
 ## Input validation
 
