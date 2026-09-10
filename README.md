@@ -13,7 +13,7 @@ The application accepts three CSV inputs:
 
 ## Current status
 
-Phases 1–8 provide:
+Phases 1–9 provide:
 
 - the Python project structure;
 - a Streamlit home page and navigation;
@@ -30,11 +30,13 @@ Phases 1–8 provide:
   sample scores and explained variance) for the active dataset;
 - descriptive, non-mutating threshold exploration of supplied, precomputed
   differential-expression results;
+- descriptive, non-mutating lookup of one exact supplied gene's expression
+  values across samples with sample-condition context;
 - placeholders for the later analysis pages;
 - automated tests.
 
-Clustering, differential-expression modelling, volcano plots, gene lookup, and
-dedicated exports are not implemented.
+Clustering, differential-expression modelling, volcano plots, and dedicated
+exports are not implemented.
 
 ## Setup
 
@@ -362,6 +364,53 @@ significance or biological importance. Phase 8 does not calculate or modify
 p-values, run DESeq2 or another differential-expression model, process FASTQ
 files, create a volcano plot, perform gene lookup, or provide a dedicated
 export workflow.
+
+## Phase 9 descriptive gene-expression lookup
+
+The Gene Expression page lets users select one exact `gene_id` supplied in the
+active expression matrix and inspect its preprocessed expression values across
+all samples. Gene options and result rows preserve expression-matrix order. No
+gene is selected by default, ranked, recommended, or looked up through aliases.
+
+Identifier matching follows the application's established contract: each
+validated source identifier is represented by exact `str(value)` for comparison
+and display. These representations are not trimmed, case-folded, normalized, or
+otherwise rewritten. The source DataFrames and their original scalar values,
+dtypes, indices, row order, and column order remain unchanged. The per-sample
+result table copies the original selected-row expression scalars; safely
+coercible numeric strings are converted only in independent numeric working
+data used for charting and descriptive summaries.
+
+Each result contains one row per expression sample column, in expression-column
+order. Conditions are mapped by exact sample ID even when metadata row order
+differs. A sample-set mismatch is a controlled error in both directions; Phase
+9 does not take an intersection, fill missing metadata, or reorder either source
+table.
+
+The per-sample chart contains unconnected points in explicit expression sample
+order. Condition colour provides context only. The condition-grouped table
+reports sample membership, count, minimum, median, arithmetic mean, maximum,
+and sample standard deviation (`ddof=1`) on the supplied scale. Standard
+deviation is undefined for a one-sample condition and is retained as `NaN` in
+the computational result while a separate display copy shows `N/A`. Derived
+statistics use scaled calculations to avoid overflowing intermediate sums. All
+returned statistics must be finite except that defined one-sample `NaN`; if a
+derived statistic cannot be represented safely as a finite float64 value, the
+lookup returns the controlled `NUMERICAL_RANGE_ERROR` and no partial summary.
+These are disclosed descriptive aggregations of the displayed values, not
+effect estimates, tests, confidence intervals, or evidence of biological
+replication.
+
+The pure lookup API defines a one-sample result, although the application's
+validated upload contract continues to require at least two expression sample
+columns. With one defensively supplied sample, the value and one-row condition
+summary remain available but an across-sample plot is omitted. One-condition
+data remain descriptive and do not create a between-condition comparison.
+
+Phase 9 performs no FASTQ processing, normalization, transformation, filtering,
+batch correction, imputation, statistical testing, differential-expression
+inference, contrast or reference-level interpretation, biological-importance
+classification, volcano plotting, or dedicated export workflow.
 
 ## Input validation
 

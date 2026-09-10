@@ -1,5 +1,6 @@
 """Smoke test for the Streamlit home page."""
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -395,6 +396,116 @@ def _run_de_page(bundle: DatasetBundle | None = None) -> AppTest:
     return app.run()
 
 
+def _gene_uploaded_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["GeneA", "genea"],
+            "sample_b": ["2.0", "8.0"],
+            "sample_a": ["1.0", "4.0"],
+            "sample_c": ["3.0", "6.0"],
+        },
+        index=pd.Index([7, 3], name="source_index"),
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_c", "sample_b"],
+            "condition": ["Control", "Treated", "Control"],
+        },
+        index=[20, 30, 10],
+    )
+    de_results = pd.DataFrame(
+        {
+            "gene_id": ["GeneA", "genea"],
+            "log2FoldChange": [0.0, 0.0],
+            "pvalue": [0.5, 0.5],
+            "padj": [0.5, 0.5],
+        }
+    )
+    report = validate_input_tables(expression, metadata, de_results)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (expression, metadata, de_results),
+        source="uploaded",
+        source_label="User-uploaded CSV tables (Phase 9 test inputs)",
+        report=report,
+    )
+
+
+def _invalid_gene_options_bundle() -> DatasetBundle:
+    bundle = _gene_uploaded_bundle()
+    expression = bundle.expression.copy(deep=True)
+    expression.loc[expression.index[0], "sample_a"] = "not-numeric"
+    return build_dataset_bundle(
+        (expression, bundle.metadata, bundle.de_results),
+        source="uploaded",
+        source_label="Defensive invalid gene-options bundle",
+        report=ValidationReport(),
+    )
+
+
+def _invalid_gene_lookup_bundle() -> DatasetBundle:
+    bundle = _gene_uploaded_bundle()
+    metadata = bundle.metadata.drop(columns="condition")
+    return build_dataset_bundle(
+        (bundle.expression, metadata, bundle.de_results),
+        source="uploaded",
+        source_label="Defensive invalid gene-lookup bundle",
+        report=ValidationReport(),
+    )
+
+
+def _one_sample_gene_bundle() -> DatasetBundle:
+    expression = pd.DataFrame({"gene_id": ["g1"], "only": [5.0]})
+    metadata = pd.DataFrame({"sample_id": ["only"], "condition": ["Control"]})
+    de_results = pd.DataFrame(
+        {
+            "gene_id": ["g1"],
+            "log2FoldChange": [0.0],
+            "pvalue": [0.5],
+            "padj": [0.5],
+        }
+    )
+    return build_dataset_bundle(
+        (expression, metadata, de_results),
+        source="uploaded",
+        source_label="Defensive one-sample gene bundle",
+        report=ValidationReport(),
+    )
+
+
+def _numerical_range_gene_bundle() -> DatasetBundle:
+    maximum = float.fromhex("0x1.fffffffffffffp+1023")
+    expression = pd.DataFrame(
+        {"gene_id": ["g1"], "s1": [maximum], "s2": [-maximum]}
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1", "s2"], "condition": ["A", "A"]}
+    )
+    de_results = pd.DataFrame(
+        {
+            "gene_id": ["g1"],
+            "log2FoldChange": [0.0],
+            "pvalue": [0.5],
+            "padj": [0.5],
+        }
+    )
+    report = validate_input_tables(expression, metadata, de_results)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (expression, metadata, de_results),
+        source="uploaded",
+        source_label="Numerical-range gene test bundle",
+        report=report,
+    )
+
+
+def _run_gene_page(bundle: DatasetBundle | None = None) -> AppTest:
+    app = AppTest.from_file("pages/6_Gene_Expression.py")
+    if bundle is not None:
+        app.session_state[CURRENT_DATASET_KEY] = bundle
+    return app.run()
+
+
 def _metric_values(app: AppTest) -> dict[str, str]:
     return {metric.label: metric.value for metric in app.metric}
 
@@ -483,7 +594,7 @@ def test_home_page_has_pca_page_link() -> None:
     assert matching[0].proto.label == "Review PCA"
 
 
-def test_home_page_analysis_link_order_includes_differential_expression() -> None:
+def test_home_page_analysis_link_order_includes_phase_9_gene_expression() -> None:
     app = AppTest.from_file("app.py").run()
 
     page_links = app.get("page_link")
@@ -495,10 +606,11 @@ def test_home_page_analysis_link_order_includes_differential_expression() -> Non
         "PCA",
         "Sample_Correlation",
         "Differential_Expression",
+        "Gene_Expression",
     ]
 
 
-def test_home_page_deg_is_available_and_later_features_remain_planned() -> None:
+def test_home_page_deg_and_gene_expression_are_available_and_exports_remain_planned() -> None:
     app = AppTest.from_file("app.py").run()
 
     workflow_markdown = next(
@@ -516,13 +628,14 @@ def test_home_page_deg_is_available_and_later_features_remain_planned() -> None:
     )
     assert "planned" not in deg_line.lower()
     assert "descriptive thresholds" in deg_line.lower()
-    assert "planned" in gene_expression_line.lower()
+    assert "planned" not in gene_expression_line.lower()
+    assert "exact supplied gene" in gene_expression_line.lower()
 
     info_text = " ".join(element.value for element in app.info).lower()
     assert "differential-expression exploration" not in info_text
     assert "volcano plots" in info_text
-    assert "gene lookup" in info_text
     assert "dedicated exports" in info_text
+    assert "gene lookup" not in info_text
 
 
 def test_upload_page_initial_state_and_synthetic_disclaimer() -> None:
@@ -537,7 +650,7 @@ def test_upload_page_initial_state_and_synthetic_disclaimer() -> None:
     assert "p-values are constructed" in visible_text
     assert "DESeq2" in visible_text
     assert "Sample Quality Control, PCA, and Sample Correlation are available" in visible_text
-    assert "not implemented yet" in visible_text
+    assert "single-gene expression lookup" in visible_text
 
 
 def test_upload_page_lists_phase_8_exploration_as_available() -> None:
@@ -555,7 +668,8 @@ def test_upload_page_lists_phase_8_exploration_as_available() -> None:
     assert "Sample Quality Control, PCA, and Sample Correlation are available" in visible_text
     assert "exploratory threshold classification" in visible_text
     assert "supplied, precomputed differential-expression results" in visible_text
-    assert "Volcano plots, gene lookup, and dedicated exports are not implemented yet" in visible_text
+    assert "exact, descriptive single-gene expression lookup" in visible_text
+    assert "Differential-expression modelling, volcano plots, and dedicated exports are not implemented yet" in visible_text
 
 
 def test_upload_page_demo_load_and_reset_are_repeatable() -> None:
@@ -1259,7 +1373,247 @@ def test_de_page_has_required_scientific_wording_and_no_later_features() -> None
         assert len(app.get("vega_lite_chart")) == 0
 
 
-def test_phase_8_navigation_and_documentation_keep_later_work_planned() -> None:
+def test_gene_page_no_data_state_is_clear_and_has_no_analysis_side_effects() -> None:
+    app = _run_gene_page()
+
+    assert not app.exception
+    assert app.title[0].value == "🌿 Gene Expression"
+    visible_text = _visible_text(app)
+    assert "No validated dataset is currently loaded" in visible_text
+    assert "Upload Data" in visible_text
+    assert len(app.selectbox) == 0
+    assert len(app.dataframe) == 0
+    assert len(app.get("vega_lite_chart")) == 0
+    assert CURRENT_DATASET_KEY not in app.session_state
+
+
+def test_gene_page_blocks_aggregate_validation_errors_before_options() -> None:
+    bundle = _blocking_de_bundle()
+
+    app = _run_gene_page(bundle)
+
+    assert not app.exception
+    assert len(app.error) == 2
+    assert "blocking validation Errors" in app.error[0].value
+    assert "VALUE_OUT_OF_RANGE" in app.error[1].value
+    assert len(app.selectbox) == 0
+    assert len(app.dataframe) == 0
+    assert app.session_state[CURRENT_DATASET_KEY] is bundle
+
+
+def test_gene_page_catches_controlled_error_while_building_options() -> None:
+    bundle = _invalid_gene_options_bundle()
+    original = bundle.expression.copy(deep=True)
+
+    app = _run_gene_page(bundle)
+
+    assert not app.exception
+    assert len(app.error) == 1
+    assert "Gene options could not be built" in app.error[0].value
+    assert "NON_COERCIBLE_EXPRESSION_VALUE" in app.error[0].value
+    assert len(app.selectbox) == 0
+    assert len(app.dataframe) == 0
+    pd.testing.assert_frame_equal(bundle.expression, original, check_exact=True)
+
+
+def test_gene_page_catches_controlled_error_during_lookup() -> None:
+    bundle = _invalid_gene_lookup_bundle()
+    app = _run_gene_page(bundle)
+
+    app.selectbox[0].select("GeneA").run()
+
+    assert not app.exception
+    assert len(app.error) == 1
+    assert "Gene-expression values could not be displayed" in app.error[0].value
+    assert "MISSING_REQUIRED_COLUMN" in app.error[0].value
+    assert len(app.dataframe) == 0
+    assert len(app.get("vega_lite_chart")) == 0
+
+
+def test_gene_page_numerical_range_error_shows_no_partial_summary() -> None:
+    bundle = _numerical_range_gene_bundle()
+    original_expression = bundle.expression.copy(deep=True)
+    original_metadata = bundle.metadata.copy(deep=True)
+    app = _run_gene_page(bundle)
+
+    app.selectbox[0].select("g1").run()
+
+    assert not app.exception
+    assert len(app.error) == 1
+    assert "NUMERICAL_RANGE_ERROR" in app.error[0].value
+    assert "no partial summary was returned" in app.error[0].value
+    assert len(app.dataframe) == 0
+    assert len(app.get("vega_lite_chart")) == 0
+    pd.testing.assert_frame_equal(
+        bundle.expression,
+        original_expression,
+        check_exact=True,
+    )
+    pd.testing.assert_frame_equal(bundle.metadata, original_metadata, check_exact=True)
+
+
+def test_gene_page_excludes_expression_deg_coverage_observations() -> None:
+    app = _run_gene_page(_de_uploaded_bundle(gene_mismatch=True))
+
+    assert not app.exception
+    initial_text = _visible_text(app)
+    assert "DE_GENE_NOT_IN_EXPRESSION" not in initial_text
+    assert "EXPRESSION_GENE_NOT_IN_DE" not in initial_text
+    assert "differential-expression gene identifier(s)" not in initial_text
+
+    app.selectbox[0].select("g1").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "DE_GENE_NOT_IN_EXPRESSION" not in visible_text
+    assert "EXPRESSION_GENE_NOT_IN_DE" not in visible_text
+    assert "differential-expression gene identifier(s)" not in visible_text
+    assert len(app.dataframe) == 2
+
+
+def test_gene_page_uploaded_selection_preserves_values_and_visual_order() -> None:
+    bundle = _gene_uploaded_bundle()
+    originals = [
+        table.copy(deep=True)
+        for table in (bundle.expression, bundle.metadata, bundle.de_results)
+    ]
+    app = _run_gene_page(bundle)
+
+    assert not app.exception
+    assert len(app.selectbox) == 1
+    assert app.selectbox[0].value is None
+    assert len(app.dataframe) == 0
+
+    app.selectbox[0].select("GeneA").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "Expression values for GeneA" in visible_text
+    assert "differs; conditions were mapped by exact sample ID" in visible_text
+    assert len(app.dataframe) == 2
+    sample_table = app.dataframe[0].value
+    assert sample_table["sample_id"].tolist() == [
+        "sample_b",
+        "sample_a",
+        "sample_c",
+    ]
+    assert sample_table["condition"].tolist() == [
+        "Control",
+        "Control",
+        "Treated",
+    ]
+    assert sample_table["expression_value"].tolist() == ["2.0", "1.0", "3.0"]
+    condition_summary = app.dataframe[1].value
+    assert condition_summary["condition"].tolist() == ["Control", "Treated"]
+    assert condition_summary["sample_ids"].tolist() == [
+        "sample_b, sample_a",
+        "sample_c",
+    ]
+    assert condition_summary["standard_deviation"].tolist()[1] == "N/A"
+
+    charts = app.get("vega_lite_chart")
+    assert len(charts) == 1
+    chart_spec = json.loads(charts[0].proto.spec)
+    assert chart_spec["mark"]["type"] == "point"
+    assert chart_spec["encoding"]["x"]["sort"] == [
+        "sample_b",
+        "sample_a",
+        "sample_c",
+    ]
+    assert chart_spec["encoding"]["order"] == {
+        "field": "sample_position",
+        "type": "quantitative",
+    }
+    assert "line" not in chart_spec["mark"]
+
+    app.selectbox[0].select("genea").run()
+    app.selectbox[0].select("GeneA").run()
+    assert not app.exception
+    assert app.session_state[CURRENT_DATASET_KEY] is bundle
+    for actual, expected in zip(
+        (bundle.expression, bundle.metadata, bundle.de_results),
+        originals,
+        strict=True,
+    ):
+        pd.testing.assert_frame_equal(actual, expected, check_exact=True)
+
+
+def test_gene_page_dataset_replacement_clears_a_stale_gene_selection() -> None:
+    app = _run_gene_page(_gene_uploaded_bundle())
+    app.selectbox[0].select("GeneA").run()
+    assert len(app.dataframe) == 2
+
+    replacement = _demo_bundle()
+    app.session_state[CURRENT_DATASET_KEY] = replacement
+    app.run()
+
+    assert not app.exception
+    assert app.session_state[CURRENT_DATASET_KEY] is replacement
+    assert app.selectbox[0].value is None
+    assert app.selectbox[0].options[0] == "SYN_Solyc_0001"
+    assert "GeneA" not in app.selectbox[0].options
+    assert len(app.dataframe) == 0
+    assert "Select one exact supplied gene ID" in _visible_text(app)
+
+
+def test_gene_page_demo_selection_has_exact_options_and_synthetic_disclaimer() -> None:
+    app = _run_gene_page(_demo_bundle())
+
+    assert not app.exception
+    assert app.selectbox[0].options[0] == "SYN_Solyc_0001"
+    assert app.selectbox[0].options[-1] == "SYN_Solyc_0120"
+    app.selectbox[0].select("SYN_Solyc_0001").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "expression values are synthetic" in visible_text
+    assert "gene IDs are fictional" in visible_text
+    assert "does not support conclusions about tomato biology" in visible_text
+    assert len(app.dataframe[0].value.index) == 6
+    assert len(app.get("vega_lite_chart")) == 1
+
+
+def test_gene_page_one_sample_has_table_summary_and_truthful_no_chart_state() -> None:
+    app = _run_gene_page(_one_sample_gene_bundle())
+    app.selectbox[0].select("g1").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert len(app.dataframe) == 2
+    assert app.dataframe[0].value["expression_value"].tolist() == [5.0]
+    assert app.dataframe[1].value["standard_deviation"].tolist() == ["N/A"]
+    assert "across-sample expression plot is not shown" in visible_text
+    assert "Only one supplied condition label" in visible_text
+    assert len(app.get("vega_lite_chart")) == 0
+
+
+def test_gene_page_scientific_disclaimers_are_negative_not_affirmative_claims() -> None:
+    app = _run_gene_page(_gene_uploaded_bundle())
+    app.selectbox[0].select("GeneA").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app).lower()
+    for required in (
+        "does not test condition effects",
+        "does not infer a reference level",
+        "no group estimate or statistical comparison is shown",
+        "do not establish biological replication, a condition effect, or statistical significance",
+        "does not infer a reference level, contrast direction, regulation, a condition effect, statistical significance, or biological importance",
+    ):
+        assert required in visible_text
+
+    for affirmative_claim in (
+        "is statistically significant",
+        "shows a condition effect",
+        "is upregulated",
+        "is downregulated",
+        "control is the reference level",
+        "is biologically important",
+    ):
+        assert affirmative_claim not in visible_text
+
+
+def test_phase_9_navigation_and_documentation_keep_later_work_planned() -> None:
     home = AppTest.from_file("app.py").run()
     page_links = home.get("page_link")
     assert [link.proto.page for link in page_links] == [
@@ -1268,19 +1622,20 @@ def test_phase_8_navigation_and_documentation_keep_later_work_planned() -> None:
         "PCA",
         "Sample_Correlation",
         "Differential_Expression",
+        "Gene_Expression",
     ]
-    matching = [link for link in page_links if link.proto.page == "Differential_Expression"]
+    matching = [link for link in page_links if link.proto.page == "Gene_Expression"]
     assert len(matching) == 1
-    assert matching[0].proto.label == "Explore Differential Expression"
+    assert matching[0].proto.label == "Explore Gene Expression"
 
     repository = Path(__file__).parents[1]
     readme = (repository / "README.md").read_text(encoding="utf-8")
     guide = (repository / "AGENTS.md").read_text(encoding="utf-8")
-    assert "Phases 1–8 provide" in readme
+    assert "Phases 1–9 provide" in readme
     assert "Phase 8 descriptive differential-expression exploration" in readme
-    assert "As of Phase 8" in guide
+    assert "Phase 9 descriptive gene-expression lookup" in readme
+    assert "As of Phase 9" in guide
     for text in (readme, guide):
         normalized = " ".join(text.split())
         assert "volcano plots" in normalized
-        assert "gene lookup" in normalized
         assert "dedicated exports" in normalized

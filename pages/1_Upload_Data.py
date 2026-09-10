@@ -310,6 +310,8 @@ st.info(
     "This page loads and validates data only. Sample Quality Control, PCA, and "
     "Sample Correlation are available on their own pages for the active "
     "dataset. Descriptive exploratory threshold classification of supplied, "
-    "precomputed differential-expression results is also available. Volcano "
-    "plots, gene lookup, and dedicated exports are not implemented yet."
+    "precomputed differential-expression results is also available, together "
+    "with exact, descriptive single-gene expression lookup. Differential-"
+    "expression modelling, volcano plots, and dedicated exports are not "
+    "implemented yet."
 )

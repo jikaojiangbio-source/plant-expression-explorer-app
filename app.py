@@ -30,22 +30,24 @@ st.markdown(
 3. Explore descriptive **PCA** sample scores and explained variance.
 4. Inspect descriptive **sample correlation** summaries.
 5. Explore supplied **differential-expression results** with descriptive thresholds.
-6. Inspect planned **gene expression** views and dedicated exports.
+6. Look up one exact supplied gene in descriptive **gene expression** views.
+7. Use planned dedicated exports.
 """
 )
 
-st.header("Phase 8")
+st.header("Phase 9")
 st.write(
     "Validated synthetic-demo loading, three-file CSV upload, and session Reset "
     "are available. Descriptive Sample Quality Control summaries are also "
     "available, together with descriptive Pearson Sample Correlation summaries "
     "and descriptive PCA sample scores and explained variance, for the active "
     "dataset. Descriptive threshold exploration of supplied, precomputed "
-    "differential-expression results is also available."
+    "differential-expression results is also available. Exact, descriptive "
+    "single-gene expression lookup is available for the active dataset."
 )
 st.info(
-    "Clustering, volcano plots, gene lookup, and dedicated exports remain "
-    "unimplemented."
+    "Clustering, differential-expression modelling, volcano plots, and "
+    "dedicated exports remain unimplemented."
 )
 st.page_link("pages/1_Upload_Data.py", label="Start with Upload Data", icon="📤")
 st.page_link(
@@ -67,4 +69,9 @@ st.page_link(
     "pages/5_Differential_Expression.py",
     label="Explore Differential Expression",
     icon="🧬",
+)
+st.page_link(
+    "pages/6_Gene_Expression.py",
+    label="Explore Gene Expression",
+    icon="🌿",
 )
