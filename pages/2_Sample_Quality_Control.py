@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from plant_expression_explorer.dataset import get_current_dataset
+from plant_expression_explorer.exports import CsvExportError, build_csv_export
 from plant_expression_explorer.qc import (
     QcComputationError,
     build_condition_chart_data,
@@ -37,6 +38,37 @@ def _display_sample_summary(sample_summary: pd.DataFrame) -> pd.DataFrame:
         "N/A",
     )
     return display
+
+
+def _render_csv_downloads(
+    downloads: tuple[
+        tuple[str, pd.DataFrame, str, tuple[str, ...]],
+        ...,
+    ],
+) -> None:
+    prepared_downloads = []
+    try:
+        for label, table, filename, json_sequence_columns in downloads:
+            artifact = build_csv_export(
+                table,
+                filename=filename,
+                json_sequence_columns=json_sequence_columns,
+            )
+            prepared_downloads.append((label, artifact))
+    except CsvExportError as error:
+        st.error(
+            "CSV downloads are unavailable "
+            f"({error.reason.value}): {error} No download buttons were shown."
+        )
+        return
+    for label, artifact in prepared_downloads:
+        st.download_button(
+            label,
+            data=artifact.data,
+            file_name=artifact.filename,
+            mime=artifact.media_type,
+            on_click="ignore",
+        )
 
 
 st.title("🧪 Sample Quality Control")
@@ -251,4 +283,37 @@ st.info(
     "No samples or genes are modified or removed. This page performs no "
     "normalisation, PCA, correlation, clustering, hypothesis testing, or "
     "differential-expression inference."
+)
+
+st.header("Download descriptive results")
+st.write(
+    "Downloads are UTF-8 CSV copies of the underlying unrounded result tables. "
+    "They preserve result row and column order, do not include the pandas index "
+    "or dtype metadata, and represent missing values as empty fields."
+)
+st.warning(
+    "CSV text is not prefixed or rewritten. Spreadsheet software may interpret "
+    "formula-like leading characters in untrusted text; review such data and "
+    "import it as plain text when needed."
+)
+_render_csv_downloads(
+    (
+        (
+            "Download condition and sample membership (CSV)",
+            result.condition_summary,
+            "sample-qc-condition-membership.csv",
+            ("sample_ids",),
+        ),
+        (
+            "Download per-sample statistics (CSV)",
+            result.sample_summary,
+            "sample-qc-sample-statistics.csv",
+            (),
+        ),
+    )
+)
+st.caption(
+    "The sample_ids field in the condition-membership file is a JSON array so "
+    "every exact sample identifier remains distinguishable. These files contain "
+    "descriptive summaries, not quality classifications or exclusion decisions."
 )

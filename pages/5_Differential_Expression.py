@@ -12,10 +12,15 @@ from plant_expression_explorer.differential_expression import (
     classify_differential_expression_results,
     select_rows_by_status,
 )
+from plant_expression_explorer.exports import CsvExportError, build_csv_export
 from plant_expression_explorer.validation import Severity, ValidationIssue
 
 
 _DE_TABLE_NAME = "Differential-expression results"
+_ADJUSTED_THRESHOLD_EXPORT_COLUMN = "applied_adjusted_p_value_threshold"
+_FOLD_CHANGE_THRESHOLD_EXPORT_COLUMN = (
+    "applied_absolute_log2_fold_change_threshold"
+)
 _CATEGORY_LABELS = {
     DifferentialExpressionStatus.NOT_EVALUABLE.value: (
         "Rows not evaluable with these fields"
@@ -68,6 +73,54 @@ def _format_applied_threshold(value: float) -> str:
     """Return Python's shortest representation that round-trips to the same float."""
 
     return repr(float(value))
+
+
+def _with_threshold_context(
+    table: pd.DataFrame,
+    *,
+    adjusted_p_value_threshold: float,
+    absolute_log2_fold_change_threshold: float,
+) -> pd.DataFrame:
+    """Return an export copy carrying the exact thresholds used for classification."""
+
+    export = table.copy(deep=True)
+    export.insert(
+        len(export.columns),
+        _ADJUSTED_THRESHOLD_EXPORT_COLUMN,
+        adjusted_p_value_threshold,
+        allow_duplicates=True,
+    )
+    export.insert(
+        len(export.columns),
+        _FOLD_CHANGE_THRESHOLD_EXPORT_COLUMN,
+        absolute_log2_fold_change_threshold,
+        allow_duplicates=True,
+    )
+    return export
+
+
+def _render_csv_downloads(
+    downloads: tuple[tuple[str, pd.DataFrame, str], ...],
+) -> None:
+    prepared_downloads = []
+    try:
+        for label, table, filename in downloads:
+            artifact = build_csv_export(table, filename=filename)
+            prepared_downloads.append((label, artifact))
+    except CsvExportError as error:
+        st.error(
+            "CSV downloads are unavailable "
+            f"({error.reason.value}): {error} No download buttons were shown."
+        )
+        return
+    for label, artifact in prepared_downloads:
+        st.download_button(
+            label,
+            data=artifact.data,
+            file_name=artifact.filename,
+            mime=artifact.media_type,
+            on_click="ignore",
+        )
 
 
 st.title("🧬 Differential Expression")
@@ -284,5 +337,57 @@ st.info(
 st.info(
     "No rows are trimmed, normalised, deduplicated, sorted, ranked, intersected, "
     "aggregated, transformed, imputed, or removed. This phase provides no "
-    "volcano plot, gene lookup, or dedicated export workflow."
+    "volcano plot or gene lookup."
+)
+
+st.header("Download descriptive results")
+st.write(
+    "Downloads are UTF-8 CSV copies in supplied row order. The annotated file "
+    "retains every supplied column and value and adds the exploratory status "
+    "column already displayed above. Both files also add export-only fields for "
+    "the exact applied adjusted-p-value and absolute fold-change thresholds. CSV "
+    "does not preserve the pandas index or dtype metadata; missing values are "
+    "empty fields."
+)
+st.warning(
+    "CSV text is not prefixed or rewritten. Spreadsheet software may interpret "
+    "formula-like leading characters in untrusted text; review such data and "
+    "import it as plain text when needed."
+)
+category_export = category_summary.loc[
+    :, ["category", "status", "row_count"]
+].copy(deep=True)
+category_export = _with_threshold_context(
+    category_export,
+    adjusted_p_value_threshold=result.adjusted_p_value_threshold,
+    absolute_log2_fold_change_threshold=(
+        result.absolute_log2_fold_change_threshold
+    ),
+)
+annotated_export = _with_threshold_context(
+    result.annotated_results,
+    adjusted_p_value_threshold=result.adjusted_p_value_threshold,
+    absolute_log2_fold_change_threshold=(
+        result.absolute_log2_fold_change_threshold
+    ),
+)
+_render_csv_downloads(
+    (
+        (
+            "Download category counts (CSV)",
+            category_export,
+            "differential-expression-category-counts.csv",
+        ),
+        (
+            "Download complete annotated results (CSV)",
+            annotated_export,
+            "differential-expression-annotated-results.csv",
+        ),
+    )
+)
+st.caption(
+    f"These files correspond to the displayed exploratory thresholds: padj ≤ "
+    f"{display_adjusted_threshold} and absolute log2 fold-change ≥ "
+    f"{display_fold_change_threshold}. Threshold matches are not claims of "
+    "statistical significance, regulation, condition effects, or biological importance."
 )

@@ -13,7 +13,7 @@ The application accepts three CSV inputs:
 
 ## Current status
 
-Phases 1–9 provide:
+Phases 1–10 provide:
 
 - the Python project structure;
 - a Streamlit home page and navigation;
@@ -32,11 +32,13 @@ Phases 1–9 provide:
   differential-expression results;
 - descriptive, non-mutating lookup of one exact supplied gene's expression
   values across samples with sample-condition context;
+- deterministic, non-mutating UTF-8 CSV downloads of current full-precision
+  descriptive result tables from each analysis page;
 - placeholders for the later analysis pages;
 - automated tests.
 
-Clustering, differential-expression modelling, volcano plots, and dedicated
-exports are not implemented.
+Clustering, differential-expression modelling, and volcano plots are not
+implemented.
 
 ## Setup
 
@@ -411,6 +413,53 @@ Phase 9 performs no FASTQ processing, normalization, transformation, filtering,
 batch correction, imputation, statistical testing, differential-expression
 inference, contrast or reference-level interpretation, biological-importance
 classification, volcano plotting, or dedicated export workflow.
+
+## Phase 10 descriptive result exports
+
+Each implemented analysis page provides dedicated downloads for its current
+successfully calculated descriptive result tables:
+
+- Sample Quality Control exports condition membership and per-sample statistics.
+- PCA exports full-precision explained variance and sample scores.
+- Sample Correlation exports the full matrix in ordered long form, plus
+  per-sample, unique-pair, and condition-pair summaries.
+- Differential Expression exports category counts and the complete supplied
+  results with the current exploratory status column. Both files include the
+  exact adjusted-p-value and absolute log2-fold-change thresholds applied to
+  every exported classification.
+- Gene Expression exports the selected gene's per-sample values and
+  condition-grouped descriptive summary; the exact selected `gene_id` is an
+  explicit column in both files.
+
+Downloads are built in memory and do not write files on the application server.
+They are generated from the underlying result DataFrames, not from rounded or
+`N/A`-formatted display copies. Result row and column order is retained and the
+active dataset and result objects are not mutated. Repeated export of the same
+result produces the same UTF-8 bytes with `\n` line endings.
+
+CSV is a serialized interchange format, not a lossless pandas archive. Exports
+do not include the pandas index or dtype metadata. Missing scalar values are
+written as empty fields, so CSV alone cannot distinguish a missing value from a
+source empty string. Tuple/list sample memberships are exported as compact JSON
+arrays in the `sample_ids` field, making exact membership boundaries explicit.
+No identifiers are placed unvalidated into filenames. Every download for a page
+is built before any download button is shown; unsupported objects, infinite
+values, invalid or conflicting columns, unsafe filenames, or serialization
+failures therefore produce one controlled error and no partial set of download
+buttons.
+
+CSV text cells are preserved without spreadsheet-specific prefixing. Some
+spreadsheet programs may interpret formula-like leading characters in untrusted
+text as formulas, so each download section tells users to review such content
+and import it as plain text when needed. The application does not silently alter
+identifiers or annotations to mitigate consumer-specific behaviour.
+
+These downloads do not recreate the original uploaded CSV bytes and are not
+described as backups of the source files. They do not add normalization,
+transformation, filtering, imputation, ranking, hypothesis testing,
+differential-expression inference, reference-level or contrast interpretation,
+biological-importance claims, chart-image export, Excel/ZIP packaging, or a
+combined report.
 
 ## Input validation
 

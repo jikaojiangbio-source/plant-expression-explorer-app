@@ -10,6 +10,7 @@ from plant_expression_explorer.correlation import (
     compute_sample_correlation,
 )
 from plant_expression_explorer.dataset import get_current_dataset
+from plant_expression_explorer.exports import CsvExportError, build_csv_export
 
 
 def _display_matrix(correlation_matrix: pd.DataFrame) -> pd.DataFrame:
@@ -30,6 +31,30 @@ def _display_summary(
         values = display[column].round(3).astype("object")
         display[column] = values.where(values.notna(), "N/A")
     return display
+
+
+def _render_csv_downloads(
+    downloads: tuple[tuple[str, pd.DataFrame, str], ...],
+) -> None:
+    prepared_downloads = []
+    try:
+        for label, table, filename in downloads:
+            artifact = build_csv_export(table, filename=filename)
+            prepared_downloads.append((label, artifact))
+    except CsvExportError as error:
+        st.error(
+            "CSV downloads are unavailable "
+            f"({error.reason.value}): {error} No download buttons were shown."
+        )
+        return
+    for label, artifact in prepared_downloads:
+        st.download_button(
+            label,
+            data=artifact.data,
+            file_name=artifact.filename,
+            mime=artifact.media_type,
+            on_click="ignore",
+        )
 
 
 st.title("🔥 Sample Correlation")
@@ -264,4 +289,48 @@ st.info(
     "No samples or genes are modified or removed. This page performs no PCA, "
     "clustering, distance analysis, batch correction, hypothesis testing, "
     "correlation p-value calculation, or differential-expression inference."
+)
+
+st.header("Download descriptive results")
+st.write(
+    "Downloads are UTF-8 CSV copies of the underlying unrounded result tables. "
+    "They preserve result row and column order, omit pandas index and dtype "
+    "metadata, and represent undefined correlations as empty fields."
+)
+st.warning(
+    "CSV text is not prefixed or rewritten. Spreadsheet software may interpret "
+    "formula-like leading characters in untrusted text; review such data and "
+    "import it as plain text when needed."
+)
+matrix_long = heatmap_data.loc[
+    :, ["row_sample", "column_sample", "correlation", "defined"]
+].copy(deep=True)
+_render_csv_downloads(
+    (
+        (
+            "Download correlation matrix in long form (CSV)",
+            matrix_long,
+            "sample-correlation-matrix-long.csv",
+        ),
+        (
+            "Download per-sample correlation summary (CSV)",
+            result.sample_summary,
+            "sample-correlation-sample-summary.csv",
+        ),
+        (
+            "Download unique sample pairs (CSV)",
+            result.pair_summary,
+            "sample-correlation-unique-pairs.csv",
+        ),
+        (
+            "Download condition-pair summary (CSV)",
+            result.condition_summary,
+            "sample-correlation-condition-pairs.csv",
+        ),
+    )
+)
+st.caption(
+    "The long-form matrix includes every ordered row/column sample position and "
+    "a defined flag. These exports do not classify correlation strength, sample "
+    "quality, or biological validity."
 )

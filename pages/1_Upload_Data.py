@@ -311,7 +311,8 @@ st.info(
     "Sample Correlation are available on their own pages for the active "
     "dataset. Descriptive exploratory threshold classification of supplied, "
     "precomputed differential-expression results is also available, together "
-    "with exact, descriptive single-gene expression lookup. Differential-"
-    "expression modelling, volcano plots, and dedicated exports are not "
-    "implemented yet."
+    "with exact, descriptive single-gene expression lookup. Dedicated CSV "
+    "downloads of current descriptive result tables are available on the "
+    "analysis pages. Differential-expression modelling and volcano plots are "
+    "not implemented."
 )

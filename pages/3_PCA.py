@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from plant_expression_explorer.dataset import get_current_dataset
+from plant_expression_explorer.exports import CsvExportError, build_csv_export
 from plant_expression_explorer.pca import (
     PcaComputationError,
     build_pca_observations,
@@ -31,6 +32,30 @@ def _display_score_table(score_table: pd.DataFrame) -> pd.DataFrame:
         if column.startswith("pc"):
             display[column] = display[column].round(3)
     return display
+
+
+def _render_csv_downloads(
+    downloads: tuple[tuple[str, pd.DataFrame, str], ...],
+) -> None:
+    prepared_downloads = []
+    try:
+        for label, table, filename in downloads:
+            artifact = build_csv_export(table, filename=filename)
+            prepared_downloads.append((label, artifact))
+    except CsvExportError as error:
+        st.error(
+            "CSV downloads are unavailable "
+            f"({error.reason.value}): {error} No download buttons were shown."
+        )
+        return
+    for label, artifact in prepared_downloads:
+        st.download_button(
+            label,
+            data=artifact.data,
+            file_name=artifact.filename,
+            mime=artifact.media_type,
+            on_click="ignore",
+        )
 
 
 st.title("📊 PCA")
@@ -247,4 +272,35 @@ st.info(
     "No samples or genes are modified or removed. Upstream normalization, "
     "transformation, filtering, and gene selection materially affect every "
     "displayed value."
+)
+
+st.header("Download descriptive results")
+st.write(
+    "Downloads are UTF-8 CSV copies of the underlying full-precision PCA result "
+    "tables, not the rounded display copies. They preserve result row and column "
+    "order, omit the pandas index and dtype metadata, and use empty fields for "
+    "missing values."
+)
+st.warning(
+    "CSV text is not prefixed or rewritten. Spreadsheet software may interpret "
+    "formula-like leading characters in untrusted text; review such data and "
+    "import it as plain text when needed."
+)
+_render_csv_downloads(
+    (
+        (
+            "Download explained variance (CSV)",
+            result.variance_table,
+            "pca-explained-variance.csv",
+        ),
+        (
+            "Download sample scores (CSV)",
+            result.score_table,
+            "pca-sample-scores.csv",
+        ),
+    )
+)
+st.caption(
+    "These files contain descriptive PCA outputs only. They do not contain "
+    "sample rankings, quality labels, condition-effect tests, or significance claims."
 )

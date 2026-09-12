@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from plant_expression_explorer.dataset import get_current_dataset
+from plant_expression_explorer.exports import CsvExportError, build_csv_export
 from plant_expression_explorer.gene_expression import (
     GeneExpressionComputationError,
     build_gene_expression_chart_data,
@@ -44,6 +45,37 @@ def _display_condition_summary(summary: pd.DataFrame) -> pd.DataFrame:
         lambda value: "N/A" if pd.isna(value) else repr(float(value))
     )
     return display
+
+
+def _render_csv_downloads(
+    downloads: tuple[
+        tuple[str, pd.DataFrame, str, tuple[str, ...]],
+        ...,
+    ],
+) -> None:
+    prepared_downloads = []
+    try:
+        for label, table, filename, json_sequence_columns in downloads:
+            artifact = build_csv_export(
+                table,
+                filename=filename,
+                json_sequence_columns=json_sequence_columns,
+            )
+            prepared_downloads.append((label, artifact))
+    except CsvExportError as error:
+        st.error(
+            "CSV downloads are unavailable "
+            f"({error.reason.value}): {error} No download buttons were shown."
+        )
+        return
+    for label, artifact in prepared_downloads:
+        st.download_button(
+            label,
+            data=artifact.data,
+            file_name=artifact.filename,
+            mime=artifact.media_type,
+            on_click="ignore",
+        )
 
 
 st.title("🌿 Gene Expression")
@@ -287,7 +319,43 @@ st.info(
 )
 st.info(
     "This page performs no FASTQ processing, batch correction, hypothesis "
-    "testing, differential-expression inference, or volcano plotting. No "
-    "dedicated application export workflow is implemented; Streamlit components "
-    "may expose framework-provided table or chart actions."
+    "testing, differential-expression inference, or volcano plotting."
+)
+
+st.header("Download descriptive results")
+st.write(
+    "Downloads are UTF-8 CSV copies of the underlying unrounded result tables. "
+    "The selected exact gene ID is added as an explicit context column. Result "
+    "row and column order is preserved; pandas index and dtype metadata are not "
+    "included, and missing values are empty fields."
+)
+st.warning(
+    "CSV text is not prefixed or rewritten. Spreadsheet software may interpret "
+    "formula-like leading characters in untrusted text; review such data and "
+    "import it as plain text when needed."
+)
+sample_export = result.sample_expression.copy(deep=True)
+sample_export.insert(0, "gene_id", result.gene_id)
+condition_export = result.condition_summary.copy(deep=True)
+condition_export.insert(0, "gene_id", result.gene_id)
+_render_csv_downloads(
+    (
+        (
+            "Download per-sample expression values (CSV)",
+            sample_export,
+            "gene-expression-sample-values.csv",
+            (),
+        ),
+        (
+            "Download condition-grouped summary (CSV)",
+            condition_export,
+            "gene-expression-condition-summary.csv",
+            ("sample_ids",),
+        ),
+    )
+)
+st.caption(
+    "The sample_ids field in the condition summary is a JSON array. These files "
+    "contain supplied values and disclosed descriptive aggregations only; they "
+    "do not report condition effects, significance, regulation, or importance."
 )

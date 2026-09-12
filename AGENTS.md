@@ -26,7 +26,7 @@ exploration, volcano plots, gene lookup, and exports are intentionally deferred.
 
 ## Current implementation boundary
 
-As of Phase 9, the application implements: project setup; a validated
+As of Phase 10, the application implements: project setup; a validated
 three-file CSV upload and data-loading workflow; a bundled reproducible
 synthetic demo dataset; descriptive, non-mutating sample quality-control
 summaries; descriptive, non-mutating Pearson sample-correlation summaries;
@@ -34,6 +34,8 @@ and descriptive, non-mutating sample PCA (mean-centred, unscaled, SVD-based
 sample scores and explained variance); and descriptive, non-mutating threshold
 exploration of supplied, precomputed differential-expression results; and
 descriptive, non-mutating lookup of one exact supplied gene's expression values
-across samples with sample-condition context.
-Differential-expression modelling, volcano plots, and dedicated exports remain
-intentionally deferred.
+across samples with sample-condition context; and deterministic, non-mutating
+UTF-8 CSV downloads of the current full-precision descriptive result tables on
+each analysis page.
+Differential-expression modelling and volcano plots remain intentionally
+deferred.

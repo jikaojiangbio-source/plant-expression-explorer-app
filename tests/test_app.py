@@ -1,11 +1,14 @@
 """Smoke test for the Streamlit home page."""
 
+import csv
+import io
 import json
 from pathlib import Path
 
 import pandas as pd
 from streamlit.testing.v1 import AppTest
 
+import plant_expression_explorer.exports as exports_module
 from plant_expression_explorer.consistency import validate_input_tables
 from plant_expression_explorer.dataset import (
     CURRENT_DATASET_KEY,
@@ -18,6 +21,11 @@ from plant_expression_explorer.dataset import (
     load_demo_candidate,
 )
 from plant_expression_explorer.differential_expression import STATUS_COLUMN
+from plant_expression_explorer.exports import (
+    CsvExportError,
+    CsvExportErrorReason,
+    build_csv_export,
+)
 from plant_expression_explorer.validation import (
     IssueCode,
     Severity,
@@ -42,6 +50,10 @@ def _visible_text(app: AppTest) -> str:
         for group in element_groups
         for element in group
     )
+
+
+def _download_labels(app: AppTest) -> list[str]:
+    return [button.label for button in app.get("download_button")]
 
 
 def _demo_bundle() -> DatasetBundle:
@@ -506,6 +518,11 @@ def _run_gene_page(bundle: DatasetBundle | None = None) -> AppTest:
     return app.run()
 
 
+def _run_selected_gene_page(bundle: DatasetBundle, gene_id: str) -> AppTest:
+    app = _run_gene_page(bundle)
+    return app.selectbox[0].select(gene_id).run()
+
+
 def _metric_values(app: AppTest) -> dict[str, str]:
     return {metric.label: metric.value for metric in app.metric}
 
@@ -610,7 +627,7 @@ def test_home_page_analysis_link_order_includes_phase_9_gene_expression() -> Non
     ]
 
 
-def test_home_page_deg_and_gene_expression_are_available_and_exports_remain_planned() -> None:
+def test_home_page_lists_phase_10_contextual_csv_exports_as_available() -> None:
     app = AppTest.from_file("app.py").run()
 
     workflow_markdown = next(
@@ -630,12 +647,14 @@ def test_home_page_deg_and_gene_expression_are_available_and_exports_remain_plan
     assert "descriptive thresholds" in deg_line.lower()
     assert "planned" not in gene_expression_line.lower()
     assert "exact supplied gene" in gene_expression_line.lower()
+    assert "dedicated utf-8 csv" in workflow_markdown.lower()
 
     info_text = " ".join(element.value for element in app.info).lower()
     assert "differential-expression exploration" not in info_text
     assert "volcano plots" in info_text
-    assert "dedicated exports" in info_text
+    assert "dedicated exports" not in info_text
     assert "gene lookup" not in info_text
+    assert "phase 10" in _visible_text(app).lower()
 
 
 def test_upload_page_initial_state_and_synthetic_disclaimer() -> None:
@@ -669,7 +688,8 @@ def test_upload_page_lists_phase_8_exploration_as_available() -> None:
     assert "exploratory threshold classification" in visible_text
     assert "supplied, precomputed differential-expression results" in visible_text
     assert "exact, descriptive single-gene expression lookup" in visible_text
-    assert "Differential-expression modelling, volcano plots, and dedicated exports are not implemented yet" in visible_text
+    assert "Dedicated CSV downloads of current descriptive result tables" in visible_text
+    assert "Differential-expression modelling and volcano plots are not implemented" in visible_text
 
 
 def test_upload_page_demo_load_and_reset_are_repeatable() -> None:
@@ -1364,7 +1384,8 @@ def test_de_page_has_required_scientific_wording_and_no_later_features() -> None
         assert "positive and negative labels refer only to the sign" in lower_text
         assert "missing adjusted p-values remain missing" in lower_text
         assert "not a claim of statistical significance" in lower_text
-        assert "no volcano plot, gene lookup, or dedicated export workflow" in lower_text
+        assert "no volcano plot or gene lookup" in lower_text
+        assert "threshold matches are not claims of statistical significance" in lower_text
         assert "upregulated" not in lower_text
         assert "downregulated" not in lower_text
         assert "deseq2 was run" not in lower_text
@@ -1554,6 +1575,7 @@ def test_gene_page_dataset_replacement_clears_a_stale_gene_selection() -> None:
     assert "GeneA" not in app.selectbox[0].options
     assert len(app.dataframe) == 0
     assert "Select one exact supplied gene ID" in _visible_text(app)
+    assert _download_labels(app) == []
 
 
 def test_gene_page_demo_selection_has_exact_options_and_synthetic_disclaimer() -> None:
@@ -1613,7 +1635,405 @@ def test_gene_page_scientific_disclaimers_are_negative_not_affirmative_claims() 
         assert affirmative_claim not in visible_text
 
 
-def test_phase_9_navigation_and_documentation_keep_later_work_planned() -> None:
+def test_phase_10_downloads_are_absent_without_successful_results() -> None:
+    no_data_apps = (
+        _run_qc_page(),
+        _run_correlation_page(),
+        _run_pca_page(),
+        _run_de_page(),
+        _run_gene_page(),
+    )
+    controlled_error_apps = (
+        _run_qc_page(_invalid_qc_bundle()),
+        _run_correlation_page(_uploaded_bundle(one_gene=True)),
+        _run_pca_page(_all_genes_constant_bundle()),
+        _run_de_page(_blocking_de_bundle()),
+        _run_gene_page(_invalid_gene_options_bundle()),
+    )
+
+    for app in (*no_data_apps, *controlled_error_apps):
+        assert not app.exception
+        assert _download_labels(app) == []
+
+    gene_range_error = _run_gene_page(_numerical_range_gene_bundle())
+    gene_range_error.selectbox[0].select("g1").run()
+    assert not gene_range_error.exception
+    assert _download_labels(gene_range_error) == []
+
+    invalid_de_threshold = _run_de_page(_de_uploaded_bundle())
+    invalid_de_threshold.number_input[1].set_value(0.0).run()
+    assert not invalid_de_threshold.exception
+    assert _download_labels(invalid_de_threshold) == []
+
+
+def test_phase_10_successful_pages_offer_only_contextual_csv_downloads() -> None:
+    expected_by_app = (
+        (
+            _run_qc_page(_demo_bundle()),
+            [
+                "Download condition and sample membership (CSV)",
+                "Download per-sample statistics (CSV)",
+            ],
+        ),
+        (
+            _run_correlation_page(_demo_bundle()),
+            [
+                "Download correlation matrix in long form (CSV)",
+                "Download per-sample correlation summary (CSV)",
+                "Download unique sample pairs (CSV)",
+                "Download condition-pair summary (CSV)",
+            ],
+        ),
+        (
+            _run_pca_page(_demo_bundle()),
+            [
+                "Download explained variance (CSV)",
+                "Download sample scores (CSV)",
+            ],
+        ),
+        (
+            _run_de_page(_demo_bundle()),
+            [
+                "Download category counts (CSV)",
+                "Download complete annotated results (CSV)",
+            ],
+        ),
+    )
+
+    for app, expected_labels in expected_by_app:
+        assert not app.exception
+        assert _download_labels(app) == expected_labels
+        assert all(
+            button.proto.ignore_rerun for button in app.get("download_button")
+        )
+
+    gene_page = _run_gene_page(_gene_uploaded_bundle())
+    assert _download_labels(gene_page) == []
+    gene_page.selectbox[0].select("GeneA").run()
+    assert not gene_page.exception
+    assert _download_labels(gene_page) == [
+        "Download per-sample expression values (CSV)",
+        "Download condition-grouped summary (CSV)",
+    ]
+    assert all(
+        button.proto.ignore_rerun for button in gene_page.get("download_button")
+    )
+
+
+def test_phase_10_pages_export_underlying_ordered_tables(monkeypatch) -> None:
+    captured: list[tuple[pd.DataFrame, str, tuple[str, ...]]] = []
+
+    def record_export(
+        table: pd.DataFrame,
+        *,
+        filename: str,
+        json_sequence_columns: tuple[str, ...] = (),
+    ):
+        captured.append(
+            (table.copy(deep=True), filename, tuple(json_sequence_columns))
+        )
+        return build_csv_export(
+            table,
+            filename=filename,
+            json_sequence_columns=json_sequence_columns,
+        )
+
+    monkeypatch.setattr(exports_module, "build_csv_export", record_export)
+
+    qc_bundle = _uploaded_bundle(one_gene=True)
+    qc_app = _run_qc_page(qc_bundle)
+    assert not qc_app.exception
+    assert [filename for _, filename, _ in captured] == [
+        "sample-qc-condition-membership.csv",
+        "sample-qc-sample-statistics.csv",
+    ]
+    assert captured[0][0]["sample_ids"].tolist() == [
+        ("sample_a",),
+        ("sample_b",),
+    ]
+    assert captured[0][2] == ("sample_ids",)
+    assert captured[1][0]["standard_deviation"].isna().all()
+
+    captured.clear()
+    correlation_app = _run_correlation_page(_uploaded_bundle())
+    assert not correlation_app.exception
+    assert [filename for _, filename, _ in captured] == [
+        "sample-correlation-matrix-long.csv",
+        "sample-correlation-sample-summary.csv",
+        "sample-correlation-unique-pairs.csv",
+        "sample-correlation-condition-pairs.csv",
+    ]
+    assert captured[0][0].columns.tolist() == [
+        "row_sample",
+        "column_sample",
+        "correlation",
+        "defined",
+    ]
+    assert captured[0][0][
+        ["row_sample", "column_sample"]
+    ].values.tolist() == [
+        ["sample_b", "sample_b"],
+        ["sample_b", "sample_a"],
+        ["sample_a", "sample_b"],
+        ["sample_a", "sample_a"],
+    ]
+
+    captured.clear()
+    pca_app = _run_pca_page(_demo_bundle())
+    assert not pca_app.exception
+    assert [filename for _, filename, _ in captured] == [
+        "pca-explained-variance.csv",
+        "pca-sample-scores.csv",
+    ]
+    assert captured[0][0]["component"].tolist() == [1, 2, 3, 4, 5]
+    assert captured[1][0]["sample_id"].tolist() == [
+        "Control_1",
+        "Control_2",
+        "Control_3",
+        "High_nitrate_1",
+        "High_nitrate_2",
+        "High_nitrate_3",
+    ]
+
+    captured.clear()
+    de_bundle = _de_uploaded_bundle()
+    de_app = _run_de_page(de_bundle)
+    assert not de_app.exception
+    assert [filename for _, filename, _ in captured] == [
+        "differential-expression-category-counts.csv",
+        "differential-expression-annotated-results.csv",
+    ]
+    assert captured[1][0].columns.tolist() == [
+        *de_bundle.de_results.columns,
+        STATUS_COLUMN,
+        "applied_adjusted_p_value_threshold",
+        "applied_absolute_log2_fold_change_threshold",
+    ]
+    assert captured[1][0].index.tolist() == de_bundle.de_results.index.tolist()
+    for table, _, _ in captured:
+        assert table["applied_adjusted_p_value_threshold"].tolist() == [
+            0.05
+        ] * len(table.index)
+        assert table["applied_absolute_log2_fold_change_threshold"].tolist() == [
+            1.0
+        ] * len(table.index)
+
+    captured.clear()
+    de_app.number_input[0].set_value(0.01).run()
+    assert not de_app.exception
+    assert captured[0][0]["row_count"].tolist() == [1, 0, 0, 4]
+    assert captured[1][0][STATUS_COLUMN].tolist() == [
+        "DOES_NOT_MEET_COMBINED_THRESHOLDS",
+        "DOES_NOT_MEET_COMBINED_THRESHOLDS",
+        "DOES_NOT_MEET_COMBINED_THRESHOLDS",
+        "NOT_EVALUABLE",
+        "DOES_NOT_MEET_COMBINED_THRESHOLDS",
+    ]
+    for table, _, _ in captured:
+        assert table["applied_adjusted_p_value_threshold"].tolist() == [
+            0.01
+        ] * len(table.index)
+        assert table["applied_absolute_log2_fold_change_threshold"].tolist() == [
+            1.0
+        ] * len(table.index)
+
+    captured.clear()
+    gene_app = _run_gene_page(_gene_uploaded_bundle())
+    assert captured == []
+    gene_app.selectbox[0].select("GeneA").run()
+    assert not gene_app.exception
+    assert [filename for _, filename, _ in captured] == [
+        "gene-expression-sample-values.csv",
+        "gene-expression-condition-summary.csv",
+    ]
+    assert captured[0][0]["gene_id"].tolist() == ["GeneA", "GeneA", "GeneA"]
+    assert captured[0][0]["sample_id"].tolist() == [
+        "sample_b",
+        "sample_a",
+        "sample_c",
+    ]
+    assert captured[1][2] == ("sample_ids",)
+
+    captured.clear()
+    gene_app.selectbox[0].select("genea").run()
+    assert not gene_app.exception
+    assert captured[0][0]["gene_id"].tolist() == ["genea", "genea", "genea"]
+
+
+def test_phase_10_pages_catch_controlled_export_errors(monkeypatch) -> None:
+    def fail_export(*args, **kwargs):
+        raise CsvExportError(
+            CsvExportErrorReason.SERIALIZATION_ERROR,
+            "Forced export failure for page regression testing.",
+        )
+
+    monkeypatch.setattr(exports_module, "build_csv_export", fail_export)
+
+    apps = (
+        _run_qc_page(_uploaded_bundle()),
+        _run_correlation_page(_uploaded_bundle()),
+        _run_pca_page(_uploaded_bundle()),
+        _run_de_page(_de_uploaded_bundle()),
+    )
+    gene_page = _run_gene_page(_gene_uploaded_bundle())
+    gene_page.selectbox[0].select("GeneA").run()
+
+    for app in (*apps, gene_page):
+        assert not app.exception
+        assert len(app.error) == 1
+        assert "SERIALIZATION_ERROR" in app.error[0].value
+        assert "No download buttons were shown" in app.error[0].value
+        assert _download_labels(app) == []
+
+
+def test_phase_10_page_download_sets_are_atomic_for_nth_export_failure(
+    monkeypatch,
+) -> None:
+    original_export = build_csv_export
+    page_cases = (
+        ("QC", 2, lambda: _run_qc_page(_uploaded_bundle())),
+        (
+            "correlation",
+            4,
+            lambda: _run_correlation_page(_uploaded_bundle()),
+        ),
+        ("PCA", 2, lambda: _run_pca_page(_uploaded_bundle())),
+        ("DE", 2, lambda: _run_de_page(_de_uploaded_bundle())),
+        (
+            "gene",
+            2,
+            lambda: _run_selected_gene_page(_gene_uploaded_bundle(), "GeneA"),
+        ),
+    )
+
+    for page_name, export_count, run_page in page_cases:
+        positions = {1, export_count}
+        if export_count > 2:
+            positions.add(2)
+        for failure_position in sorted(positions):
+            call_count = 0
+
+            def fail_nth_export(*args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                if call_count == failure_position:
+                    raise CsvExportError(
+                        CsvExportErrorReason.SERIALIZATION_ERROR,
+                        f"Forced {page_name} export failure at {failure_position}.",
+                    )
+                return original_export(*args, **kwargs)
+
+            monkeypatch.setattr(
+                exports_module,
+                "build_csv_export",
+                fail_nth_export,
+            )
+            app = run_page()
+
+            assert not app.exception
+            assert call_count == failure_position
+            assert len(app.error) == 1
+            assert "SERIALIZATION_ERROR" in app.error[0].value
+            assert "No download buttons were shown" in app.error[0].value
+            assert _download_labels(app) == []
+
+
+def test_de_download_csvs_embed_exact_current_thresholds(monkeypatch) -> None:
+    captured: dict[str, bytes] = {}
+    bundle = _high_precision_de_bundle()
+    original = bundle.de_results.copy(deep=True)
+
+    def record_export(
+        table: pd.DataFrame,
+        *,
+        filename: str,
+        json_sequence_columns: tuple[str, ...] = (),
+    ):
+        artifact = build_csv_export(
+            table,
+            filename=filename,
+            json_sequence_columns=json_sequence_columns,
+        )
+        captured[filename] = artifact.data
+        return artifact
+
+    monkeypatch.setattr(exports_module, "build_csv_export", record_export)
+    app = _run_de_page(bundle)
+    captured.clear()
+    adjusted_threshold = 0.010000000000000002
+    fold_change_threshold = 1.0000000000000002
+    app.number_input[0].set_value(adjusted_threshold).run()
+    captured.clear()
+    app.number_input[1].set_value(fold_change_threshold).run()
+
+    assert not app.exception
+    assert set(captured) == {
+        "differential-expression-category-counts.csv",
+        "differential-expression-annotated-results.csv",
+    }
+    for data in captured.values():
+        rows = list(csv.DictReader(io.StringIO(data.decode("utf-8"))))
+        assert rows
+        assert {
+            row["applied_adjusted_p_value_threshold"] for row in rows
+        } == {repr(adjusted_threshold)}
+        assert {
+            row["applied_absolute_log2_fold_change_threshold"] for row in rows
+        } == {repr(fold_change_threshold)}
+    pd.testing.assert_frame_equal(bundle.de_results, original, check_exact=True)
+
+
+def test_de_export_threshold_column_conflict_is_controlled_and_atomic() -> None:
+    bundle = _de_uploaded_bundle()
+    de_results = bundle.de_results.copy(deep=True)
+    de_results["applied_adjusted_p_value_threshold"] = "supplied"
+    original = de_results.copy(deep=True)
+    conflicting_bundle = build_dataset_bundle(
+        (bundle.expression, bundle.metadata, de_results),
+        source="uploaded",
+        source_label="DE threshold export column conflict",
+        report=bundle.validation_report,
+    )
+
+    app = _run_de_page(conflicting_bundle)
+
+    assert not app.exception
+    assert len(app.error) == 1
+    assert "DUPLICATE_COLUMNS" in app.error[0].value
+    assert "No download buttons were shown" in app.error[0].value
+    assert _download_labels(app) == []
+    pd.testing.assert_frame_equal(de_results, original, check_exact=True)
+
+
+def test_phase_10_download_wording_discloses_csv_boundaries() -> None:
+    apps = (
+        _run_qc_page(_uploaded_bundle()),
+        _run_correlation_page(_uploaded_bundle()),
+        _run_pca_page(_uploaded_bundle()),
+        _run_de_page(_de_uploaded_bundle()),
+    )
+    gene_page = _run_gene_page(_gene_uploaded_bundle())
+    gene_page.selectbox[0].select("GeneA").run()
+
+    for app in (*apps, gene_page):
+        assert not app.exception
+        text = _visible_text(app).lower()
+        assert "utf-8 csv" in text
+        assert "pandas index" in text
+        assert "dtype metadata" in text
+        assert "empty fields" in text
+        assert "spreadsheet software may interpret" in text
+        assert "csv text is not prefixed or rewritten" in text
+
+    de_text = _visible_text(apps[3]).lower()
+    assert "threshold matches are not claims of statistical significance" in de_text
+    assert "both files also add export-only fields" in de_text
+    assert "exact applied adjusted-p-value" in de_text
+    gene_text = _visible_text(gene_page).lower()
+    assert "gene id is added as an explicit context column" in gene_text
+
+
+def test_phase_10_navigation_and_documentation_keep_later_work_planned() -> None:
     home = AppTest.from_file("app.py").run()
     page_links = home.get("page_link")
     assert [link.proto.page for link in page_links] == [
@@ -1631,11 +2051,14 @@ def test_phase_9_navigation_and_documentation_keep_later_work_planned() -> None:
     repository = Path(__file__).parents[1]
     readme = (repository / "README.md").read_text(encoding="utf-8")
     guide = (repository / "AGENTS.md").read_text(encoding="utf-8")
-    assert "Phases 1–9 provide" in readme
+    assert "Phases 1–10 provide" in readme
     assert "Phase 8 descriptive differential-expression exploration" in readme
     assert "Phase 9 descriptive gene-expression lookup" in readme
-    assert "As of Phase 9" in guide
+    assert "Phase 10 descriptive result exports" in readme
+    assert "exact adjusted-p-value and absolute log2-fold-change thresholds" in readme
+    assert "As of Phase 10" in guide
     for text in (readme, guide):
         normalized = " ".join(text.split())
         assert "volcano plots" in normalized
-        assert "dedicated exports" in normalized
+        assert "UTF-8 CSV" in normalized
+    assert "no partial set of download buttons" in " ".join(readme.split())

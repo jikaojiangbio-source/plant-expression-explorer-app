@@ -55,6 +55,13 @@ from plant_expression_explorer.differential_expression import (
     classify_differential_expression_results,
     select_rows_by_status,
 )
+from plant_expression_explorer.exports import (
+    CSV_MEDIA_TYPE,
+    CsvExportArtifact,
+    CsvExportError,
+    CsvExportErrorReason,
+    build_csv_export,
+)
 from plant_expression_explorer.gene_expression import (
     CONDITION_EXPRESSION_SUMMARY_COLUMNS,
     GENE_EXPRESSION_CHART_COLUMNS,
@@ -107,6 +114,7 @@ __all__ = [
     "CANDIDATE_LABEL_KEY",
     "CANDIDATE_REPORT_KEY",
     "CANDIDATE_SOURCE_KEY",
+    "CSV_MEDIA_TYPE",
     "CONDITION_CORRELATION_SUMMARY_COLUMNS",
     "CONDITION_EXPRESSION_SUMMARY_COLUMNS",
     "CONDITION_SUMMARY_COLUMNS",
@@ -114,6 +122,9 @@ __all__ = [
     "CorrelationErrorReason",
     "CURRENT_DATASET_KEY",
     "CsvReadError",
+    "CsvExportArtifact",
+    "CsvExportError",
+    "CsvExportErrorReason",
     "CandidateResult",
     "DEMO_SOURCE_LABEL",
     "DE_RESULTS_UPLOAD_KEY",
@@ -148,6 +159,7 @@ __all__ = [
     "ValidationIssue",
     "ValidationReport",
     "build_dataset_bundle",
+    "build_csv_export",
     "build_condition_chart_data",
     "build_condition_correlation_summary",
     "build_condition_summary",
