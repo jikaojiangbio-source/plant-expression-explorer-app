@@ -124,6 +124,23 @@ def list_gene_ids(expression: pd.DataFrame) -> tuple[str, ...]:
     return tuple(gene_ids)
 
 
+def filter_gene_ids(gene_ids: tuple[str, ...], query: str) -> tuple[str, ...]:
+    """Return gene IDs containing ``query`` as a case-insensitive substring.
+
+    An empty or whitespace-only query returns every supplied ID unchanged.
+    Matching does not trim, normalize, or reorder identifiers; source row
+    order is preserved.
+    """
+
+    stripped_query = query.strip()
+    if not stripped_query:
+        return gene_ids
+    lowered_query = stripped_query.casefold()
+    return tuple(
+        gene_id for gene_id in gene_ids if lowered_query in gene_id.casefold()
+    )
+
+
 def lookup_gene_expression(
     expression: pd.DataFrame,
     metadata: pd.DataFrame,
@@ -205,6 +222,81 @@ def build_gene_expression_chart_data(
         },
         columns=GENE_EXPRESSION_CHART_COLUMNS,
     )
+
+
+def build_grouped_gene_expression_chart_data(
+    result: GeneExpressionResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return independent numeric point-chart data labelled by one metadata column.
+
+    ``group_column`` values are joined from ``metadata`` by exact sample ID,
+    for display only, exactly like 'condition'. Reuses
+    :func:`build_gene_expression_chart_data`'s numeric coercion; the plotted
+    values are unchanged.
+    """
+
+    if group_column == "condition":
+        return build_gene_expression_chart_data(result)
+    lookup = _metadata_column_lookup(metadata, group_column)
+    numeric_values = pd.to_numeric(
+        result.sample_expression["expression_value"],
+        errors="raise",
+    )
+    sample_ids = result.sample_expression["sample_id"].tolist()
+    return pd.DataFrame(
+        {
+            "sample_position": range(result.sample_count),
+            "sample_id": sample_ids,
+            group_column: [lookup[sample_id] for sample_id in sample_ids],
+            "expression_value": numeric_values.tolist(),
+        },
+        columns=("sample_position", "sample_id", group_column, "expression_value"),
+    )
+
+
+def build_grouped_gene_expression_condition_summary(
+    result: GeneExpressionResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return the descriptive expression summary for one metadata column.
+
+    Reuses the same descriptive statistics (minimum/median/mean/maximum/
+    standard deviation) already used for condition grouping, computed for an
+    alternate metadata column chosen by the caller, from the already-copied
+    values in ``result.sample_expression``; nothing is re-looked-up or
+    re-validated.
+    """
+
+    if group_column == "condition":
+        return result.condition_summary.copy(deep=True)
+    lookup = _metadata_column_lookup(metadata, group_column)
+    sample_ids = result.sample_expression["sample_id"].tolist()
+    groups = [lookup[sample_id] for sample_id in sample_ids]
+    numeric_values = pd.to_numeric(
+        result.sample_expression["expression_value"],
+        errors="raise",
+    )
+    summary = _build_condition_summary(sample_ids, groups, numeric_values)
+    return summary.rename(columns={"condition": group_column})
+
+
+def _metadata_column_lookup(
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> dict[str, object]:
+    if not isinstance(metadata, pd.DataFrame) or "sample_id" not in metadata.columns:
+        raise ValueError("Sample metadata is missing required column 'sample_id'.")
+    if group_column not in metadata.columns:
+        raise ValueError(f"Sample metadata does not contain column '{group_column}'.")
+    return {
+        str(sample_id): ("(missing)" if _is_missing_or_blank(value) else value)
+        for sample_id, value in zip(
+            metadata["sample_id"], metadata[group_column], strict=True
+        )
+    }
 
 
 def build_gene_expression_observations(

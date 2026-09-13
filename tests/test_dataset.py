@@ -13,6 +13,7 @@ from pandas.testing import assert_frame_equal
 import plant_expression_explorer.dataset as dataset_module
 from plant_expression_explorer.consistency import validate_input_tables
 from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
     APPLICATION_DATA_KEYS,
     CANDIDATE_LABEL_KEY,
     CANDIDATE_REPORT_KEY,
@@ -31,6 +32,7 @@ from plant_expression_explorer.dataset import (
     clear_dataset_context_state,
     clear_legacy_data_state,
     clear_uploader_state,
+    ensure_valid_group_column_state,
     get_current_dataset,
     load_demo_candidate,
     load_uploaded_candidate,
@@ -620,6 +622,53 @@ def test_successful_activation_clears_candidate_feedback() -> None:
             CANDIDATE_LABEL_KEY,
         )
     )
+
+
+def test_set_current_dataset_clears_the_shared_group_by_choice() -> None:
+    demo_bundle = _bundle_from_candidate(
+        load_demo_candidate(),
+        source="demo",
+        source_label=DEMO_SOURCE_LABEL,
+    )
+    state: dict[str, object] = {ACTIVE_GROUP_COLUMN_KEY: "genotype"}
+
+    set_current_dataset(state, demo_bundle)
+
+    assert ACTIVE_GROUP_COLUMN_KEY not in state
+
+
+def test_ensure_valid_group_column_state_keeps_a_still_applicable_choice() -> None:
+    state: dict[str, object] = {ACTIVE_GROUP_COLUMN_KEY: "genotype"}
+
+    ensure_valid_group_column_state(state, ("genotype", "batch"))
+
+    assert state[ACTIVE_GROUP_COLUMN_KEY] == "genotype"
+
+
+def test_ensure_valid_group_column_state_defaults_an_unset_choice_to_condition() -> (
+    None
+):
+    state: dict[str, object] = {}
+
+    ensure_valid_group_column_state(state, ("genotype",))
+
+    assert state[ACTIVE_GROUP_COLUMN_KEY] == "condition"
+
+
+def test_ensure_valid_group_column_state_resets_a_stale_choice() -> None:
+    state: dict[str, object] = {ACTIVE_GROUP_COLUMN_KEY: "genotype"}
+
+    ensure_valid_group_column_state(state, ("batch",))
+
+    assert state[ACTIVE_GROUP_COLUMN_KEY] == "condition"
+
+
+def test_ensure_valid_group_column_state_resets_when_no_additional_columns() -> None:
+    state: dict[str, object] = {ACTIVE_GROUP_COLUMN_KEY: "genotype"}
+
+    ensure_valid_group_column_state(state, ())
+
+    assert state[ACTIVE_GROUP_COLUMN_KEY] == "condition"
 
 
 def test_reset_deletes_only_explicit_application_keys_and_preserves_unrelated() -> None:

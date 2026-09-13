@@ -3,7 +3,11 @@
 import pandas as pd
 import streamlit as st
 
-from plant_expression_explorer.dataset import get_current_dataset
+from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
+    ensure_valid_group_column_state,
+    get_current_dataset,
+)
 from plant_expression_explorer.exports import CsvExportError, build_csv_export
 from plant_expression_explorer.pca import (
     PcaComputationError,
@@ -137,7 +141,8 @@ with st.expander("Method"):
     )
 
 try:
-    result = compute_sample_pca(current.expression, current.metadata)
+    with st.spinner("Computing PCA…"):
+        result = compute_sample_pca(current.expression, current.metadata)
 except PcaComputationError as error:
     st.error(
         "Descriptive PCA could not be calculated "
@@ -210,13 +215,17 @@ if result.component_count >= 2:
     additional_columns = list_additional_metadata_columns(current.metadata)
     group_column = "condition"
     if additional_columns:
+        ensure_valid_group_column_state(st.session_state, additional_columns)
         group_column = st.selectbox(
             "Colour points by",
             options=("condition", *additional_columns),
+            key=ACTIVE_GROUP_COLUMN_KEY,
             help=(
                 "Any column present in the uploaded sample metadata beyond "
                 "'sample_id' and 'condition' can be used for visual grouping "
-                "only; the choice never changes how components were fit."
+                "only; the choice never changes how components were fit. This "
+                "choice is shared with the Sample Quality Control, Sample "
+                "Correlation, and Gene Expression pages."
             ),
         )
     plot_data = build_grouped_score_plot_data(result, current.metadata, group_column)

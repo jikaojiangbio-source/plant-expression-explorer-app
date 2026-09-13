@@ -523,23 +523,34 @@ without changing any validation rule's outcome:
 Sample metadata may carry additional columns beyond `sample_id` and
 `condition` (for example `genotype`, `tissue`, `batch`, or
 `biological_replicate`); they are preserved and every analysis page that
-groups by condition (PCA, Sample Quality Control, Sample Correlation) offers a
-"Group by" / "Colour points by" selector for any such column. This always
-relabels or rejoins already-computed results by exact sample ID; no PCA
-component, per-sample statistic, or Pearson correlation is recalculated for
-the new grouping.
+groups by condition (PCA, Sample Quality Control, Sample Correlation, Gene
+Expression) offers a "Group by" / "Colour points by" selector for any such
+column. This always relabels or rejoins already-computed results by exact
+sample ID, or recomputes only the same already-disclosed descriptive
+statistic (minimum/median/mean/maximum/standard deviation) for the new
+grouping; no PCA component or Pearson correlation is ever recalculated. The
+selected grouping column is shared across those four pages for the session
+(reset automatically to 'condition' whenever a new dataset is activated, or
+if the stored column does not exist on the active dataset's metadata).
 
 The Upload Data page shows an at-a-glance overview card (gene count, sample
 count, DE-row count or "Not supplied", and a samples-per-condition chart) as
-soon as a dataset is active, and offers example CSV templates (fabricated
-placeholder values only) showing the exact required column layout for each
-table. The maximum upload size is raised to 500 MB per file to accommodate
-genome-scale matrices.
+soon as a dataset is active; separates the demo and upload workflows into
+tabs; and offers example CSV templates (fabricated placeholder values only)
+showing the exact required column layout for each table. The maximum upload
+size is raised to 500 MB per file to accommodate genome-scale matrices, and
+uploaded-file validation runs under a progress spinner.
 
 Each analysis page's "Method" and "Scientific and statistical limitations"
 text is collapsed into an expander so descriptive results are not visually
 crowded by disclosures; the wording itself is unchanged and still applies in
-full.
+full. PCA, Sample Quality Control, and Sample Correlation show a spinner
+while their (potentially genome-scale) computation runs.
+
+The Gene Expression page's gene selector gains a case-insensitive substring
+search box once a dataset supplies more than 200 genes, keeping the
+underlying dropdown responsive; matches beyond 500 are truncated with an
+explicit count, and matching never trims, reorders, or aliases identifiers.
 
 ## Input validation
 

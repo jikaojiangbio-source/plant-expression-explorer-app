@@ -25,6 +25,7 @@ from plant_expression_explorer.correlation import (
 )
 from plant_expression_explorer.data import CsvReadError, read_csv
 from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
     CANDIDATE_LABEL_KEY,
     CANDIDATE_REPORT_KEY,
     CANDIDATE_SOURCE_KEY,
@@ -49,6 +50,7 @@ from plant_expression_explorer.dataset import (
     clear_dataset_context_state,
     clear_legacy_data_state,
     clear_uploader_state,
+    ensure_valid_group_column_state,
     get_current_dataset,
     load_demo_candidate,
     load_uploaded_candidate,
@@ -84,6 +86,9 @@ from plant_expression_explorer.gene_expression import (
     GeneExpressionResult,
     build_gene_expression_chart_data,
     build_gene_expression_observations,
+    build_grouped_gene_expression_chart_data,
+    build_grouped_gene_expression_condition_summary,
+    filter_gene_ids,
     list_gene_ids,
     lookup_gene_expression,
 )
@@ -141,6 +146,7 @@ from plant_expression_explorer.validation import (
 )
 
 __all__ = [
+    "ACTIVE_GROUP_COLUMN_KEY",
     "CANDIDATE_LABEL_KEY",
     "CANDIDATE_REPORT_KEY",
     "CANDIDATE_SOURCE_KEY",
@@ -213,6 +219,8 @@ __all__ = [
     "build_category_summary",
     "build_gene_expression_chart_data",
     "build_gene_expression_observations",
+    "build_grouped_gene_expression_chart_data",
+    "build_grouped_gene_expression_condition_summary",
     "build_grouped_condition_chart_data",
     "build_grouped_condition_correlation_summary",
     "build_grouped_condition_summary",
@@ -238,6 +246,8 @@ __all__ = [
     "compute_sample_pca",
     "compute_sample_qc",
     "count_zero_variance_genes",
+    "ensure_valid_group_column_state",
+    "filter_gene_ids",
     "find_constant_samples",
     "load_demo_candidate",
     "load_uploaded_candidate",

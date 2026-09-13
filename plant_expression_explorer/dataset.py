@@ -39,6 +39,7 @@ REFERENCE_ANNOTATION_KEY = "pee_context_reference_annotation"
 FEATURE_LEVEL_KEY = "pee_context_feature_level"
 DE_CONTRAST_KEY = "pee_context_de_contrast"
 CONTEXT_NOTES_KEY = "pee_context_notes"
+ACTIVE_GROUP_COLUMN_KEY = "pee_active_group_column"
 
 CANDIDATE_FEEDBACK_KEYS = (
     CANDIDATE_REPORT_KEY,
@@ -66,6 +67,7 @@ APPLICATION_DATA_KEYS = (
     *CANDIDATE_FEEDBACK_KEYS,
     *UPLOADER_KEYS,
     *DATASET_CONTEXT_KEYS,
+    ACTIVE_GROUP_COLUMN_KEY,
     *LEGACY_DATA_KEYS,
 )
 
@@ -305,6 +307,7 @@ def set_current_dataset(
         raise ValueError("Cannot activate a dataset bundle with Errors.")
     state[CURRENT_DATASET_KEY] = bundle
     clear_candidate_feedback(state)
+    state.pop(ACTIVE_GROUP_COLUMN_KEY, None)
 
 
 def record_candidate_failure(
@@ -340,6 +343,23 @@ def clear_uploader_state(state: MutableMapping[str, Any]) -> None:
 
     for key in UPLOADER_KEYS:
         state.pop(key, None)
+
+
+def ensure_valid_group_column_state(
+    state: MutableMapping[str, Any],
+    additional_columns: tuple[str, ...],
+) -> None:
+    """Reset the shared 'group by' choice if it no longer applies.
+
+    Must run before a ``st.selectbox`` keyed by :data:`ACTIVE_GROUP_COLUMN_KEY`
+    is instantiated, since Streamlit raises if a widget's pre-set session
+    value is not one of its current options (for example, after switching to
+    a dataset whose metadata lacks the previously selected column).
+    """
+
+    valid_options = ("condition", *additional_columns)
+    if state.get(ACTIVE_GROUP_COLUMN_KEY) not in valid_options:
+        state[ACTIVE_GROUP_COLUMN_KEY] = "condition"
 
 
 def clear_dataset_context_state(state: MutableMapping[str, Any]) -> None:

@@ -3,12 +3,19 @@
 import pandas as pd
 import streamlit as st
 
-from plant_expression_explorer.dataset import get_current_dataset
+from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
+    ensure_valid_group_column_state,
+    get_current_dataset,
+)
 from plant_expression_explorer.exports import CsvExportError, build_csv_export
 from plant_expression_explorer.gene_expression import (
     GeneExpressionComputationError,
     build_gene_expression_chart_data,
     build_gene_expression_observations,
+    build_grouped_gene_expression_chart_data,
+    build_grouped_gene_expression_condition_summary,
+    filter_gene_ids,
     list_gene_ids,
     lookup_gene_expression,
 )
@@ -16,7 +23,11 @@ from plant_expression_explorer.provenance import (
     DatasetProvenance,
     provenance_display_rows,
 )
+from plant_expression_explorer.qc import list_additional_metadata_columns
 from plant_expression_explorer.validation import Severity, ValidationIssue
+
+_SEARCH_BOX_GENE_COUNT_THRESHOLD = 200
+_SEARCH_RESULT_DISPLAY_LIMIT = 500
 
 
 def _render_issue(issue: ValidationIssue) -> None:
@@ -180,9 +191,32 @@ st.write(
     "identifier is trimmed, case-folded, normalized, or searched by alias, and "
     "the source values remain unchanged."
 )
+
+selectable_gene_ids = gene_ids
+if len(gene_ids) > _SEARCH_BOX_GENE_COUNT_THRESHOLD:
+    search_query = st.text_input(
+        "Search gene IDs",
+        placeholder="Type part of a gene ID to narrow the list below",
+        help=(
+            "Case-insensitive substring match against the exact supplied gene "
+            "IDs. This dataset has "
+            f"{len(gene_ids):,} genes; searching keeps the selector responsive."
+        ),
+    )
+    selectable_gene_ids = filter_gene_ids(gene_ids, search_query)
+    if len(selectable_gene_ids) > _SEARCH_RESULT_DISPLAY_LIMIT:
+        st.info(
+            f"{len(selectable_gene_ids):,} gene IDs match; showing the first "
+            f"{_SEARCH_RESULT_DISPLAY_LIMIT:,} in matrix row order. Narrow your "
+            "search to see others."
+        )
+        selectable_gene_ids = selectable_gene_ids[:_SEARCH_RESULT_DISPLAY_LIMIT]
+    elif not selectable_gene_ids:
+        st.info("No supplied gene ID contains that text.")
+
 selected_gene_id = st.selectbox(
     "Exact gene ID",
-    gene_ids,
+    selectable_gene_ids,
     index=None,
     placeholder="Select a supplied gene ID",
     help="Typing filters the supplied options; it does not create a new identifier.",
@@ -233,11 +267,32 @@ st.caption(
     "rounding or replacement; neither source table is reordered or rewritten."
 )
 
+additional_columns = list_additional_metadata_columns(current.metadata)
+group_column = "condition"
+if additional_columns:
+    ensure_valid_group_column_state(st.session_state, additional_columns)
+    group_column = st.selectbox(
+        "Group plot and summary by",
+        options=("condition", *additional_columns),
+        key=ACTIVE_GROUP_COLUMN_KEY,
+        help=(
+            "Any column present in the uploaded sample metadata beyond "
+            "'sample_id' and 'condition' can relabel the plot and summary "
+            "below. The same descriptive statistics are recomputed for the "
+            "new grouping; the underlying per-sample values are unchanged. "
+            "This choice is shared with the PCA, Sample Quality Control, and "
+            "Sample Correlation pages."
+        ),
+    )
+group_title = group_column.replace("_", " ").capitalize()
+
 st.subheader("Per-sample expression plot")
 if result.sample_count >= 2:
-    chart_data = build_gene_expression_chart_data(result)
+    chart_data = build_grouped_gene_expression_chart_data(
+        result, current.metadata, group_column
+    )
     sample_order = result.sample_expression["sample_id"].tolist()
-    condition_order = list(dict.fromkeys(result.sample_expression["condition"]))
+    group_order = list(dict.fromkeys(chart_data[group_column]))
     point_spec = {
         "mark": {"type": "point", "filled": True, "size": 110},
         "encoding": {
@@ -255,10 +310,10 @@ if result.sample_count >= 2:
                 "scale": {"zero": True},
             },
             "color": {
-                "field": "condition",
+                "field": group_column,
                 "type": "nominal",
-                "sort": condition_order,
-                "legend": {"title": "Condition"},
+                "sort": group_order,
+                "legend": {"title": group_title},
             },
             "order": {
                 "field": "sample_position",
@@ -267,9 +322,9 @@ if result.sample_count >= 2:
             "tooltip": [
                 {"field": "sample_id", "type": "nominal", "title": "Sample"},
                 {
-                    "field": "condition",
+                    "field": group_column,
                     "type": "nominal",
-                    "title": "Condition",
+                    "title": group_title,
                 },
                 {
                     "field": "expression_value",
@@ -286,10 +341,10 @@ if result.sample_count >= 2:
         height=420,
     )
     st.caption(
-        "Each point represents one supplied sample. Colour shows the exact "
-        "metadata condition label for context only. Points are not connected, "
-        "the y-axis includes zero on the supplied scale, and no group estimate "
-        "or statistical comparison is shown."
+        "Each point represents one supplied sample. Colour shows the selected "
+        "metadata column for context only. Points are not connected, the "
+        "y-axis includes zero on the supplied scale, and no group estimate or "
+        "statistical comparison is shown."
     )
 else:
     st.info(
@@ -298,8 +353,13 @@ else:
     )
 
 st.header("Condition-grouped descriptive summary")
+if group_column != "condition":
+    st.caption(f"Grouped by metadata column '{group_column}', not 'condition'.")
+grouped_condition_summary = build_grouped_gene_expression_condition_summary(
+    result, current.metadata, group_column
+)
 st.dataframe(
-    _display_condition_summary(result.condition_summary),
+    _display_condition_summary(grouped_condition_summary),
     hide_index=True,
     width="stretch",
 )
@@ -350,9 +410,10 @@ st.warning(
     "formula-like leading characters in untrusted text; review such data and "
     "import it as plain text when needed."
 )
+_group_file_suffix = "" if group_column == "condition" else f"-by-{group_column}"
 sample_export = result.sample_expression.copy(deep=True)
 sample_export.insert(0, "gene_id", result.gene_id)
-condition_export = result.condition_summary.copy(deep=True)
+condition_export = grouped_condition_summary.copy(deep=True)
 condition_export.insert(0, "gene_id", result.gene_id)
 _render_csv_downloads(
     (
@@ -365,7 +426,7 @@ _render_csv_downloads(
         (
             "Download condition-grouped summary (CSV)",
             condition_export,
-            "gene-expression-condition-summary.csv",
+            f"gene-expression-condition-summary{_group_file_suffix}.csv",
             ("sample_ids",),
         ),
     )

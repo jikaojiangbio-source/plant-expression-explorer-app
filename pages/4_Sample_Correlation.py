@@ -12,7 +12,11 @@ from plant_expression_explorer.correlation import (
     build_heatmap_data,
     compute_sample_correlation,
 )
-from plant_expression_explorer.dataset import get_current_dataset
+from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
+    ensure_valid_group_column_state,
+    get_current_dataset,
+)
 from plant_expression_explorer.exports import CsvExportError, build_csv_export
 from plant_expression_explorer.provenance import (
     DatasetProvenance,
@@ -122,7 +126,8 @@ with st.expander("Method"):
     )
 
 try:
-    result = compute_sample_correlation(current.expression, current.metadata)
+    with st.spinner("Computing Pearson correlations…"):
+        result = compute_sample_correlation(current.expression, current.metadata)
 except CorrelationComputationError as error:
     st.error(
         "Descriptive Pearson correlations could not be calculated "
@@ -234,14 +239,18 @@ st.caption(
 additional_columns = list_additional_metadata_columns(current.metadata)
 group_column = "condition"
 if additional_columns:
+    ensure_valid_group_column_state(st.session_state, additional_columns)
     group_column = st.selectbox(
         "Group summaries by",
         options=("condition", *additional_columns),
+        key=ACTIVE_GROUP_COLUMN_KEY,
         help=(
             "Any column present in the uploaded sample metadata beyond "
             "'sample_id' and 'condition' can relabel the tables below. No "
             "Pearson correlation is recalculated for the new grouping; only "
-            "the group label and within/between-group membership change."
+            "the group label and within/between-group membership change. "
+            "This choice is shared with the PCA, Sample Quality Control, and "
+            "Gene Expression pages."
         ),
     )
 grouped_sample_summary = build_grouped_sample_correlation_summary(

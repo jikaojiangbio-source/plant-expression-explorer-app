@@ -3,7 +3,11 @@
 import pandas as pd
 import streamlit as st
 
-from plant_expression_explorer.dataset import get_current_dataset
+from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
+    ensure_valid_group_column_state,
+    get_current_dataset,
+)
 from plant_expression_explorer.exports import CsvExportError, build_csv_export
 from plant_expression_explorer.provenance import (
     DatasetProvenance,
@@ -132,7 +136,8 @@ validation_columns[2].metric(
 )
 
 try:
-    result = compute_sample_qc(current.expression, current.metadata)
+    with st.spinner("Computing quality-control summaries…"):
+        result = compute_sample_qc(current.expression, current.metadata)
 except QcComputationError as error:
     st.error(
         "Descriptive QC summaries could not be calculated "
@@ -174,14 +179,18 @@ st.write(
 additional_columns = list_additional_metadata_columns(current.metadata)
 group_column = "condition"
 if additional_columns:
+    ensure_valid_group_column_state(st.session_state, additional_columns)
     group_column = st.selectbox(
         "Group summaries by",
         options=("condition", *additional_columns),
+        key=ACTIVE_GROUP_COLUMN_KEY,
         help=(
             "Any column present in the uploaded sample metadata beyond "
             "'sample_id' and 'condition' can relabel the tables and chart "
             "below. No per-sample statistic is recalculated for the new "
-            "grouping; only the group label and membership counts change."
+            "grouping; only the group label and membership counts change. "
+            "This choice is shared with the PCA, Sample Correlation, and "
+            "Gene Expression pages."
         ),
     )
 grouped_condition_summary = build_grouped_condition_summary(

@@ -11,6 +11,7 @@ from streamlit.testing.v1 import AppTest
 import plant_expression_explorer.exports as exports_module
 from plant_expression_explorer.consistency import validate_input_tables
 from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
     CURRENT_DATASET_KEY,
     DE_RESULTS_UPLOAD_KEY,
     DEMO_SOURCE_LABEL,
@@ -565,6 +566,31 @@ def _numerical_range_gene_bundle() -> DatasetBundle:
     )
 
 
+def _large_gene_bundle(gene_count: int) -> DatasetBundle:
+    gene_ids = [f"GENE_{index:04d}" for index in range(gene_count)]
+    expression = pd.DataFrame(
+        {
+            "gene_id": gene_ids,
+            "sample_a": list(range(gene_count)),
+            "sample_b": list(range(gene_count)),
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b"],
+            "condition": ["control", "treated"],
+        }
+    )
+    report = validate_input_tables(expression, metadata, None)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (expression, metadata, None),
+        source="uploaded",
+        source_label="Large synthetic gene list (test input)",
+        report=report,
+    )
+
+
 def _run_gene_page(bundle: DatasetBundle | None = None) -> AppTest:
     app = AppTest.from_file("pages/6_Gene_Expression.py")
     if bundle is not None:
@@ -732,6 +758,23 @@ def test_upload_page_initial_state_and_synthetic_disclaimer() -> None:
     assert len(app.text_area) == 1
     assert "Sample Quality Control, PCA, and Sample Correlation are available" in visible_text
     assert "single-gene expression lookup" in visible_text
+
+
+def test_upload_page_splits_demo_and_upload_flows_into_tabs() -> None:
+    app = AppTest.from_file("pages/1_Upload_Data.py").run()
+
+    assert not app.exception
+    tab_labels = [tab.label for tab in app.tabs]
+    assert tab_labels == ["Use demo data", "Upload my own data"]
+    demo_tab, upload_tab = app.tabs
+    assert any(
+        "values are synthetic" in str(getattr(element, "value", ""))
+        for element in demo_tab.children.values()
+    )
+    assert any(
+        "Required: gene_id" in str(getattr(element, "help", ""))
+        for element in upload_tab.children.values()
+    )
 
 
 def test_upload_page_offers_example_csv_template_downloads() -> None:
@@ -983,6 +1026,37 @@ def test_qc_page_grouping_selector_relabels_summaries_without_recomputation() ->
     }
     visible_text = _visible_text(app)
     assert "Grouped by metadata column 'genotype'" in visible_text
+
+
+def test_group_by_selection_persists_from_pca_to_qc_page() -> None:
+    bundle = _colinear_pca_bundle_with_genotype()
+
+    pca_app = _run_pca_page(bundle)
+    pca_app.selectbox[0].select("genotype").run()
+    assert not pca_app.exception
+    shared_choice = pca_app.session_state[ACTIVE_GROUP_COLUMN_KEY]
+    assert shared_choice == "genotype"
+
+    qc_app = AppTest.from_file("pages/2_Sample_Quality_Control.py")
+    qc_app.session_state[CURRENT_DATASET_KEY] = bundle
+    qc_app.session_state[ACTIVE_GROUP_COLUMN_KEY] = shared_choice
+    qc_app.run()
+
+    assert not qc_app.exception
+    assert qc_app.selectbox[0].value == "genotype"
+    assert "genotype" in qc_app.dataframe[1].value.columns
+
+
+def test_group_by_selection_falls_back_to_condition_for_an_unrelated_dataset() -> None:
+    app = AppTest.from_file("pages/2_Sample_Quality_Control.py")
+    app.session_state[CURRENT_DATASET_KEY] = _uploaded_bundle()
+    app.session_state[ACTIVE_GROUP_COLUMN_KEY] = "genotype"
+
+    app.run()
+
+    assert not app.exception
+    assert len(app.selectbox) == 0
+    assert app.dataframe[1].value["condition"].tolist() == ["treated", "control"]
 
 
 def test_qc_page_shows_only_controlled_qc_error_without_traceback() -> None:
@@ -1990,6 +2064,80 @@ def test_gene_page_demo_selection_has_exact_options_and_synthetic_disclaimer() -
     assert "does not support conclusions about tomato biology" in visible_text
     assert len(app.dataframe[0].value.index) == 6
     assert len(app.get("vega_lite_chart")) == 1
+
+
+def test_gene_page_omits_search_box_below_the_gene_count_threshold() -> None:
+    app = _run_gene_page(_demo_bundle())
+
+    assert not app.exception
+    assert len(app.text_input) == 0
+    assert len(app.selectbox[0].options) == 120
+
+
+def test_gene_page_search_box_narrows_options_above_the_threshold() -> None:
+    bundle = _large_gene_bundle(250)
+
+    app = _run_gene_page(bundle)
+
+    assert not app.exception
+    assert len(app.text_input) == 1
+    assert len(app.selectbox[0].options) == 250
+
+    app.text_input[0].set_value("0007").run()
+
+    assert not app.exception
+    assert app.selectbox[0].options == ["GENE_0007"]
+
+    app.selectbox[0].select("GENE_0007").run()
+
+    assert not app.exception
+    assert len(app.dataframe) >= 1
+
+
+def test_gene_page_search_box_shows_no_match_message() -> None:
+    bundle = _large_gene_bundle(250)
+
+    app = _run_gene_page(bundle)
+    app.text_input[0].set_value("nonexistent").run()
+
+    assert not app.exception
+    assert app.selectbox[0].options == []
+    assert "No supplied gene ID contains that text" in _visible_text(app)
+
+
+def test_gene_page_offers_no_grouping_selector_without_additional_metadata() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    assert not app.exception
+    assert len(app.selectbox) == 1
+
+
+def test_gene_page_grouping_selector_relabels_plot_and_summary() -> None:
+    bundle = _uploaded_bundle_with_genotype()
+
+    app = _run_gene_page(bundle)
+    app.selectbox[0].select("g1").run()
+    assert len(app.selectbox) == 2
+    group_selector = app.selectbox[1]
+    assert group_selector.options == ["condition", "genotype"]
+    assert group_selector.value == "condition"
+
+    app.selectbox[1].select("genotype").run()
+
+    assert not app.exception
+    summary = app.dataframe[1].value
+    assert "genotype" in summary.columns
+    assert "condition" not in summary.columns
+    by_genotype = summary.set_index("genotype")
+    assert by_genotype.loc["WT", "mean_expression"] == 1.0
+    assert by_genotype.loc["mutant", "mean_expression"] == 2.0
+    visible_text = _visible_text(app)
+    assert "Grouped by metadata column 'genotype'" in visible_text
+    chart = next(
+        chart for chart in app.get("vega_lite_chart") if '"point"' in chart.proto.spec
+    )
+    assert '"field": "genotype"' in chart.proto.spec
 
 
 def test_gene_page_collapses_limitations_into_an_expander() -> None:

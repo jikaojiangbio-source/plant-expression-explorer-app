@@ -32,22 +32,25 @@ metadata, with precomputed differential-expression results now optional; a
 bundled reproducible synthetic demo dataset; descriptive, non-mutating sample
 quality-control summaries; descriptive, non-mutating Pearson sample-correlation
 summaries; and descriptive, non-mutating sample PCA (mean-centred, unscaled,
-SVD-based sample scores and explained variance); with an optional "group by"
-selector, on PCA, Sample Quality Control, and Sample Correlation, that
-relabels already-computed results by any additional supplied metadata column
-without recalculating any statistic; and descriptive, non-mutating threshold
-exploration of supplied, precomputed
-differential-expression results when supplied; and descriptive, non-mutating
-lookup of one exact supplied gene's expression values across samples with
-sample-condition context; and deterministic, non-mutating UTF-8 CSV downloads
-of the current full-precision descriptive result tables on each analysis page;
-and optional, verbatim, non-scientifically-verified dataset context (title,
-organism, expression scale, upstream normalization, reference annotation,
-feature level, DE contrast description, notes) shown on every analysis page;
-and example CSV templates and clearer error messages for common real-world
-upload mistakes (delimiter mismatch, blank spreadsheet-export columns, ad hoc
-missing-value placeholders); and GitHub release-readiness foundations
-comprising an exact Python 3.13.9 version pin, pinned Python dependencies,
-least-privilege continuous integration, contributor guidance, and
-repository-readiness regression tests. Differential-expression modelling and
-volcano plots remain intentionally deferred.
+SVD-based sample scores and explained variance); with a shared, session-wide
+"group by" selector, on PCA, Sample Quality Control, Sample Correlation, and
+Gene Expression, that relabels or recomputes only already-disclosed
+descriptive statistics for any additional supplied metadata column, never a
+PCA component or a Pearson correlation; and descriptive, non-mutating
+threshold exploration of supplied, precomputed differential-expression
+results when supplied; and descriptive, non-mutating lookup of one exact
+supplied gene's expression values across samples with sample-condition
+context, with a substring search box once a dataset supplies more than 200
+genes; and deterministic, non-mutating UTF-8 CSV downloads of the current
+full-precision descriptive result tables on each analysis page; and optional,
+verbatim, non-scientifically-verified dataset context (title, organism,
+expression scale, upstream normalization, reference annotation, feature
+level, DE contrast description, notes) shown on every analysis page; and
+example CSV templates, an at-a-glance dataset overview card, and clearer
+error messages for common real-world upload mistakes (delimiter mismatch,
+blank spreadsheet-export columns, ad hoc missing-value placeholders); and
+GitHub release-readiness foundations comprising an exact Python 3.13.9
+version pin, pinned Python dependencies, least-privilege continuous
+integration, contributor guidance, and repository-readiness regression
+tests. Differential-expression modelling and volcano plots remain
+intentionally deferred.

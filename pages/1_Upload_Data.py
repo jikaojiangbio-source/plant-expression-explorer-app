@@ -248,128 +248,132 @@ st.write(
 
 status_container = st.container()
 
-st.header("Synthetic demo data")
-st.warning(
-    "The bundled demo values are synthetic, the gene IDs are fictional, and the "
-    "p-values are constructed. They do not support real tomato nitrate-response "
-    "inference. DESeq2 and other fitted RNA-seq models were not run. In this "
-    "demo, larger preset effect sizes are constructed to produce smaller p-values "
-    "and replicate noise is balanced within each condition; neither pattern is "
-    "guaranteed in real experiments."
-)
-demo_requested = st.button(
-    "Load synthetic demo data",
-    key="pee_load_demo",
-    on_click=_activate_demo,
-)
+demo_tab, upload_tab = st.tabs(["Use demo data", "Upload my own data"])
 
-st.header("Upload your own data")
-st.write(
-    "Uploaded tables are retained in the active Streamlit session for application "
-    "use. The application does not intentionally write uploaded tables to project "
-    "files."
-)
-
-with st.expander("Need the exact column format? Download example CSV templates"):
-    st.caption(
-        "Each template has fabricated placeholder values only, to illustrate the "
-        "required column names and layout. Replace every value before uploading; "
-        "these templates are not real biological data and are never loaded as a "
-        "dataset."
+with demo_tab:
+    st.warning(
+        "The bundled demo values are synthetic, the gene IDs are fictional, and the "
+        "p-values are constructed. They do not support real tomato nitrate-response "
+        "inference. DESeq2 and other fitted RNA-seq models were not run. In this "
+        "demo, larger preset effect sizes are constructed to produce smaller p-values "
+        "and replicate noise is balanced within each condition; neither pattern is "
+        "guaranteed in real experiments."
     )
-    template_columns = st.columns(3)
-    template_columns[0].download_button(
-        "Expression matrix template",
-        data=build_example_expression_template().to_csv(index=False),
-        file_name="expression_matrix_template.csv",
-        mime=CSV_MEDIA_TYPE,
-        key="pee_download_expression_template",
-    )
-    template_columns[1].download_button(
-        "Sample metadata template",
-        data=build_example_metadata_template().to_csv(index=False),
-        file_name="sample_metadata_template.csv",
-        mime=CSV_MEDIA_TYPE,
-        key="pee_download_metadata_template",
-    )
-    template_columns[2].download_button(
-        "DE results template",
-        data=build_example_de_results_template().to_csv(index=False),
-        file_name="de_results_template.csv",
-        mime=CSV_MEDIA_TYPE,
-        key="pee_download_de_template",
+    demo_requested = st.button(
+        "Load synthetic demo data",
+        key="pee_load_demo",
+        on_click=_activate_demo,
     )
 
-expression_file = st.file_uploader(
-    "Normalized expression matrix",
-    type="csv",
-    key=EXPRESSION_UPLOAD_KEY,
-    help="Required: gene_id and at least two numeric sample columns.",
-)
-metadata_file = st.file_uploader(
-    "Sample metadata",
-    type="csv",
-    key=METADATA_UPLOAD_KEY,
-    help=(
-        "Required: sample_id and condition. Optional design columns such as "
-        "genotype, tissue, developmental_stage, timepoint, dose, batch, block, "
-        "and biological_replicate are preserved but not interpreted."
-    ),
-)
-de_file = st.file_uploader(
-    "Precomputed differential-expression results",
-    type="csv",
-    key=DE_RESULTS_UPLOAD_KEY,
-    help=(
-        "Optional: gene_id, log2FoldChange, pvalue, and padj. Supplying this "
-        "file enables the Differential Expression page."
-    ),
-)
-st.caption(
-    "Each file may be up to 500 MB. A typical plant genome (around 30,000-70,000 "
-    "genes) with up to a few hundred samples is well within this limit; whole-genome "
-    "matrices with very many samples may approach it."
-)
-
-with st.expander("Dataset context (optional)"):
-    st.caption(
-        "Non-empty entries are carried and displayed exactly as typed. Untouched "
-        "empty fields are recorded as not supplied. Context is not scientifically "
-        "verified, parsed, or used in any calculation."
+with upload_tab:
+    st.write(
+        "Uploaded tables are retained in the active Streamlit session for "
+        "application use. The application does not intentionally write "
+        "uploaded tables to project files."
     )
-    dataset_title = st.text_input("Dataset title", key=DATASET_TITLE_KEY)
-    organism = st.text_input("Organism / taxon", key=ORGANISM_KEY)
-    expression_scale = st.text_input(
-        "Expression scale or preprocessing description",
-        key=EXPRESSION_SCALE_KEY,
+
+    with st.expander("Need the exact column format? Download example CSV templates"):
+        st.caption(
+            "Each template has fabricated placeholder values only, to illustrate "
+            "the required column names and layout. Replace every value before "
+            "uploading; these templates are not real biological data and are "
+            "never loaded as a dataset."
+        )
+        template_columns = st.columns(3)
+        template_columns[0].download_button(
+            "Expression matrix template",
+            data=build_example_expression_template().to_csv(index=False),
+            file_name="expression_matrix_template.csv",
+            mime=CSV_MEDIA_TYPE,
+            key="pee_download_expression_template",
+        )
+        template_columns[1].download_button(
+            "Sample metadata template",
+            data=build_example_metadata_template().to_csv(index=False),
+            file_name="sample_metadata_template.csv",
+            mime=CSV_MEDIA_TYPE,
+            key="pee_download_metadata_template",
+        )
+        template_columns[2].download_button(
+            "DE results template",
+            data=build_example_de_results_template().to_csv(index=False),
+            file_name="de_results_template.csv",
+            mime=CSV_MEDIA_TYPE,
+            key="pee_download_de_template",
+        )
+
+    expression_file = st.file_uploader(
+        "Normalized expression matrix",
+        type="csv",
+        key=EXPRESSION_UPLOAD_KEY,
+        help="Required: gene_id and at least two numeric sample columns.",
+    )
+    metadata_file = st.file_uploader(
+        "Sample metadata",
+        type="csv",
+        key=METADATA_UPLOAD_KEY,
         help=(
-            "For example: VST, rlog, log2(TPM + 1), logCPM, or another exact "
-            "description from the upstream workflow. The application does not "
-            "infer or validate this text."
+            "Required: sample_id and condition. Optional design columns such as "
+            "genotype, tissue, developmental_stage, timepoint, dose, batch, block, "
+            "and biological_replicate are preserved but not interpreted."
         ),
     )
-    upstream_normalization = st.text_input(
-        "Upstream normalization method",
-        key=UPSTREAM_NORMALIZATION_KEY,
-    )
-    reference_annotation = st.text_input(
-        "Reference genome / annotation release",
-        key=REFERENCE_ANNOTATION_KEY,
-    )
-    feature_level = st.text_input(
-        "Feature level",
-        key=FEATURE_LEVEL_KEY,
-        help="For example: gene, transcript, or another supplied feature unit.",
-    )
-    de_contrast = st.text_input(
-        "Differential-expression contrast description",
-        key=DE_CONTRAST_KEY,
+    de_file = st.file_uploader(
+        "Precomputed differential-expression results",
+        type="csv",
+        key=DE_RESULTS_UPLOAD_KEY,
         help=(
-            "Describe the supplied coefficient or contrast, including direction "
-            "and reference level if known. The application does not infer them."
+            "Optional: gene_id, log2FoldChange, pvalue, and padj. Supplying this "
+            "file enables the Differential Expression page."
         ),
     )
-    context_notes = st.text_area("Notes", key=CONTEXT_NOTES_KEY)
+    st.caption(
+        "Each file may be up to 500 MB. A typical plant genome (around "
+        "30,000-70,000 genes) with up to a few hundred samples is well within "
+        "this limit; whole-genome matrices with very many samples may approach "
+        "it."
+    )
+
+    with st.expander("Dataset context (optional)"):
+        st.caption(
+            "Non-empty entries are carried and displayed exactly as typed. "
+            "Untouched empty fields are recorded as not supplied. Context is "
+            "not scientifically verified, parsed, or used in any calculation."
+        )
+        dataset_title = st.text_input("Dataset title", key=DATASET_TITLE_KEY)
+        organism = st.text_input("Organism / taxon", key=ORGANISM_KEY)
+        expression_scale = st.text_input(
+            "Expression scale or preprocessing description",
+            key=EXPRESSION_SCALE_KEY,
+            help=(
+                "For example: VST, rlog, log2(TPM + 1), logCPM, or another exact "
+                "description from the upstream workflow. The application does "
+                "not infer or validate this text."
+            ),
+        )
+        upstream_normalization = st.text_input(
+            "Upstream normalization method",
+            key=UPSTREAM_NORMALIZATION_KEY,
+        )
+        reference_annotation = st.text_input(
+            "Reference genome / annotation release",
+            key=REFERENCE_ANNOTATION_KEY,
+        )
+        feature_level = st.text_input(
+            "Feature level",
+            key=FEATURE_LEVEL_KEY,
+            help="For example: gene, transcript, or another supplied feature unit.",
+        )
+        de_contrast = st.text_input(
+            "Differential-expression contrast description",
+            key=DE_CONTRAST_KEY,
+            help=(
+                "Describe the supplied coefficient or contrast, including "
+                "direction and reference level if known. The application does "
+                "not infer them."
+            ),
+        )
+        context_notes = st.text_area("Notes", key=CONTEXT_NOTES_KEY)
 
 context_values = (
     dataset_title,
@@ -420,7 +424,8 @@ if missing_uploads:
         clear_candidate_feedback(st.session_state)
 elif not demo_requested:
     upload_label = uploaded_source_label(*uploaded_sources)
-    uploaded_candidate = load_uploaded_candidate(*uploaded_sources)
+    with st.spinner("Validating uploaded files…"):
+        uploaded_candidate = load_uploaded_candidate(*uploaded_sources)
     _activate_uploaded_candidate(
         uploaded_candidate,
         upload_label,

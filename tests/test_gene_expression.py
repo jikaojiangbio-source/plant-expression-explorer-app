@@ -22,6 +22,9 @@ from plant_expression_explorer.gene_expression import (
     GeneExpressionResult,
     build_gene_expression_chart_data,
     build_gene_expression_observations,
+    build_grouped_gene_expression_chart_data,
+    build_grouped_gene_expression_condition_summary,
+    filter_gene_ids,
     list_gene_ids,
     lookup_gene_expression,
 )
@@ -212,6 +215,71 @@ def test_condition_summary_uses_disclosed_arithmetic_conventions() -> None:
     assert pd.isna(treated["standard_deviation"])
 
 
+def test_build_grouped_condition_summary_matches_default_for_condition() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    pd.testing.assert_frame_equal(
+        build_grouped_gene_expression_condition_summary(result, metadata, "condition"),
+        result.condition_summary,
+    )
+
+
+def test_build_grouped_condition_summary_recomputes_for_an_alternate_column() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    grouped = build_grouped_gene_expression_condition_summary(
+        result, metadata, "unused"
+    )
+
+    assert list(grouped.columns) == [
+        "unused",
+        "sample_count",
+        "sample_ids",
+        "minimum_expression",
+        "median_expression",
+        "mean_expression",
+        "maximum_expression",
+        "standard_deviation",
+    ]
+    by_group = grouped.set_index("unused")
+    # sample_a=1 -> 4.0, sample_c=2 -> 6.0, sample_b=3 -> 8.0; each its own group.
+    assert by_group.loc[1, "mean_expression"] == 4.0
+    assert by_group.loc[2, "mean_expression"] == 6.0
+    assert by_group.loc[3, "mean_expression"] == 8.0
+
+
+def test_build_grouped_condition_summary_rejects_unknown_column() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    with pytest.raises(ValueError, match="does not contain column"):
+        build_grouped_gene_expression_condition_summary(result, metadata, "tissue")
+
+
+def test_build_grouped_chart_data_matches_default_for_condition() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    pd.testing.assert_frame_equal(
+        build_grouped_gene_expression_chart_data(result, metadata, "condition"),
+        build_gene_expression_chart_data(result),
+    )
+
+
+def test_build_grouped_chart_data_labels_by_an_alternate_column() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    chart_data = build_grouped_gene_expression_chart_data(result, metadata, "unused")
+
+    assert "unused" in chart_data.columns
+    assert "condition" not in chart_data.columns
+    by_sample = dict(zip(chart_data["sample_id"], chart_data["unused"]))
+    assert by_sample == {"sample_b": 3, "sample_a": 1, "sample_c": 2}
+
+
 @pytest.mark.parametrize(
     ("values", "expected_median", "expected_mean", "expected_sd"),
     [
@@ -368,6 +436,26 @@ def test_list_gene_ids_defensively_validates_structure(
 ) -> None:
     error = _capture_error(table)
     assert error.reason is expected_reason
+
+
+def test_filter_gene_ids_returns_all_ids_for_empty_query() -> None:
+    gene_ids = ("Solyc01g001", "Solyc02g002", "GENE_EXAMPLE_3")
+
+    assert filter_gene_ids(gene_ids, "") == gene_ids
+    assert filter_gene_ids(gene_ids, "   ") == gene_ids
+
+
+def test_filter_gene_ids_matches_case_insensitive_substring_in_order() -> None:
+    gene_ids = ("Solyc01g001", "GENE_EXAMPLE_3", "Solyc02g002")
+
+    assert filter_gene_ids(gene_ids, "solyc") == ("Solyc01g001", "Solyc02g002")
+    assert filter_gene_ids(gene_ids, "EXAMPLE") == ("GENE_EXAMPLE_3",)
+
+
+def test_filter_gene_ids_returns_empty_tuple_for_no_matches() -> None:
+    gene_ids = ("Solyc01g001", "Solyc02g002")
+
+    assert filter_gene_ids(gene_ids, "nonexistent") == ()
 
 
 def test_duplicate_gene_id_column_is_controlled_by_both_public_lookups() -> None:
