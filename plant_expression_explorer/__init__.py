@@ -1,5 +1,10 @@
 """Core validation functionality for Plant Expression Explorer."""
 
+from plant_expression_explorer.annotations import (
+    GeneAnnotation,
+    list_supported_species,
+    lookup_gene_annotation,
+)
 from plant_expression_explorer.consistency import (
     validate_expression_de_consistency,
     validate_expression_metadata_consistency,
@@ -151,6 +156,9 @@ from plant_expression_explorer.validation import (
 
 __all__ = [
     "ACTIVE_GROUP_COLUMN_KEY",
+    "GeneAnnotation",
+    "list_supported_species",
+    "lookup_gene_annotation",
     "CANDIDATE_LABEL_KEY",
     "CANDIDATE_REPORT_KEY",
     "CANDIDATE_SOURCE_KEY",

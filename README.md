@@ -597,6 +597,26 @@ a row of capability chips. These are additive presentational elements built
 from the same underlying text already required elsewhere; no scientific
 wording changed.
 
+## Species reference (optional, display-only)
+
+The Gene Expression page offers an optional "Species reference" selector.
+When a supported species is chosen and the currently selected gene ID
+exactly matches an entry in `data/annotations/<species>.csv`, its published
+gene symbol, a short description, and its data source are shown. Matching is
+exact `str(value)` equality only, identical to every other identifier match
+in this application: no case-folding, trimming, or alias resolution, and no
+computation ever uses this lookup.
+
+This is a small, hand-curated list of well-known reference/marker genes per
+species (currently Arabidopsis thaliana, rice, maize, and soybean; not yet
+tomato — see `data/annotations/README.md` for why), not a genome annotation.
+Most real gene IDs will not have an entry; that is expected, not an error.
+Every bundled `gene_id`/`symbol` pair was individually verified against the
+Ensembl Plants REST API in the session that added it; rows whose description
+was hand-written from established literature (because the API returned
+none) are labelled as such in the `source` column rather than attributed to
+Ensembl.
+
 ## Input validation
 
 Phase 2 validates three preprocessed CSV tables before making a validated

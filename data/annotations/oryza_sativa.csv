@@ -1,0 +1,6 @@
+gene_id,symbol,description,source
+Os01g0883800,SD1,Semi-dwarf 1 (SD1); gibberellin 20-oxidase; the rice 'Green Revolution' plant-height gene.,hand-curated from established literature
+Os03g0407400,GS3,Grain Size 3 (GS3); a major QTL controlling rice grain length.,hand-curated from established literature
+Os06g0133000,Waxy,Granule-bound starch synthase I (Waxy); controls endosperm amylose content.,hand-curated from established literature
+Os06g0157700,Hd3a,"Heading date 3a (Hd3a); rice florigen, ortholog of Arabidopsis FT.",hand-curated from established literature
+Os06g0275000,Hd1,"Heading date 1 (Hd1); photoperiod flowering-time regulator, ortholog of Arabidopsis CONSTANS.",hand-curated from established literature

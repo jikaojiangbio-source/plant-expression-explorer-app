@@ -4,6 +4,10 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from plant_expression_explorer.annotations import (
+    list_supported_species,
+    lookup_gene_annotation,
+)
 from plant_expression_explorer.dataset import (
     ACTIVE_GROUP_COLUMN_KEY,
     ensure_valid_group_column_state,
@@ -242,6 +246,32 @@ except GeneExpressionComputationError as error:
     st.stop()
 
 st.header(f"Expression values for {result.gene_id}")
+
+species_label = st.selectbox(
+    "Species reference (optional)",
+    options=("Not selected", *list_supported_species()),
+    help=(
+        "Matches the exact selected gene ID against a small, hand-curated "
+        "list of well-known reference genes for one species (see "
+        "data/annotations/README.md). This is not a genome annotation, is "
+        "not used in any calculation, and most real gene IDs will not "
+        "have an entry."
+    ),
+)
+if species_label != "Not selected":
+    annotation = lookup_gene_annotation(species_label, result.gene_id)
+    if annotation is None:
+        st.caption(
+            f"No entry for '{result.gene_id}' in the small curated reference "
+            f"list for {species_label}. This is expected for most gene IDs; "
+            "it does not indicate a problem with the gene ID."
+        )
+    else:
+        st.info(
+            f"**{annotation.symbol}** — {annotation.description}  \n"
+            f"Source: {annotation.source}."
+        )
+
 summary_columns = st.columns(3)
 summary_columns[0].metric("Samples displayed", result.sample_count)
 summary_columns[1].metric("Condition labels", result.condition_count)

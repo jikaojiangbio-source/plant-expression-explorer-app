@@ -2163,12 +2163,67 @@ def test_gene_page_search_box_shows_no_match_message() -> None:
     assert "No supplied gene ID contains that text" in _visible_text(app)
 
 
+def _species_reference_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["AT1G65480", "NOT_A_REAL_GENE"],
+            "sample_a": ["1.0", "2.0"],
+            "sample_b": ["3.0", "4.0"],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b"],
+            "condition": ["control", "treated"],
+        }
+    )
+    report = validate_input_tables(expression, metadata, None)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (expression, metadata, None),
+        source="uploaded",
+        source_label="Species reference test bundle",
+        report=report,
+    )
+
+
+def test_gene_page_species_reference_shows_a_matching_annotation() -> None:
+    app = _run_gene_page(_species_reference_bundle())
+    app.selectbox[0].select("AT1G65480").run()
+
+    species_selector = next(
+        box for box in app.selectbox if box.label == "Species reference (optional)"
+    )
+    species_selector.select("Arabidopsis thaliana").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "FT" in visible_text
+    assert "PEBP" in visible_text
+    assert "Ensembl Plants REST API" in visible_text
+
+
+def test_gene_page_species_reference_reports_no_entry_for_an_unmatched_gene() -> None:
+    app = _run_gene_page(_species_reference_bundle())
+    app.selectbox[0].select("NOT_A_REAL_GENE").run()
+
+    species_selector = next(
+        box for box in app.selectbox if box.label == "Species reference (optional)"
+    )
+    species_selector.select("Arabidopsis thaliana").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "No entry for 'NOT_A_REAL_GENE'" in visible_text
+
+
 def test_gene_page_offers_no_grouping_selector_without_additional_metadata() -> None:
     app = _run_gene_page(_uploaded_bundle())
     app.selectbox[0].select("g1").run()
 
     assert not app.exception
-    assert len(app.selectbox) == 1
+    # Exact gene ID + species reference selectors only; no group-by selector.
+    assert len(app.selectbox) == 2
 
 
 def test_gene_page_grouping_selector_relabels_plot_and_summary() -> None:
@@ -2176,12 +2231,13 @@ def test_gene_page_grouping_selector_relabels_plot_and_summary() -> None:
 
     app = _run_gene_page(bundle)
     app.selectbox[0].select("g1").run()
-    assert len(app.selectbox) == 2
-    group_selector = app.selectbox[1]
+    # Exact gene ID, species reference, and group-by selectors.
+    assert len(app.selectbox) == 3
+    group_selector = app.selectbox[2]
     assert group_selector.options == ["condition", "genotype"]
     assert group_selector.value == "condition"
 
-    app.selectbox[1].select("genotype").run()
+    app.selectbox[2].select("genotype").run()
 
     assert not app.exception
     summary = app.dataframe[1].value

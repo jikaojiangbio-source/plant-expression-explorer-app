@@ -1,0 +1,5 @@
+gene_id,symbol,description,source
+GLYMA_10G246300,CG-1,beta-conglycinin alpha prime subunit,Ensembl Plants REST API (rest.ensembl.org)
+GLYMA_10G278000,FAD2-1A,"omega-6 fatty acid desaturase, endoplasmic reticulum isozyme 1",Ensembl Plants REST API (rest.ensembl.org)
+GLYMA_14G194300,FAD3A,microsomal omega-3-fatty acid desaturase,Ensembl Plants REST API (rest.ensembl.org)
+GLYMA_16G150700,GmFT2a,protein FLOWERING LOCUS T,Ensembl Plants REST API (rest.ensembl.org)
