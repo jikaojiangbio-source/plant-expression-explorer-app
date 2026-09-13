@@ -62,6 +62,7 @@ def _activate_demo() -> None:
             source_label=DEMO_SOURCE_LABEL,
             report=candidate.report,
             provenance=DEMO_PROVENANCE,
+            checksums=candidate.checksums,
         )
         set_current_dataset(st.session_state, bundle)
         clear_uploader_state(st.session_state)
@@ -88,6 +89,7 @@ def _activate_uploaded_candidate(
             source_label=source_label,
             report=candidate.report,
             provenance=provenance,
+            checksums=candidate.checksums,
         )
         set_current_dataset(st.session_state, bundle)
     elif candidate.status == "invalid":

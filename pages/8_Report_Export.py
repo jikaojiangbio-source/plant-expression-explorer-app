@@ -114,6 +114,26 @@ def _dataset_summary_table() -> pd.DataFrame:
         ("Samples", f"{current.sample_count:,}"),
         ("Differential-expression rows", de_description),
     ]
+    if current.checksums is not None:
+        rows.append(
+            ("Expression file SHA-256", current.checksums.expression_sha256)
+        )
+        rows.append(("Metadata file SHA-256", current.checksums.metadata_sha256))
+        rows.append(
+            (
+                "Differential-expression file SHA-256",
+                current.checksums.de_results_sha256
+                if current.checksums.de_results_sha256 is not None
+                else "Not supplied",
+            )
+        )
+    else:
+        rows.append(
+            (
+                "Input file checksums",
+                "Not available (this dataset predates checksum computation)",
+            )
+        )
     return pd.DataFrame(rows, columns=["Field", "Value"])
 
 
@@ -221,6 +241,11 @@ intro_lines = (
     "This report contains no chart images. No normalisation, "
     "transformation, filtering, imputation, clustering, or "
     "differential-expression modelling is performed by this application.",
+    "The Dataset summary table's SHA-256 checksum(s), when available, are "
+    "of the exact uploaded/demo CSV file bytes, computed before any "
+    "parsing; they let a later reader confirm this report was generated "
+    "from a specific, unaltered input file, not from a re-derived or "
+    "re-saved copy of it.",
 )
 
 st.header("Report preview")

@@ -93,7 +93,9 @@ summary and context, Sample Quality Control, PCA, Sample Correlation, and,
 when supplied, Differential Expression), previewing every section on
 screen before download and noting, rather than silently omitting, a
 section whose computation is not currently possible for the active
-dataset.
+dataset; the dataset summary also discloses a SHA-256 checksum of each
+uploaded/demo input file's exact source bytes, for reproducibility/audit
+only, never for validation or gating.
 
 A missing expression value is tolerated (never imputed) rather than
 blocking upload: Sample Quality Control's per-sample statistics exclude it;

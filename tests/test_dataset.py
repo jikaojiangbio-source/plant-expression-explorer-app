@@ -28,6 +28,7 @@ from plant_expression_explorer.dataset import (
     METADATA_UPLOAD_KEY,
     CandidateResult,
     DatasetBundle,
+    DatasetChecksums,
     build_dataset_bundle,
     clear_dataset_context_state,
     clear_legacy_data_state,
@@ -156,6 +157,166 @@ def test_default_demo_loading_returns_clean_valid_candidate() -> None:
         (120, 4),
     ]
     assert candidate.report.issues == ()
+
+
+def test_demo_candidate_reports_deterministic_sha256_checksums() -> None:
+    import hashlib
+
+    candidate = load_demo_candidate()
+
+    assert candidate.checksums is not None
+    expected_expression = hashlib.sha256(
+        (DEMO_DIRECTORY / "expression_matrix.csv").read_bytes()
+    ).hexdigest()
+    expected_metadata = hashlib.sha256(
+        (DEMO_DIRECTORY / "metadata.csv").read_bytes()
+    ).hexdigest()
+    expected_de_results = hashlib.sha256(
+        (DEMO_DIRECTORY / "deg_results.csv").read_bytes()
+    ).hexdigest()
+    assert candidate.checksums.expression_sha256 == expected_expression
+    assert candidate.checksums.metadata_sha256 == expected_metadata
+    assert candidate.checksums.de_results_sha256 == expected_de_results
+
+    # Loading again from the same committed files reproduces the same digests.
+    again = load_demo_candidate()
+    assert again.checksums == candidate.checksums
+
+
+def test_uploaded_candidate_reports_sha256_checksums_of_exact_source_bytes() -> None:
+    import hashlib
+
+    expression, metadata, de_results = _valid_uploaded_sources()
+    expression_bytes = expression.getvalue().encode("utf-8")
+    metadata_bytes = metadata.getvalue().encode("utf-8")
+    de_results_bytes = de_results.getvalue().encode("utf-8")
+
+    candidate = load_uploaded_candidate(expression, metadata, de_results)
+
+    assert candidate.status == "valid"
+    assert candidate.checksums is not None
+    assert candidate.checksums.expression_sha256 == hashlib.sha256(
+        expression_bytes
+    ).hexdigest()
+    assert candidate.checksums.metadata_sha256 == hashlib.sha256(
+        metadata_bytes
+    ).hexdigest()
+    assert candidate.checksums.de_results_sha256 == hashlib.sha256(
+        de_results_bytes
+    ).hexdigest()
+
+
+def test_uploaded_candidate_without_de_results_has_none_de_results_checksum() -> None:
+    expression, metadata, _de_results = _valid_uploaded_sources()
+
+    candidate = load_uploaded_candidate(expression, metadata, None)
+
+    assert candidate.status == "valid"
+    assert candidate.checksums is not None
+    assert candidate.checksums.de_results_sha256 is None
+
+
+def test_checksum_computation_preserves_the_source_cursor_position() -> None:
+    expression, metadata, de_results = _valid_uploaded_sources()
+    expression.seek(3)
+
+    load_uploaded_candidate(expression, metadata, de_results)
+
+    assert expression.tell() == 3
+
+
+def test_byte_identical_uploads_produce_identical_checksums() -> None:
+    first_expression, first_metadata, first_de_results = _valid_uploaded_sources()
+    second_expression, second_metadata, second_de_results = _valid_uploaded_sources()
+
+    first = load_uploaded_candidate(first_expression, first_metadata, first_de_results)
+    second = load_uploaded_candidate(
+        second_expression, second_metadata, second_de_results
+    )
+
+    assert first.checksums == second.checksums
+
+
+def test_an_invalid_candidate_has_no_checksums() -> None:
+    expression, metadata, de_results = _invalid_uploaded_sources()
+
+    candidate = load_uploaded_candidate(expression, metadata, de_results)
+
+    assert candidate.status == "invalid"
+    assert candidate.checksums is None
+
+
+def test_dataset_bundle_carries_checksums_through() -> None:
+    expression, metadata, de_results = _valid_uploaded_sources()
+    candidate = load_uploaded_candidate(expression, metadata, de_results)
+    assert candidate.tables is not None
+
+    bundle = build_dataset_bundle(
+        candidate.tables,
+        source="uploaded",
+        source_label="test",
+        report=candidate.report,
+        checksums=candidate.checksums,
+    )
+
+    assert bundle.checksums == candidate.checksums
+
+
+def test_dataset_bundle_defaults_to_no_checksums() -> None:
+    expression, metadata, de_results = _valid_uploaded_sources()
+    candidate = load_uploaded_candidate(expression, metadata, de_results)
+    assert candidate.tables is not None
+
+    bundle = build_dataset_bundle(
+        candidate.tables,
+        source="uploaded",
+        source_label="test",
+        report=candidate.report,
+    )
+
+    assert bundle.checksums is None
+
+
+def test_build_dataset_bundle_rejects_a_non_checksums_value() -> None:
+    expression, metadata, de_results = _valid_uploaded_sources()
+    candidate = load_uploaded_candidate(expression, metadata, de_results)
+    assert candidate.tables is not None
+
+    with pytest.raises(TypeError, match="checksums"):
+        build_dataset_bundle(
+            candidate.tables,
+            source="uploaded",
+            source_label="test",
+            report=candidate.report,
+            checksums="not-a-checksums-object",  # type: ignore[arg-type]
+        )
+
+
+def test_candidate_result_rejects_checksums_on_incomplete_or_invalid() -> None:
+    with pytest.raises(ValueError, match="incomplete"):
+        CandidateResult(
+            "incomplete",
+            None,
+            ValidationReport(),
+            checksums=DatasetChecksums("a", "b", None),
+        )
+    error_report = ValidationReport(
+        (
+            ValidationIssue(
+                code=IssueCode.CSV_READ_ERROR,
+                severity=Severity.ERROR,
+                table="Expression matrix",
+                message="boom",
+            ),
+        )
+    )
+    with pytest.raises(ValueError, match="invalid"):
+        CandidateResult(
+            "invalid",
+            None,
+            error_report,
+            checksums=DatasetChecksums("a", "b", None),
+        )
 
 
 def test_demo_and_upload_routes_use_shared_reader_and_aggregate_validator(

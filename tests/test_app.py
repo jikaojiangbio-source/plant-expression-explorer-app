@@ -73,6 +73,7 @@ def _demo_bundle() -> DatasetBundle:
         source="demo",
         source_label=DEMO_SOURCE_LABEL,
         report=candidate.report,
+        checksums=candidate.checksums,
     )
 
 
@@ -3028,6 +3029,35 @@ def test_report_page_shows_all_sections_and_a_download_button_for_the_demo() -> 
     assert [button.label for button in app.get("download_button")] == [
         "Download descriptive report (PDF)"
     ]
+
+
+def test_report_page_dataset_summary_shows_sha256_checksums_for_the_demo() -> None:
+    bundle = _demo_bundle()
+    assert bundle.checksums is not None
+
+    app = _run_report_page(bundle)
+
+    assert not app.exception
+    dataset_summary = app.dataframe[0].value.set_index("Field")["Value"]
+    assert dataset_summary["Expression file SHA-256"] == (
+        bundle.checksums.expression_sha256
+    )
+    assert dataset_summary["Metadata file SHA-256"] == bundle.checksums.metadata_sha256
+    assert dataset_summary["Differential-expression file SHA-256"] == (
+        bundle.checksums.de_results_sha256
+    )
+    visible_text = _visible_text(app)
+    assert "confirm this report was generated from a specific" in visible_text
+
+
+def test_report_page_dataset_summary_discloses_missing_checksums() -> None:
+    app = _run_report_page(_uploaded_bundle())
+
+    assert not app.exception
+    dataset_summary = app.dataframe[0].value.set_index("Field")["Value"]
+    assert dataset_summary["Input file checksums"] == (
+        "Not available (this dataset predates checksum computation)"
+    )
 
 
 def test_report_page_notes_missing_differential_expression_when_not_supplied() -> None:

@@ -729,6 +729,16 @@ built-in font cannot render (outside Windows-1252) produces a controlled
 error naming the offending section instead of silently dropping or
 mangling that character.
 
+The Dataset summary table also includes a SHA-256 checksum for each
+uploaded/demo input file, computed from the exact source CSV bytes before
+any parsing (`plant_expression_explorer/dataset.py`'s `DatasetChecksums`),
+so a later reader can confirm a specific report was generated from a
+specific, byte-identical input file. Two uploads of the same file always
+produce the same digest, and this is purely a disclosure: it is never
+compared, validated, or used to gate anything. A dataset built without
+supplying checksums (as some older or directly-constructed bundles are)
+shows an explicit "not available" note instead of a fabricated value.
+
 ## Input validation
 
 Phase 2 validates three preprocessed CSV tables before making a validated
