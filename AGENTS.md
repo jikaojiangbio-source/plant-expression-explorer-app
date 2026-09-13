@@ -59,6 +59,17 @@ pan, box/lasso-select, hover) for the PCA sample plot, correlation
 heatmap, gene-expression plot, and volcano plot; and GitHub
 release-readiness foundations comprising an exact Python 3.13.9 version
 pin, pinned Python dependencies, least-privilege continuous integration,
-contributor guidance, and repository-readiness regression tests.
+contributor guidance, and repository-readiness regression tests; an
+optional, display-only "Species reference" lookup on the Gene Expression
+page against a small, hand-curated, individually source-verified
+per-species gene table (`data/annotations/`), matched by the same exact
+`str(value)` identifier equality as everywhere else in the application; an
+optional multi-gene panel on the Gene Expression page comparing several
+independently looked-up exact gene IDs in one chart and wide table without
+averaging or ranking them against each other; and an optional "Chart
+x-axis" selector on the Gene Expression page that re-renders the per-sample
+plot ordered by one numeric supplied metadata column instead of upload
+order, with a controlled error (not silent coercion) when that column is
+not numeric for every sample.
 Differential-expression modelling and clustering remain intentionally
 deferred.

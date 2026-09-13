@@ -20,6 +20,8 @@ from plant_expression_explorer.gene_expression import (
     build_gene_expression_observations,
     build_grouped_gene_expression_chart_data,
     build_grouped_gene_expression_condition_summary,
+    build_multi_gene_panel_data,
+    build_time_series_chart_data,
     filter_gene_ids,
     list_gene_ids,
     lookup_gene_expression,
@@ -245,6 +247,93 @@ except GeneExpressionComputationError as error:
     )
     st.stop()
 
+st.header("Multi-gene panel (optional)")
+st.write(
+    "Optionally compare the gene selected above with additional exact gene "
+    "IDs on one combined chart and table. Each gene is looked up "
+    "independently and shown on its own supplied scale; no normalization or "
+    "cross-gene scaling is applied, so different genes' absolute magnitudes "
+    "are not directly comparable."
+)
+additional_gene_ids = st.multiselect(
+    "Compare with additional gene IDs",
+    [gene_id for gene_id in selectable_gene_ids if gene_id != result.gene_id],
+    default=[],
+    help=(
+        "Selecting one or more genes here adds a combined panel below; it "
+        "does not replace the detailed single-gene view further down."
+    ),
+)
+if additional_gene_ids:
+    panel_gene_ids = [result.gene_id, *additional_gene_ids]
+    try:
+        panel_data = build_multi_gene_panel_data(
+            current.expression, current.metadata, panel_gene_ids
+        )
+    except GeneExpressionComputationError as error:
+        st.error(
+            "The multi-gene panel could not be displayed "
+            f"({error.reason.value}): {error}"
+        )
+    else:
+        panel_sample_order = result.sample_expression["sample_id"].tolist()
+        panel_gene_order = list(dict.fromkeys(panel_data["gene_id"]))
+        panel_figure = px.line(
+            panel_data,
+            x="sample_id",
+            y="expression_value",
+            color="gene_id",
+            markers=True,
+            category_orders={
+                "sample_id": panel_sample_order,
+                "gene_id": panel_gene_order,
+            },
+            labels={
+                "sample_id": "Sample",
+                "expression_value": "Supplied preprocessed expression value",
+                "gene_id": "Gene ID",
+            },
+        )
+        panel_figure.update_traces(marker=dict(size=9), line=dict(width=1.5))
+        panel_figure.update_layout(
+            height=440,
+            margin=dict(l=10, r=10, t=10, b=10),
+            legend_title_text="Gene ID",
+            xaxis=dict(tickangle=-45),
+        )
+        st.plotly_chart(panel_figure, width="stretch")
+        st.caption(
+            "Lines connect one gene's own points across samples in "
+            "expression-column order only, to make each gene's series "
+            "easier to trace; they are not a fitted trend or a claim about "
+            "intermediate values. Colour identifies the gene, not a "
+            "condition or group."
+        )
+
+        panel_wide = panel_data.pivot(
+            index=["sample_id", "condition"],
+            columns="gene_id",
+            values="expression_value",
+        ).reset_index()
+        panel_wide.columns.name = None
+        st.dataframe(panel_wide, hide_index=True, width="stretch")
+        st.caption(
+            "One row per sample; one column per selected gene, each holding "
+            "that gene's exact supplied value for that sample."
+        )
+
+        panel_export = panel_data.copy(deep=True)
+        _render_csv_downloads(
+            (
+                (
+                    "Download multi-gene panel values (CSV)",
+                    panel_export,
+                    "gene-expression-multi-gene-panel.csv",
+                    (),
+                ),
+            )
+        )
+
 st.header(f"Expression values for {result.gene_id}")
 
 species_label = st.selectbox(
@@ -319,8 +408,69 @@ if additional_columns:
     )
 group_title = group_column.replace("_", " ").capitalize()
 
+time_column = None
+if additional_columns:
+    axis_options = (
+        "Sample (upload order)",
+        *[f"Numeric time/order: {col}" for col in additional_columns],
+    )
+    axis_choice = st.selectbox(
+        "Chart x-axis",
+        options=axis_options,
+        help=(
+            "'Sample (upload order)' plots samples as categories in "
+            "expression-column order, coloured by the grouping above. A "
+            "numeric option instead connects points in ascending order of "
+            "that metadata column's exact supplied value; every sample "
+            "must have a numeric value in that column, or the chart shows "
+            "a controlled error instead of skipping samples."
+        ),
+    )
+    if axis_choice != "Sample (upload order)":
+        time_column = axis_choice.removeprefix("Numeric time/order: ")
+
 st.subheader("Per-sample expression plot")
-if result.sample_count >= 2:
+if result.sample_count < 2:
+    st.info(
+        "Only one sample is available, so an across-sample expression plot is "
+        "not shown. The supplied value remains visible in the table."
+    )
+elif time_column is not None:
+    try:
+        time_series = build_time_series_chart_data(
+            result, current.metadata, time_column
+        )
+    except ValueError as error:
+        st.error(
+            f"'{time_column}' cannot be used as a numeric time axis: {error}"
+        )
+    else:
+        time_figure = px.line(
+            time_series,
+            x="time_value",
+            y="expression_value",
+            markers=True,
+            labels={
+                "time_value": time_column,
+                "expression_value": "Supplied preprocessed expression value",
+            },
+            hover_data={"sample_id": True, "condition": True},
+        )
+        time_figure.update_traces(marker=dict(size=10), line=dict(width=1.5))
+        time_figure.update_layout(
+            height=420,
+            margin=dict(l=10, r=10, t=10, b=10),
+        )
+        st.plotly_chart(time_figure, width="stretch")
+        st.caption(
+            f"Points are ordered by the exact supplied '{time_column}' "
+            "value and connected by a line only to make the sequence "
+            "easier to trace; this is not a fitted trend, interpolation, "
+            "or a claim about values between samples. Samples sharing the "
+            "same time value (for example replicates at one timepoint) "
+            "are shown individually, not averaged."
+        )
+if result.sample_count >= 2 and time_column is None:
     chart_data = build_grouped_gene_expression_chart_data(
         result, current.metadata, group_column
     )
@@ -353,11 +503,6 @@ if result.sample_count >= 2:
         "y-axis includes zero on the supplied scale, and no group estimate or "
         "statistical comparison is shown. Zoom, pan, and hover are Plotly's "
         "built-in interactions and do not change the underlying values."
-    )
-else:
-    st.info(
-        "Only one sample is available, so an across-sample expression plot is "
-        "not shown. The supplied value remains visible in the table."
     )
 
 st.header("Condition-grouped descriptive summary")

@@ -86,6 +86,8 @@ CONDITION_EXPRESSION_SUMMARY_COLUMNS = (
     "maximum_expression",
     "standard_deviation",
 )
+MULTI_GENE_PANEL_COLUMNS = ("gene_id", "sample_id", "condition", "expression_value")
+TIME_SERIES_CHART_COLUMNS = ("sample_id", "condition", "time_value", "expression_value")
 GENE_EXPRESSION_CHART_COLUMNS = (
     "sample_position",
     "sample_id",
@@ -204,6 +206,35 @@ def lookup_gene_expression(
     return result
 
 
+def build_multi_gene_panel_data(
+    expression: pd.DataFrame,
+    metadata: pd.DataFrame,
+    gene_ids: list[object],
+) -> pd.DataFrame:
+    """Return long-format supplied per-sample values for several exact genes.
+
+    Each gene is looked up independently through :func:`lookup_gene_expression`,
+    reusing its full validation and numeric-coercion contract; no additional
+    computation, normalization, or cross-gene scaling is introduced. Rows are
+    concatenated in the supplied gene order, then each gene's own sample
+    order. Different genes may have very different absolute scales; plotting
+    them together does not make their magnitudes comparable.
+    """
+
+    frames: list[pd.DataFrame] = []
+    for gene_id in gene_ids:
+        result = lookup_gene_expression(expression, metadata, gene_id)
+        gene_frame = result.sample_expression.loc[
+            :, ["sample_id", "condition", "expression_value"]
+        ].copy(deep=True)
+        gene_frame.insert(0, "gene_id", result.gene_id)
+        frames.append(gene_frame)
+    if not frames:
+        return pd.DataFrame(columns=MULTI_GENE_PANEL_COLUMNS)
+    combined = pd.concat(frames, ignore_index=True)
+    return combined.loc[:, list(MULTI_GENE_PANEL_COLUMNS)]
+
+
 def build_gene_expression_chart_data(
     result: GeneExpressionResult,
 ) -> pd.DataFrame:
@@ -254,6 +285,52 @@ def build_grouped_gene_expression_chart_data(
         },
         columns=("sample_position", "sample_id", group_column, "expression_value"),
     )
+
+
+def build_time_series_chart_data(
+    result: GeneExpressionResult,
+    metadata: pd.DataFrame,
+    time_column: str,
+) -> pd.DataFrame:
+    """Return per-sample values stably sorted by one numeric metadata column.
+
+    ``time_column`` values are joined from ``metadata`` by exact sample ID
+    and must be fully numeric (safely coercible via ``pandas.to_numeric``);
+    this raises ``ValueError`` naming every sample with a non-numeric or
+    missing value rather than silently dropping, imputing, or excluding it.
+    Samples are stably sorted by the numeric time value: identical-time
+    samples (for example biological replicates at one timepoint) keep their
+    original relative order and are never averaged or otherwise combined.
+    """
+
+    lookup = _metadata_column_lookup(metadata, time_column)
+    sample_ids = result.sample_expression["sample_id"].tolist()
+    raw_time_values = [lookup[sample_id] for sample_id in sample_ids]
+    numeric_time = pd.to_numeric(pd.Series(raw_time_values), errors="coerce")
+    invalid_samples = [
+        sample_id
+        for sample_id, value in zip(sample_ids, numeric_time, strict=True)
+        if pd.isna(value)
+    ]
+    if invalid_samples:
+        raise ValueError(
+            f"Metadata column '{time_column}' is not numeric for sample(s): "
+            + ", ".join(invalid_samples)
+            + "."
+        )
+    numeric_values = pd.to_numeric(
+        result.sample_expression["expression_value"], errors="raise"
+    )
+    frame = pd.DataFrame(
+        {
+            "sample_id": sample_ids,
+            "condition": result.sample_expression["condition"].tolist(),
+            "time_value": numeric_time.tolist(),
+            "expression_value": numeric_values.tolist(),
+        },
+        columns=TIME_SERIES_CHART_COLUMNS,
+    )
+    return frame.sort_values("time_value", kind="stable", ignore_index=True)
 
 
 def build_grouped_gene_expression_condition_summary(

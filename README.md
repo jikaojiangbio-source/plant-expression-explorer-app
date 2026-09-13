@@ -617,6 +617,33 @@ was hand-written from established literature (because the API returned
 none) are labelled as such in the `source` column rather than attributed to
 Ensembl.
 
+## Multi-gene panel (optional)
+
+The Gene Expression page offers an optional "Compare with additional gene
+IDs" multiselect, independent of the primary "Exact gene ID" selector used
+throughout the rest of the page. Choosing one or more additional exact gene
+IDs adds a combined panel above the single-gene detail view: a Plotly line
+chart (one coloured series per gene, samples in expression-column order) and
+a wide-format table (`sample_id`, `condition`, one column per selected gene)
+with its own CSV download. Each gene's values come from an independent call
+to the same per-sample lookup used by the single-gene view; genes are never
+averaged, combined into a score, or ranked against one another, and adding
+this panel does not change the primary gene's detail view below it.
+
+## Time-series chart x-axis (optional)
+
+When the active dataset's sample metadata has at least one column beyond
+`sample_id` and `condition`, the Gene Expression page offers a "Chart
+x-axis" selector. The default, "Sample (upload order)", is the existing
+categorical per-sample plot. Choosing "Numeric time/order: `<column>`"
+instead re-renders the per-sample plot as a Plotly line chart with that
+column's exact supplied value, converted to numeric, on the x-axis; points
+are connected only to make the sample sequence easier to trace, not as a
+fitted trend or interpolation, and replicates sharing one time value are
+plotted individually rather than averaged. If the chosen column is not
+numeric for every sample, the page shows a controlled error naming every
+offending sample instead of skipping, coercing, or guessing values.
+
 ## Input validation
 
 Phase 2 validates three preprocessed CSV tables before making a validated

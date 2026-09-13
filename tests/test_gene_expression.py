@@ -16,6 +16,8 @@ from plant_expression_explorer.dataset import load_demo_candidate
 from plant_expression_explorer.gene_expression import (
     CONDITION_EXPRESSION_SUMMARY_COLUMNS,
     GENE_EXPRESSION_CHART_COLUMNS,
+    MULTI_GENE_PANEL_COLUMNS,
+    TIME_SERIES_CHART_COLUMNS,
     SAMPLE_EXPRESSION_COLUMNS,
     GeneExpressionComputationError,
     GeneExpressionErrorReason,
@@ -24,6 +26,8 @@ from plant_expression_explorer.gene_expression import (
     build_gene_expression_observations,
     build_grouped_gene_expression_chart_data,
     build_grouped_gene_expression_condition_summary,
+    build_multi_gene_panel_data,
+    build_time_series_chart_data,
     filter_gene_ids,
     list_gene_ids,
     lookup_gene_expression,
@@ -278,6 +282,142 @@ def test_build_grouped_chart_data_labels_by_an_alternate_column() -> None:
     assert "condition" not in chart_data.columns
     by_sample = dict(zip(chart_data["sample_id"], chart_data["unused"]))
     assert by_sample == {"sample_b": 3, "sample_a": 1, "sample_c": 2}
+
+
+def test_build_multi_gene_panel_data_concatenates_genes_in_supplied_order() -> None:
+    expression, metadata = _known_tables()
+
+    panel = build_multi_gene_panel_data(expression, metadata, ["101", "202"])
+
+    assert list(panel.columns) == list(MULTI_GENE_PANEL_COLUMNS)
+    assert panel["gene_id"].tolist() == ["101"] * 3 + ["202"] * 3
+    assert panel.loc[panel["gene_id"] == "101", "sample_id"].tolist() == [
+        "sample_b",
+        "sample_a",
+        "sample_c",
+    ]
+    assert panel.loc[panel["gene_id"] == "101", "expression_value"].tolist() == [
+        "2.0",
+        "1.0",
+        "3.0",
+    ]
+    assert panel.loc[panel["gene_id"] == "202", "expression_value"].tolist() == [
+        "8.0",
+        "4.0",
+        "6.0",
+    ]
+    assert panel["condition"].tolist() == [
+        "Control",
+        "Control",
+        "Treated",
+        "Control",
+        "Control",
+        "Treated",
+    ]
+
+
+def test_build_multi_gene_panel_data_handles_a_single_gene() -> None:
+    expression, metadata = _known_tables()
+
+    panel = build_multi_gene_panel_data(expression, metadata, ["101"])
+
+    assert panel["gene_id"].unique().tolist() == ["101"]
+    assert len(panel.index) == 3
+
+
+def test_build_multi_gene_panel_data_returns_empty_frame_for_no_genes() -> None:
+    expression, metadata = _known_tables()
+
+    panel = build_multi_gene_panel_data(expression, metadata, [])
+
+    assert panel.empty
+    assert list(panel.columns) == list(MULTI_GENE_PANEL_COLUMNS)
+
+
+def test_build_multi_gene_panel_data_propagates_an_unknown_gene_error() -> None:
+    expression, metadata = _known_tables()
+
+    with pytest.raises(GeneExpressionComputationError) as captured:
+        build_multi_gene_panel_data(expression, metadata, ["101", "not-a-gene"])
+
+    assert captured.value.reason is GeneExpressionErrorReason.UNKNOWN_GENE_ID
+
+
+def test_build_multi_gene_panel_data_does_not_mutate_inputs() -> None:
+    expression, metadata = _known_tables()
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    build_multi_gene_panel_data(expression, metadata, ["101", "202"])
+
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
+
+
+def test_build_time_series_chart_data_sorts_by_numeric_time_value() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    time_series = build_time_series_chart_data(result, metadata, "unused")
+
+    assert list(time_series.columns) == list(TIME_SERIES_CHART_COLUMNS)
+    assert time_series["sample_id"].tolist() == ["sample_a", "sample_c", "sample_b"]
+    assert time_series["time_value"].tolist() == [1.0, 2.0, 3.0]
+    assert time_series["expression_value"].tolist() == [4.0, 6.0, 8.0]
+
+
+def test_build_time_series_chart_data_keeps_relative_order_for_tied_times() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1"],
+            "s1": [1.0],
+            "s2": [2.0],
+            "s3": [3.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["s1", "s2", "s3"],
+            "condition": ["control", "control", "control"],
+            "day": [1, 1, 0],
+        }
+    )
+    result = lookup_gene_expression(expression, metadata, "g1")
+
+    time_series = build_time_series_chart_data(result, metadata, "day")
+
+    # s3 (day 0) sorts first; s1 and s2 (tied at day 1) keep their original
+    # expression-column relative order.
+    assert time_series["sample_id"].tolist() == ["s3", "s1", "s2"]
+    assert time_series["time_value"].tolist() == [0.0, 1.0, 1.0]
+
+
+def test_build_time_series_chart_data_rejects_a_non_numeric_column() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    with pytest.raises(ValueError, match="is not numeric for sample"):
+        build_time_series_chart_data(result, metadata, "condition")
+
+
+def test_build_time_series_chart_data_rejects_an_unknown_column() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    with pytest.raises(ValueError, match="does not contain column"):
+        build_time_series_chart_data(result, metadata, "not_a_column")
+
+
+def test_build_time_series_chart_data_does_not_mutate_inputs() -> None:
+    expression, metadata = _known_tables()
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    build_time_series_chart_data(result, metadata, "unused")
+
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
 
 
 @pytest.mark.parametrize(

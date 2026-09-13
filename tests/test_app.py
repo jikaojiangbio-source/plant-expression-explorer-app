@@ -1,10 +1,12 @@
 """Smoke test for the Streamlit home page."""
 
+import base64
 import csv
 import io
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from streamlit.testing.v1 import AppTest
 
@@ -617,6 +619,14 @@ def _pca_session_keys(app: AppTest) -> list[str]:
 
 def _plotly_figures(app: AppTest) -> list[dict]:
     return [json.loads(chart.proto.spec) for chart in app.get("plotly_chart")]
+
+
+def _decode_plotly_array(value: object) -> list:
+    """Decode a Plotly trace field that may use the binary 'bdata'/'dtype' form."""
+    if isinstance(value, dict) and "bdata" in value and "dtype" in value:
+        raw = base64.b64decode(value["bdata"])
+        return np.frombuffer(raw, dtype=value["dtype"]).tolist()
+    return list(value)
 
 
 def _pca_scatter_chart_count(app: AppTest) -> int:
@@ -2217,6 +2227,118 @@ def test_gene_page_species_reference_reports_no_entry_for_an_unmatched_gene() ->
     assert "No entry for 'NOT_A_REAL_GENE'" in visible_text
 
 
+def test_gene_page_multi_gene_panel_is_absent_without_additional_genes() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    assert not app.exception
+    assert len(app.multiselect) == 1
+    assert app.multiselect[0].value == []
+    assert len(app.dataframe) == 2  # sample values + condition summary only
+
+
+def test_gene_page_multi_gene_panel_shows_a_combined_chart_and_wide_table() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+    assert app.multiselect[0].options == ["g2", "g3", "g4"]
+
+    app.multiselect[0].select("g2").run()
+
+    assert not app.exception
+    assert len(app.dataframe) == 3
+    wide_table = app.dataframe[0].value
+    assert list(wide_table.columns) == ["sample_id", "condition", "g1", "g2"]
+    assert len(wide_table.index) == 2
+    panel_figure = next(
+        figure
+        for figure in _plotly_figures(app)
+        if figure["layout"].get("legend", {}).get("title", {}).get("text") == "Gene ID"
+    )
+    assert {trace["name"] for trace in panel_figure["data"]} == {"g1", "g2"}
+    download_labels = [button.label for button in app.get("download_button")]
+    assert "Download multi-gene panel values (CSV)" in download_labels
+
+
+def test_gene_page_multi_gene_panel_excludes_the_primary_gene_from_options() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    assert "g1" not in app.multiselect[0].options
+
+
+def _gene_time_series_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1"],
+            "sample_x": [10.0],
+            "sample_y": [20.0],
+            "sample_z": [30.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_x", "sample_y", "sample_z"],
+            "condition": ["control", "control", "control"],
+            "day": [5, 1, 3],
+        }
+    )
+    report = validate_input_tables(expression, metadata, None)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (expression, metadata, None),
+        source="uploaded",
+        source_label="Gene time-series test bundle",
+        report=report,
+    )
+
+
+def test_gene_page_time_series_axis_reorders_the_chart_by_numeric_value() -> None:
+    app = _run_gene_page(_gene_time_series_bundle())
+    app.selectbox[0].select("g1").run()
+
+    axis_selector = next(
+        box for box in app.selectbox if box.label == "Chart x-axis"
+    )
+    assert axis_selector.options == [
+        "Sample (upload order)",
+        "Numeric time/order: day",
+    ]
+
+    axis_selector.select("Numeric time/order: day").run()
+
+    assert not app.exception
+    figure = next(
+        fig
+        for fig in _plotly_figures(app)
+        if fig["layout"]["xaxis"]["title"]["text"] == "day"
+    )
+    trace = figure["data"][0]
+    assert _decode_plotly_array(trace["x"]) == [1, 3, 5]
+    assert _decode_plotly_array(trace["y"]) == [20.0, 30.0, 10.0]
+
+
+def test_gene_page_time_series_axis_reports_a_non_numeric_column() -> None:
+    app = _run_gene_page(_uploaded_bundle_with_genotype())
+    app.selectbox[0].select("g1").run()
+
+    axis_selector = next(
+        box for box in app.selectbox if box.label == "Chart x-axis"
+    )
+    assert axis_selector.options == [
+        "Sample (upload order)",
+        "Numeric time/order: genotype",
+    ]
+
+    axis_selector.select("Numeric time/order: genotype").run()
+
+    assert not app.exception
+    assert not _plotly_figures(app)
+    assert (
+        "'genotype' cannot be used as a numeric time axis"
+        in app.error[0].value
+    )
+
+
 def test_gene_page_offers_no_grouping_selector_without_additional_metadata() -> None:
     app = _run_gene_page(_uploaded_bundle())
     app.selectbox[0].select("g1").run()
@@ -2231,8 +2353,8 @@ def test_gene_page_grouping_selector_relabels_plot_and_summary() -> None:
 
     app = _run_gene_page(bundle)
     app.selectbox[0].select("g1").run()
-    # Exact gene ID, species reference, and group-by selectors.
-    assert len(app.selectbox) == 3
+    # Exact gene ID, species reference, group-by, and chart x-axis selectors.
+    assert len(app.selectbox) == 4
     group_selector = app.selectbox[2]
     assert group_selector.options == ["condition", "genotype"]
     assert group_selector.value == "condition"
