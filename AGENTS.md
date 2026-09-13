@@ -30,8 +30,9 @@ As of Phase 12, the application implements: project setup; a validated CSV
 upload and data-loading workflow requiring an expression matrix and sample
 metadata, with precomputed differential-expression results now optional; a
 bundled reproducible synthetic demo dataset; descriptive, non-mutating sample
-quality-control summaries; descriptive, non-mutating Pearson sample-correlation
-summaries; and descriptive, non-mutating sample PCA (mean-centred by
+quality-control summaries; descriptive, non-mutating user-selectable Pearson
+or Spearman sample-correlation summaries; and descriptive, non-mutating
+sample PCA (mean-centred by
 default, with an optional additional per-gene scale-to-unit-variance
 toggle, SVD-based sample scores and explained variance); with a shared,
 session-wide

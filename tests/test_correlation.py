@@ -459,6 +459,73 @@ def test_duplicate_sample_column_identifier_is_controlled() -> None:
     )
 
 
+def test_spearman_method_defaults_to_pearson(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+
+    result = compute_sample_correlation(expression, metadata)
+
+    assert result.method == "pearson"
+
+
+def test_spearman_method_is_selectable_and_disclosed() -> None:
+    # A monotonic-but-nonlinear relationship: Spearman is exactly 1.0
+    # (perfect rank agreement) while Pearson is not exactly 1.0.
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3", "g4"],
+            "s1": [1.0, 2.0, 3.0, 4.0],
+            "s2": [1.0, 8.0, 27.0, 64.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1", "s2"], "condition": ["control", "treated"]}
+    )
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    pearson_result = compute_sample_correlation(expression, metadata)
+    spearman_result = compute_sample_correlation(
+        expression, metadata, method="spearman"
+    )
+
+    assert pearson_result.method == "pearson"
+    assert spearman_result.method == "spearman"
+    assert spearman_result.correlation_matrix.loc["s1", "s2"] == pytest.approx(1.0)
+    assert pearson_result.correlation_matrix.loc["s1", "s2"] < 0.999
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
+
+
+def test_spearman_method_rejects_an_unsupported_value(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+
+    with pytest.raises(ValueError, match="Unsupported correlation method"):
+        compute_sample_correlation(expression, metadata, method="kendall")
+
+
+def test_spearman_method_also_treats_constant_samples_as_undefined() -> None:
+    expression, metadata = _constant_tables()
+
+    result = compute_sample_correlation(expression, metadata, method="spearman")
+
+    assert result.constant_samples == ("constant_1",)
+    assert result.correlation_matrix.loc["constant_1"].isna().all()
+
+
+def test_spearman_method_observations_use_the_correct_label() -> None:
+    expression, metadata = _constant_tables()
+
+    result = compute_sample_correlation(expression, metadata, method="spearman")
+    observations = build_correlation_observations(result, ValidationReport())
+
+    assert any("undefined Spearman values" in item for item in observations)
+    assert not any("Pearson" in item for item in observations)
+
+
 def test_a_missing_value_is_excluded_pairwise_and_disclosed() -> None:
     expression = pd.DataFrame(
         {

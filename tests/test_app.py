@@ -1218,7 +1218,10 @@ def test_correlation_page_offers_no_grouping_selector_without_additional_metadat
     app = _run_correlation_page(_uploaded_bundle())
 
     assert not app.exception
-    assert len(app.selectbox) == 0
+    # Only the always-present "Correlation method" selector; no group-by
+    # selector without additional metadata columns.
+    assert len(app.selectbox) == 1
+    assert app.selectbox[0].label == "Correlation method"
 
 
 def test_correlation_page_grouping_selector_relabels_summaries_without_recomputation() -> (
@@ -1227,12 +1230,14 @@ def test_correlation_page_grouping_selector_relabels_summaries_without_recomputa
     bundle = _uploaded_bundle_with_genotype()
 
     app = _run_correlation_page(bundle)
-    assert len(app.selectbox) == 1
-    selector = app.selectbox[0]
+    assert len(app.selectbox) == 2
+    selector = next(
+        box for box in app.selectbox if box.label == "Group summaries by"
+    )
     assert selector.options == ["condition", "genotype"]
     assert selector.value == "condition"
 
-    app.selectbox[0].select("genotype").run()
+    selector.select("genotype").run()
 
     assert not app.exception
     pair_summary = app.dataframe[2].value
@@ -1246,6 +1251,27 @@ def test_correlation_page_grouping_selector_relabels_summaries_without_recomputa
     assert "genotype_a" in condition_pair_summary.columns
     visible_text = _visible_text(app)
     assert "Grouped by metadata column 'genotype'" in visible_text
+
+
+def test_correlation_page_method_selector_defaults_to_pearson_and_switches() -> None:
+    app = _run_correlation_page(_uploaded_bundle())
+    method_selector = next(
+        box for box in app.selectbox if box.label == "Correlation method"
+    )
+    assert method_selector.value == "Pearson (linear)"
+    pearson_visible_text = _visible_text(app)
+    assert "Computing Pearson correlations" not in pearson_visible_text
+    assert "Pearson correlation is calculated" in pearson_visible_text
+    assert "Spearman" not in pearson_visible_text
+
+    method_selector.select("Spearman (rank)").run()
+
+    assert not app.exception
+    spearman_visible_text = _visible_text(app)
+    assert "Spearman correlation is calculated" in spearman_visible_text
+    assert "Pearson" not in spearman_visible_text
+    download_labels = _download_labels(app)
+    assert "Download correlation matrix in long form (CSV)" in download_labels
 
 
 def _interleaved_condition_correlation_bundle() -> DatasetBundle:

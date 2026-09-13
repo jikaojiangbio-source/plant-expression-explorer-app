@@ -1,4 +1,4 @@
-"""Descriptive Pearson sample-to-sample correlation summaries."""
+"""Descriptive Pearson or Spearman sample-to-sample correlation summaries."""
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -86,7 +86,7 @@ def _render_csv_downloads(
 inject_global_styles()
 st.title("🔥 Sample Correlation")
 st.write(
-    "Pearson sample-to-sample correlations are descriptive summaries of the "
+    "Sample-to-sample correlations are descriptive summaries of the "
     "active expression matrix. Correlation does not establish biological "
     "validity and does not imply causation."
 )
@@ -122,19 +122,37 @@ validation_columns[2].metric(
     len(report.information),
 )
 
+method_choice = st.selectbox(
+    "Correlation method",
+    options=("Pearson (linear)", "Spearman (rank)"),
+    help=(
+        "Pearson measures linear correlation of the supplied values. "
+        "Spearman measures rank correlation instead: it is more robust to "
+        "outliers and to monotonic-but-nonlinear relationships, at the "
+        "cost of discarding the exact magnitude of differences. Neither "
+        "is presented as universally superior; this is a disclosed "
+        "analysis choice."
+    ),
+)
+method = "spearman" if method_choice.startswith("Spearman") else "pearson"
+method_label = method.capitalize()
+
 with st.expander("Method"):
     st.write(
-        "Pearson correlation is calculated between every sample pair across all "
-        "gene rows using complete observations. Sample order follows the "
-        "expression-matrix columns; no similarity-based reordering is performed."
+        f"{method_label} correlation is calculated between every sample pair "
+        "across the gene rows where both samples have a value ('pairwise "
+        "complete observations'). Sample order follows the expression-matrix "
+        "columns; no similarity-based reordering is performed."
     )
 
 try:
-    with st.spinner("Computing Pearson correlations…"):
-        result = compute_sample_correlation(current.expression, current.metadata)
+    with st.spinner(f"Computing {method_label} correlations…"):
+        result = compute_sample_correlation(
+            current.expression, current.metadata, method=method
+        )
 except CorrelationComputationError as error:
     st.error(
-        "Descriptive Pearson correlations could not be calculated "
+        f"Descriptive {method_label} correlations could not be calculated "
         f"({error.reason.value}): {error}"
     )
     st.stop()
@@ -149,11 +167,11 @@ if additional_columns:
         key=ACTIVE_GROUP_COLUMN_KEY,
         help=(
             "Any column present in the uploaded sample metadata beyond "
-            "'sample_id' and 'condition' can relabel the tables below and "
-            "sort the heatmap. No Pearson correlation is recalculated for the "
-            "new grouping; only the group label and within/between-group "
-            "membership change. This choice is shared with the PCA, Sample "
-            "Quality Control, and Gene Expression pages."
+            f"'sample_id' and 'condition' can relabel the tables below and "
+            f"sort the heatmap. No {method_label} correlation is recalculated "
+            "for the new grouping; only the group label and within/between-"
+            "group membership change. This choice is shared with the PCA, "
+            "Sample Quality Control, and Gene Expression pages."
         ),
     )
 grouped_sample_summary = build_grouped_sample_correlation_summary(
@@ -177,7 +195,7 @@ st.dataframe(
 )
 st.caption(
     "Rows and columns preserve expression sample order. Values are rounded to "
-    "three decimals for display only; N/A denotes undefined Pearson "
+    f"three decimals for display only; N/A denotes undefined {method_label} "
     "correlation."
 )
 
@@ -210,11 +228,12 @@ heatmap_figure = go.Figure(
         zmin=-1,
         zmax=1,
         colorscale="RdBu",
-        colorbar=dict(title="Pearson r"),
+        colorbar=dict(title=f"{method_label} correlation"),
         text=hover_text.to_numpy(),
         customdata=hover_text.to_numpy(),
         hovertemplate=(
-            "Row: %{y}<br>Column: %{x}<br>Pearson r: %{customdata}<extra></extra>"
+            "Row: %{y}<br>Column: %{x}<br>"
+            f"{method_label} correlation: " + "%{customdata}<extra></extra>"
         ),
         xgap=1,
         ygap=1,
@@ -242,7 +261,7 @@ st.header("Constant samples and undefined correlations")
 if result.constant_samples:
     st.info(
         f"{len(result.constant_samples)} constant sample column(s) produce "
-        "undefined Pearson correlations: "
+        f"undefined {method_label} correlations: "
         + ", ".join(result.constant_samples)
         + ". They remain in every summary."
     )
@@ -324,14 +343,14 @@ if current.source == "demo":
 
 with st.expander("Scientific and statistical limitations"):
     st.info(
-        "Input scale and transformation affect Pearson correlation, and gene "
-        "filtering or selection can change every displayed value. Broad expression "
-        "distributions may dominate these summaries."
+        f"Input scale and transformation affect {method_label} correlation, "
+        "and gene filtering or selection can change every displayed value. "
+        "Broad expression distributions may dominate these summaries."
     )
     st.info(
         "High correlation does not prove replicate validity. A low or negative "
         "correlation alone does not prove that a sample is unsuitable. Constant "
-        "samples produce undefined Pearson correlations."
+        f"samples produce undefined {method_label} correlations."
     )
     st.info(
         "No samples or genes are modified or removed. This page performs no PCA, "
@@ -354,27 +373,28 @@ matrix_long = heatmap_data.loc[
     :, ["row_sample", "column_sample", "correlation", "defined"]
 ].copy(deep=True)
 _group_file_suffix = "" if group_column == "condition" else f"-by-{group_column}"
+_method_file_suffix = "" if method == "pearson" else f"-{method}"
 _render_csv_downloads(
     (
         (
             "Download correlation matrix in long form (CSV)",
             matrix_long,
-            "sample-correlation-matrix-long.csv",
+            f"sample-correlation-matrix-long{_method_file_suffix}.csv",
         ),
         (
             "Download per-sample correlation summary (CSV)",
             grouped_sample_summary,
-            f"sample-correlation-sample-summary{_group_file_suffix}.csv",
+            f"sample-correlation-sample-summary{_method_file_suffix}{_group_file_suffix}.csv",
         ),
         (
             "Download unique sample pairs (CSV)",
             grouped_pair_summary,
-            f"sample-correlation-unique-pairs{_group_file_suffix}.csv",
+            f"sample-correlation-unique-pairs{_method_file_suffix}{_group_file_suffix}.csv",
         ),
         (
             "Download condition-pair summary (CSV)",
             grouped_condition_summary,
-            f"sample-correlation-condition-pairs{_group_file_suffix}.csv",
+            f"sample-correlation-condition-pairs{_method_file_suffix}{_group_file_suffix}.csv",
         ),
     )
 )

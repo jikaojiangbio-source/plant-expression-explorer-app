@@ -24,7 +24,7 @@ Phases 1–11 provide:
 - explicit validation feedback, table previews, source status, and Reset Data;
 - descriptive, non-mutating sample quality-control summaries for the active
   dataset;
-- descriptive, non-mutating Pearson sample-correlation summaries for the active
+- descriptive, non-mutating Pearson or Spearman sample-correlation summaries for the active
   dataset;
 - descriptive, non-mutating sample PCA (mean-centred, optionally additionally
   scaled to unit variance, SVD-based sample scores and explained variance)
@@ -174,18 +174,20 @@ testing, or differential-expression inference.
 
 ## Phase 6 descriptive sample correlation
 
-The Sample Correlation page calculates Pearson correlation between every pair
-of sample columns across all gene rows in the active expression matrix. Phase 6
-supports Pearson only: it does not silently select another correlation method
-and does not calculate correlation p-values or confidence intervals.
+The Sample Correlation page calculates correlation between every pair of
+sample columns across the gene rows in the active expression matrix, using
+either Pearson (linear correlation; the default) or Spearman (rank
+correlation) — a user-selected, disclosed choice, never a silent default
+substitution — and never calculates correlation p-values or confidence
+intervals for either method.
 
 For `n` expression samples, the correlation matrix is `n × n`. Both axes follow
 the original expression sample-column order; the matrix is never clustered or
 reordered by similarity. Non-constant sample diagonal values are `1.0`.
 A constant sample has exactly identical expression values across every gene,
-so its Pearson correlations, including its diagonal, are undefined and remain
-`NaN` in the computational result. Undefined correlations are never replaced
-with zero or one.
+so its correlations (Pearson or Spearman alike), including its diagonal, are
+undefined and remain `NaN` in the computational result. Undefined correlations
+are never replaced with zero or one.
 
 The unique sample-pair summary excludes the diagonal and contains each unordered
 pair exactly once, for `n(n-1)/2` rows. Its deterministic order follows
@@ -211,7 +213,7 @@ a `1 × 1` matrix containing `NaN`. In either case there are no unique non-self
 pairs and the per-sample correlation statistics remain undefined. Although the
 validated application input contract normally requires more than one sample,
 these behaviours make the pure computation API explicit. A one-gene matrix
-cannot support Pearson correlation and produces a controlled
+cannot support either correlation method and produces a controlled
 `INSUFFICIENT_GENE_ROWS` error.
 
 Safely coercible numeric strings are converted only in a temporary deep copy.

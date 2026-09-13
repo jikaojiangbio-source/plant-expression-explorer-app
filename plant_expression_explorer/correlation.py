@@ -1,4 +1,4 @@
-"""Pure descriptive sample-to-sample Pearson correlation calculations."""
+"""Pure descriptive sample-to-sample Pearson or Spearman correlation calculations."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ class CorrelationErrorReason(StrEnum):
 
 
 class CorrelationComputationError(ValueError):
-    """Expected failure when inputs cannot support Pearson correlation."""
+    """Expected failure when inputs cannot support sample correlation."""
 
     def __init__(
         self,
@@ -48,14 +48,14 @@ class CorrelationComputationError(ValueError):
 
 @dataclass(frozen=True)
 class SampleCorrelationResult:
-    """Complete descriptive Pearson result for one expression/metadata pair.
+    """Complete descriptive Pearson or Spearman result for one expr/metadata pair.
 
     ``frozen=True`` prevents field rebinding. It does not make the newly
     constructed nested pandas DataFrames deeply immutable, so callers should
     treat all result tables as read-only and use copies for display formatting.
     """
 
-    method: Literal["pearson"]
+    method: Literal["pearson", "spearman"]
     gene_count: int
     sample_count: int
     missing_value_count: int
@@ -122,8 +122,16 @@ _RELEVANT_VALIDATION_OBSERVATIONS = frozenset(
 def compute_sample_correlation(
     expression: pd.DataFrame,
     metadata: pd.DataFrame,
+    *,
+    method: Literal["pearson", "spearman"] = "pearson",
 ) -> SampleCorrelationResult:
-    """Calculate non-mutating descriptive Pearson sample correlations.
+    """Calculate non-mutating descriptive Pearson or Spearman sample correlations.
+
+    ``method`` selects Pearson (default; linear correlation of the supplied
+    values) or Spearman (rank correlation, more robust to outliers and
+    monotonic-but-nonlinear relationships; ties use the average-rank
+    convention). Both use the same computation and error-priority
+    contract below; only the correlation formula itself differs.
 
     Safely coercible numeric strings are converted only in a temporary working
     copy. A missing expression cell is retained as missing (never imputed);
@@ -141,6 +149,9 @@ def compute_sample_correlation(
     order empty-column, boolean/complex, non-coercible, and infinite.
     """
 
+    if method not in ("pearson", "spearman"):
+        raise ValueError(f"Unsupported correlation method: {method!r}.")
+
     _require_dataframe(expression, "Expression matrix")
     _require_dataframe(metadata, "Sample metadata")
     if len(expression.index) == 0:
@@ -153,8 +164,8 @@ def compute_sample_correlation(
     if len(expression.index) < 2:
         raise CorrelationComputationError(
             CorrelationErrorReason.INSUFFICIENT_GENE_ROWS,
-            "The expression matrix contains 1 gene row; Pearson correlation "
-            "requires at least 2 gene rows.",
+            f"The expression matrix contains 1 gene row; {method} "
+            "correlation requires at least 2 gene rows.",
         )
 
     sample_columns = [
@@ -199,10 +210,11 @@ def compute_sample_correlation(
         condition_by_sample[sample_id] for sample_id in sample_ids
     ]
     constant_samples = find_constant_samples(numeric_expression)
-    correlation_matrix = _pearson_matrix(
+    correlation_matrix = _correlation_matrix(
         numeric_expression,
         sample_ids,
         constant_samples,
+        method,
     )
     _verify_correlation_matrix(
         correlation_matrix,
@@ -226,7 +238,7 @@ def compute_sample_correlation(
     undefined_pair_count = int((~pair_summary["defined"]).sum())
 
     return SampleCorrelationResult(
-        method="pearson",
+        method=method,
         gene_count=len(gene_ids),
         sample_count=len(sample_ids),
         missing_value_count=int(numeric_expression.isna().sum().sum()),
@@ -406,25 +418,26 @@ def build_correlation_observations(
 ) -> tuple[str, ...]:
     """Build exact observations without thresholds or quality classification."""
 
+    method_label = result.method.capitalize()
     observations: list[str] = []
     if result.missing_value_count:
         observations.append(
             f"The matrix contains {result.missing_value_count} missing "
             "value(s), retained as missing and excluded pairwise (per "
-            "sample pair, not imputed) from Pearson correlation; a pair "
-            "with fewer than 2 shared non-missing gene values is reported "
-            "as undefined."
+            f"sample pair, not imputed) from {method_label} correlation; a "
+            "pair with fewer than 2 shared non-missing gene values is "
+            "reported as undefined."
         )
     if result.constant_samples:
         observations.append(
-            f"Constant sample column(s) with undefined Pearson values: "
+            f"Constant sample column(s) with undefined {method_label} values: "
             + ", ".join(result.constant_samples)
             + "."
         )
     if result.undefined_pair_count:
         observations.append(
             f"{result.undefined_pair_count} unique non-self sample pair(s) "
-            "have undefined Pearson correlation."
+            f"have undefined {method_label} correlation."
         )
     if result.sample_count == 1:
         observations.append(
@@ -445,19 +458,21 @@ def build_correlation_observations(
     if len(defined_correlations.index):
         if defined_correlations.gt(0).all():
             observations.append(
-                "All defined unique-pair Pearson correlations are positive."
+                f"All defined unique-pair {method_label} correlations are "
+                "positive."
             )
         elif defined_correlations.lt(0).all():
             observations.append(
-                "All defined unique-pair Pearson correlations are negative."
+                f"All defined unique-pair {method_label} correlations are "
+                "negative."
             )
         elif (
             defined_correlations.gt(0).any()
             and defined_correlations.lt(0).any()
         ):
             observations.append(
-                "Defined unique-pair Pearson correlations include both "
-                "positive and negative values."
+                f"Defined unique-pair {method_label} correlations include "
+                "both positive and negative values."
             )
 
     relevant_issues = []
@@ -507,7 +522,7 @@ def build_grouped_pair_summary(
     ``group_column`` values are joined from ``metadata`` by exact sample ID,
     for display only, exactly like 'condition'. Reuses
     :func:`build_pair_summary` on the already-computed correlation matrix; no
-    Pearson correlation is recalculated for the new grouping.
+    correlation is recalculated for the new grouping.
     """
 
     if group_column == "condition":
@@ -527,7 +542,7 @@ def build_grouped_sample_correlation_summary(
     """Return per-sample correlation metrics labelled by one metadata column.
 
     Reuses :func:`build_sample_correlation_summary` on the already-computed
-    correlation matrix; no Pearson correlation is recalculated.
+    correlation matrix; no correlation is recalculated.
     """
 
     if group_column == "condition":
@@ -545,7 +560,7 @@ def build_grouped_condition_correlation_summary(
     """Return group-pair correlation summaries for one metadata column.
 
     Reuses :func:`build_condition_correlation_summary` on the
-    already-computed pair summary for that grouping; no Pearson correlation
+    already-computed pair summary for that grouping; no correlation
     is recalculated.
     """
 
@@ -796,13 +811,14 @@ def _numeric_expression_copy(
     return numeric
 
 
-def _pearson_matrix(
+def _correlation_matrix(
     numeric_expression: pd.DataFrame,
     sample_ids: list[str],
     constant_samples: tuple[str, ...],
+    method: Literal["pearson", "spearman"],
 ) -> pd.DataFrame:
     matrix = numeric_expression.corr(
-        method="pearson",
+        method=method,
         min_periods=_MINIMUM_PAIRWISE_COMPLETE_GENES,
     )
     matrix = matrix.reindex(index=sample_ids, columns=sample_ids).copy(deep=True)
@@ -824,11 +840,11 @@ def _verify_correlation_matrix(
     expected_shape = (len(sample_ids), len(sample_ids))
     if matrix.shape != expected_shape:
         raise RuntimeError(
-            "Pearson matrix shape does not match the expression sample count."
+            "Correlation matrix shape does not match the expression sample count."
         )
     if list(matrix.index) != sample_ids or list(matrix.columns) != sample_ids:
         raise RuntimeError(
-            "Pearson matrix axes do not preserve expression sample order."
+            "Correlation matrix axes do not preserve expression sample order."
         )
 
     for row_position in range(len(sample_ids)):
@@ -839,17 +855,17 @@ def _verify_correlation_matrix(
                 continue
             if pd.isna(value) != pd.isna(mirror):
                 raise RuntimeError(
-                    "Pearson matrix contains asymmetric undefined values."
+                    "Correlation matrix contains asymmetric undefined values."
                 )
             if abs(float(value) - float(mirror)) > _MATRIX_TOLERANCE:
-                raise RuntimeError("Pearson matrix is not symmetric.")
+                raise RuntimeError("Correlation matrix is not symmetric.")
             if not (
                 -1.0 - _MATRIX_TOLERANCE
                 <= float(value)
                 <= 1.0 + _MATRIX_TOLERANCE
             ):
                 raise RuntimeError(
-                    "Pearson matrix contains a value outside [-1, 1]."
+                    "Correlation matrix contains a value outside [-1, 1]."
                 )
 
     constant_set = set(constant_samples)
@@ -860,7 +876,7 @@ def _verify_correlation_matrix(
                 and matrix.loc[:, sample_id].isna().all()
             ):
                 raise RuntimeError(
-                    "A constant sample has a defined Pearson correlation."
+                    "A constant sample has a defined correlation."
                 )
         else:
             diagonal = matrix.loc[sample_id, sample_id]
