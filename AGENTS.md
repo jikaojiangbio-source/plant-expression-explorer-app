@@ -31,8 +31,10 @@ upload and data-loading workflow requiring an expression matrix and sample
 metadata, with precomputed differential-expression results now optional; a
 bundled reproducible synthetic demo dataset; descriptive, non-mutating sample
 quality-control summaries; descriptive, non-mutating Pearson sample-correlation
-summaries; and descriptive, non-mutating sample PCA (mean-centred, unscaled,
-SVD-based sample scores and explained variance); with a shared, session-wide
+summaries; and descriptive, non-mutating sample PCA (mean-centred by
+default, with an optional additional per-gene scale-to-unit-variance
+toggle, SVD-based sample scores and explained variance); with a shared,
+session-wide
 "group by" selector, on PCA, Sample Quality Control, Sample Correlation, and
 Gene Expression, that relabels or recomputes only already-disclosed
 descriptive statistics for any additional supplied metadata column, never a

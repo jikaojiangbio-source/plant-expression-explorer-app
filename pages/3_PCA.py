@@ -124,18 +124,44 @@ validation_columns[2].metric(
     len(report.information),
 )
 
+scale_to_unit_variance = st.checkbox(
+    "Scale each gene to unit variance (in addition to mean-centring)",
+    value=False,
+    help=(
+        "Off (default): genes are mean-centred only, so a gene with larger "
+        "variance on the supplied scale contributes more strongly to the "
+        "components ('covariance-matrix' PCA). On: each gene is "
+        "additionally divided by its own sample standard deviation "
+        "('correlation-matrix' PCA), so every non-constant gene "
+        "contributes equally regardless of magnitude. Neither option is a "
+        "universally superior method; this is a disclosed analysis choice."
+    ),
+)
+
 with st.expander("Method"):
-    st.write(
-        "Each gene is mean-centred across samples in a temporary computation copy "
-        "before singular value decomposition; the active expression matrix is "
-        "never rewritten. Genes are not scaled to unit variance. This preserves "
-        "the relative variance structure of the supplied preprocessed matrix and "
-        "avoids adding a separate standardization step. Genes with larger "
-        "variance in the supplied matrix consequently contribute more strongly to "
-        "the components; this is a disclosed analysis policy, not a claim that "
-        "such genes are more biologically informative, and not a claim that this "
-        "is a universally superior PCA method."
-    )
+    if scale_to_unit_variance:
+        st.write(
+            "Each gene is mean-centred across samples, then divided by its own "
+            "sample standard deviation, in a temporary computation copy before "
+            "singular value decomposition; the active expression matrix is "
+            "never rewritten. Every non-constant gene therefore contributes "
+            "equally to the total variance regardless of its magnitude on the "
+            "supplied scale. A gene with exactly zero variance is kept at "
+            "exactly zero rather than divided by zero."
+        )
+    else:
+        st.write(
+            "Each gene is mean-centred across samples in a temporary computation "
+            "copy before singular value decomposition; the active expression "
+            "matrix is never rewritten. Genes are not scaled to unit variance. "
+            "This preserves the relative variance structure of the supplied "
+            "preprocessed matrix and avoids adding a separate standardization "
+            "step. Genes with larger variance in the supplied matrix "
+            "consequently contribute more strongly to the components; this is "
+            "a disclosed analysis policy, not a claim that such genes are more "
+            "biologically informative, and not a claim that this is a "
+            "universally superior PCA method."
+        )
     st.caption(
         "Finite expression values that cannot be safely represented through the "
         "float64 PCA calculation (for example, extremely large or extremely "
@@ -145,7 +171,11 @@ with st.expander("Method"):
 
 try:
     with st.spinner("Computing PCA…"):
-        result = compute_sample_pca(current.expression, current.metadata)
+        result = compute_sample_pca(
+            current.expression,
+            current.metadata,
+            scale_to_unit_variance=scale_to_unit_variance,
+        )
 except PcaComputationError as error:
     st.error(
         "Descriptive PCA could not be calculated "

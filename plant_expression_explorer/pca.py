@@ -75,6 +75,7 @@ class SamplePcaResult:
     genes_excluded_for_missing_values: int
     component_count: int
     metadata_order_matches_expression: bool
+    scale_to_unit_variance: bool
     total_variance: float
     zero_variance_gene_count: int
     score_table: pd.DataFrame
@@ -122,14 +123,27 @@ _RELEVANT_VALIDATION_OBSERVATIONS = frozenset(
 def compute_sample_pca(
     expression: pd.DataFrame,
     metadata: pd.DataFrame,
+    *,
+    scale_to_unit_variance: bool = False,
 ) -> SamplePcaResult:
     """Calculate non-mutating descriptive PCA sample scores and variance.
 
     Samples are observations and genes are features. Each gene is
-    mean-centred across samples in a temporary numeric copy; genes are not
-    scaled to unit variance. Conditions are mapped by exact sample ID and are
-    never used to fit the components. Safely coercible numeric strings are
-    converted only in the temporary copy.
+    mean-centred across samples in a temporary numeric copy. Conditions are
+    mapped by exact sample ID and are never used to fit the components.
+    Safely coercible numeric strings are converted only in the temporary
+    copy.
+
+    By default (``scale_to_unit_variance=False``), genes are not scaled to
+    unit variance, so highly variable genes dominate the components exactly
+    as in the underlying supplied scale ("covariance-matrix" PCA). Passing
+    ``scale_to_unit_variance=True`` additionally divides each gene's
+    centred values by its own sample standard deviation ("correlation-
+    matrix" PCA), so every gene contributes equally to the total variance
+    regardless of its magnitude; a gene with exactly zero variance is kept
+    at exactly zero (its already-centred value) rather than divided by
+    zero. Both modes use the same complete-case gene exclusion and the same
+    error-priority order described below.
 
     Principal component analysis requires a complete matrix: a gene with a
     missing value in any included sample is excluded from this calculation
@@ -257,9 +271,30 @@ def compute_sample_pca(
     _require_finite_array(gene_means)
     _require_finite_array(centered_matrix)
 
+    if scale_to_unit_variance:
+        with np.errstate(over="ignore", invalid="ignore"):
+            gene_stds = working_matrix.std(axis=0, ddof=1)
+            safe_stds = np.where(gene_stds > 0.0, gene_stds, 1.0)
+            decomposition_matrix = centered_matrix / safe_stds
+        _require_finite_array(gene_stds)
+        _require_finite_array(decomposition_matrix)
+        with np.errstate(over="ignore", invalid="ignore"):
+            decomposition_total_variance = float(
+                np.var(decomposition_matrix, axis=0, ddof=1).sum()
+            )
+        _require_finite_scalar(decomposition_total_variance)
+        if decomposition_total_variance <= 0.0:
+            raise PcaComputationError(
+                PcaErrorReason.NUMERICAL_RANGE_ERROR,
+                _NUMERICAL_RANGE_MESSAGE,
+            )
+    else:
+        decomposition_matrix = centered_matrix
+        decomposition_total_variance = raw_total_variance
+
     try:
         left_vectors, singular_values, _right_vectors = np.linalg.svd(
-            centered_matrix,
+            decomposition_matrix,
             full_matrices=False,
         )
     except np.linalg.LinAlgError as exc:
@@ -318,7 +353,7 @@ def compute_sample_pca(
 
     _verify_variance_totals(
         reported_total_variance,
-        raw_total_variance,
+        decomposition_total_variance,
         ratio_sum,
     )
     _verify_ratio_bounds(explained_variance_ratio)
@@ -355,6 +390,7 @@ def compute_sample_pca(
         metadata_order_matches_expression=(
             metadata_sample_ids == sample_ids
         ),
+        scale_to_unit_variance=scale_to_unit_variance,
         total_variance=reported_total_variance,
         zero_variance_gene_count=zero_variance_gene_count,
         score_table=score_table,
@@ -378,10 +414,24 @@ def build_pca_observations(
             "value was imputed."
         )
     if result.zero_variance_gene_count:
+        contribution = (
+            "exactly zero after scaling, instead of the division by zero "
+            "that scaling by its own zero standard deviation would "
+            "otherwise require"
+            if result.scale_to_unit_variance
+            else "no variance"
+        )
         observations.append(
             f"{result.zero_variance_gene_count} gene(s) have exactly "
             "identical values across all samples and were retained. They "
-            "contribute no variance to the components."
+            f"contribute {contribution} to the components."
+        )
+    if result.scale_to_unit_variance:
+        observations.append(
+            "Each gene was additionally scaled to unit variance before "
+            "decomposition (in addition to mean-centring), so a highly "
+            "variable gene does not dominate the components solely because "
+            "of its magnitude on the supplied scale."
         )
     if not result.metadata_order_matches_expression:
         observations.append(
@@ -507,17 +557,18 @@ def _require_finite_array(values: np.ndarray) -> None:
 
 def _verify_variance_totals(
     reported_total_variance: float,
-    raw_total_variance: float,
+    expected_total_variance: float,
     ratio_sum: float,
 ) -> None:
     if not math.isclose(
         reported_total_variance,
-        raw_total_variance,
+        expected_total_variance,
         rel_tol=_TOTAL_VARIANCE_REL_TOLERANCE,
     ):
         raise RuntimeError(
             "Reported total variance does not closely match the "
-            "independently calculated raw total variance."
+            "independently calculated total variance of the matrix "
+            "actually decomposed."
         )
     if not math.isclose(
         ratio_sum,

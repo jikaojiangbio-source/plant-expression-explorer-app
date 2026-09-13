@@ -26,8 +26,9 @@ Phases 1–11 provide:
   dataset;
 - descriptive, non-mutating Pearson sample-correlation summaries for the active
   dataset;
-- descriptive, non-mutating sample PCA (mean-centred, unscaled, SVD-based
-  sample scores and explained variance) for the active dataset;
+- descriptive, non-mutating sample PCA (mean-centred, optionally additionally
+  scaled to unit variance, SVD-based sample scores and explained variance)
+  for the active dataset;
 - descriptive, non-mutating threshold exploration of supplied, precomputed
   differential-expression results, including a descriptive volcano plot of
   the already-classified supplied values (no model fit, no calculated
@@ -265,16 +266,25 @@ colour coding; they are never used to fit the components.
 
 Each gene is mean-centred across samples in a temporary numeric copy before
 singular value decomposition (SVD); the active expression matrix is never
-rewritten. Genes are not scaled to unit variance. This preserves the relative
-variance structure of the supplied preprocessed matrix and avoids adding a
-separate standardization step. Genes with larger variance in the supplied
-matrix consequently contribute more strongly to the components; this is a
-disclosed analysis policy, not a claim that such genes are more biologically
-informative, and not a claim that this is a universally superior PCA method.
-Upstream normalization, transformation, filtering, and gene selection
-materially affect the result. No log transformation, normalisation,
-filtering, trimming, aggregation, reordering, or imputation is performed. All
-gene features are retained, including constant genes.
+rewritten. By default, genes are not scaled to unit variance. This preserves
+the relative variance structure of the supplied preprocessed matrix and
+avoids adding a separate standardization step. Genes with larger variance in
+the supplied matrix consequently contribute more strongly to the components;
+this is a disclosed analysis policy, not a claim that such genes are more
+biologically informative, and not a claim that this is a universally
+superior PCA method. Upstream normalization, transformation, filtering, and
+gene selection materially affect the result. No log transformation,
+normalisation, filtering, trimming, aggregation, reordering, or imputation is
+performed. All gene features are retained, including constant genes.
+
+A "Scale each gene to unit variance" checkbox (off by default) additionally
+divides each gene's centred values by its own sample standard deviation
+before decomposition ("correlation-matrix" PCA), so every non-constant gene
+contributes equally regardless of its magnitude on the supplied scale. A
+gene with exactly zero variance is kept at exactly zero rather than divided
+by zero. Neither mode is presented as universally superior; the choice and
+its effect on the result are both disclosed in the Method panel and the
+descriptive observations.
 
 PCA uses NumPy's singular value decomposition directly (`numpy.linalg.svd`).
 The component count is `min(sample_count - 1, gene_count)`. At least two

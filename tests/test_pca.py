@@ -638,6 +638,87 @@ def test_constant_genes_retained_with_positive_total_variance_proceeds() -> None
     pd.testing.assert_frame_equal(expression, original_expression)
 
 
+def test_scale_to_unit_variance_defaults_to_false_and_is_disclosed() -> None:
+    expression, metadata = _some_constant_gene_tables()
+
+    result = compute_sample_pca(expression, metadata)
+
+    assert result.scale_to_unit_variance is False
+
+
+def test_scale_to_unit_variance_gives_every_non_constant_gene_equal_weight() -> None:
+    # g1 and g2 are constructed to be orthogonal after centering (their
+    # centred dot product is exactly 0) but on very different magnitudes.
+    # After scaling both to unit variance, two orthogonal unit-variance
+    # features split the total variance exactly 50/50 between components.
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "sample_a": [1.0, 1000.0],
+            "sample_b": [2.0, -2000.0],
+            "sample_c": [3.0, 1000.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b", "sample_c"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    scaled = compute_sample_pca(expression, metadata, scale_to_unit_variance=True)
+
+    assert scaled.scale_to_unit_variance is True
+    assert scaled.total_variance == pytest.approx(2.0, rel=1e-9)
+    ratios = scaled.variance_table["explained_variance_ratio"].tolist()
+    assert ratios[0] == pytest.approx(0.5, abs=1e-6)
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
+
+
+def test_scale_to_unit_variance_keeps_a_constant_gene_at_exactly_zero() -> None:
+    expression, metadata = _some_constant_gene_tables()
+
+    result = compute_sample_pca(expression, metadata, scale_to_unit_variance=True)
+    observations = build_pca_observations(result, ValidationReport())
+
+    assert result.zero_variance_gene_count == 1
+    assert np.isfinite(result.total_variance)
+    assert any(
+        "exactly zero after scaling" in item for item in observations
+    )
+    assert any(
+        "additionally scaled to unit variance" in item for item in observations
+    )
+
+
+def test_scale_to_unit_variance_true_and_false_can_disagree_on_pc1_sample_order() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "sample_a": [1.0, 1000.0],
+            "sample_b": [2.0, 1.0],
+            "sample_c": [3.0, 500.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b", "sample_c"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+
+    unscaled = compute_sample_pca(expression, metadata)
+    scaled = compute_sample_pca(expression, metadata, scale_to_unit_variance=True)
+
+    # Different scaling modes are independent, non-mutating calculations on
+    # the same source tables; this only demonstrates that the mode has a
+    # real, expected effect on which sample dominates PC1's structure.
+    assert not unscaled.score_table["pc1"].equals(scaled.score_table["pc1"])
+
+
 def test_all_genes_constant_is_controlled_zero_total_variance() -> None:
     expression, metadata = _all_constant_tables()
     original_expression = expression.copy(deep=True)

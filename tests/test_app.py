@@ -1450,6 +1450,30 @@ def test_pca_page_uploaded_maps_conditions_preserves_bundle_and_omits_scatter() 
     assert _pca_session_keys(app) == []
 
 
+def test_pca_page_scale_checkbox_changes_results_and_is_disclosed() -> None:
+    bundle = _demo_bundle()
+    app = _run_pca_page(bundle)
+    unscaled_score_table = app.dataframe[1].value
+
+    app.checkbox[0].check().run()
+
+    assert not app.exception
+    scaled_score_table = app.dataframe[1].value
+    assert not unscaled_score_table["pc1"].equals(scaled_score_table["pc1"])
+    visible_text = _visible_text(app)
+    assert "additionally scaled to unit variance" in visible_text
+    assert "divided by its own sample standard deviation" in visible_text
+
+
+def test_pca_page_scale_checkbox_defaults_to_off() -> None:
+    app = _run_pca_page(_demo_bundle())
+
+    assert not app.exception
+    assert app.checkbox[0].value is False
+    visible_text = _visible_text(app)
+    assert "Genes are not scaled to unit variance" in visible_text
+
+
 def test_pca_page_all_genes_zero_variance_shows_only_controlled_error() -> None:
     bundle = _all_genes_constant_bundle()
     original_expression = bundle.expression.copy(deep=True)
