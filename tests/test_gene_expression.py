@@ -240,6 +240,7 @@ def test_build_grouped_condition_summary_recomputes_for_an_alternate_column() ->
     assert list(grouped.columns) == [
         "unused",
         "sample_count",
+        "missing_value_count",
         "sample_ids",
         "minimum_expression",
         "median_expression",
@@ -532,6 +533,105 @@ def test_multiple_equal_values_are_retained_and_reported() -> None:
     assert result.condition_summary.loc[0, "standard_deviation"] == 0.0
 
 
+def test_a_missing_value_is_shown_as_missing_and_excluded_from_its_condition() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "s1": [1.0, 10.0],
+            "s2": [None, 20.0],
+            "s3": [5.0, 30.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["s1", "s2", "s3"],
+            "condition": ["A", "A", "B"],
+        }
+    )
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    result = lookup_gene_expression(expression, metadata, "g1")
+    observations = build_gene_expression_observations(result, ValidationReport())
+
+    assert result.missing_value_count == 1
+    values = result.sample_expression.set_index("sample_id")["expression_value"]
+    assert pd.isna(values["s2"])
+    condition_a = result.condition_summary.set_index("condition").loc["A"]
+    assert condition_a["sample_count"] == 2
+    assert condition_a["missing_value_count"] == 1
+    assert condition_a["minimum_expression"] == pytest.approx(1.0)
+    assert condition_a["maximum_expression"] == pytest.approx(1.0)
+    assert pd.isna(condition_a["standard_deviation"])
+    condition_b = result.condition_summary.set_index("condition").loc["B"]
+    assert condition_b["missing_value_count"] == 0
+    assert any(
+        "1 missing" in item and "excluded from condition summary" in item
+        for item in observations
+    )
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
+
+
+def test_a_condition_with_every_value_missing_reports_undefined_statistics() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "s1": [None, 10.0],
+            "s2": [None, 20.0],
+            "s3": [5.0, 30.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["s1", "s2", "s3"],
+            "condition": ["A", "A", "B"],
+        }
+    )
+
+    result = lookup_gene_expression(expression, metadata, "g1")
+
+    condition_a = result.condition_summary.set_index("condition").loc["A"]
+    assert condition_a["missing_value_count"] == 2
+    assert pd.isna(condition_a["minimum_expression"])
+    assert pd.isna(condition_a["median_expression"])
+    assert pd.isna(condition_a["mean_expression"])
+    assert pd.isna(condition_a["maximum_expression"])
+    assert pd.isna(condition_a["standard_deviation"])
+
+
+def test_a_sample_column_that_is_entirely_missing_is_a_controlled_failure() -> None:
+    expression = pd.DataFrame(
+        {"gene_id": ["g1", "g2"], "s1": [None, None], "s2": [1.0, 2.0]}
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1", "s2"], "condition": ["A", "B"]}
+    )
+
+    error = _capture_error(expression, metadata, "g1")
+
+    assert error.reason is GeneExpressionErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN
+    assert "s1" in str(error)
+
+
+def test_missing_values_do_not_count_toward_all_values_equal() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "s1": [5.0, 10.0],
+            "s2": [None, 20.0],
+            "s3": [5.0, 30.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1", "s2", "s3"], "condition": ["A", "A", "A"]}
+    )
+
+    result = lookup_gene_expression(expression, metadata, "g1")
+
+    assert result.all_values_equal is True
+
+
 @pytest.mark.parametrize("query", [None, pd.NA, "", "   ", " g1 "])
 def test_invalid_selected_gene_id_is_controlled_without_trimming(query: object) -> None:
     expression = pd.DataFrame({"gene_id": ["g1"], "s1": [1.0]})
@@ -637,8 +737,6 @@ def test_invalid_gene_identifiers_block_option_building_and_lookup(
 @pytest.mark.parametrize(
     ("value", "reason"),
     [
-        (None, GeneExpressionErrorReason.MISSING_EXPRESSION_VALUE),
-        ("", GeneExpressionErrorReason.MISSING_EXPRESSION_VALUE),
         ("not-numeric", GeneExpressionErrorReason.NON_COERCIBLE_EXPRESSION_VALUE),
         (True, GeneExpressionErrorReason.NON_COERCIBLE_EXPRESSION_VALUE),
         (False, GeneExpressionErrorReason.NON_COERCIBLE_EXPRESSION_VALUE),

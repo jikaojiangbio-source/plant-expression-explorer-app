@@ -156,7 +156,19 @@ except PcaComputationError as error:
 st.header("Dataset summary for PCA")
 summary_columns = st.columns(4)
 summary_columns[0].metric("Samples", result.sample_count)
-summary_columns[1].metric("Genes", result.gene_count)
+summary_columns[1].metric(
+    "Genes used",
+    result.complete_gene_count,
+    help=(
+        f"{result.gene_count:,} gene(s) were supplied; "
+        f"{result.genes_excluded_for_missing_values:,} were excluded "
+        "because they had at least one missing value among the included "
+        "samples. Excluded genes are never imputed."
+        if result.genes_excluded_for_missing_values
+        else f"All {result.gene_count:,} supplied gene(s) were used; none "
+        "had a missing value."
+    ),
+)
 summary_columns[2].metric("Components", result.component_count)
 summary_columns[3].metric(
     "Constant genes",

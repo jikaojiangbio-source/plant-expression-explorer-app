@@ -28,7 +28,7 @@ class GeneExpressionErrorReason(StrEnum):
     SAMPLE_MISMATCH = "SAMPLE_MISMATCH"
     INVALID_GENE_ID = "INVALID_GENE_ID"
     UNKNOWN_GENE_ID = "UNKNOWN_GENE_ID"
-    MISSING_EXPRESSION_VALUE = "MISSING_EXPRESSION_VALUE"
+    EMPTY_EXPRESSION_SAMPLE_COLUMN = "EMPTY_EXPRESSION_SAMPLE_COLUMN"
     NON_COERCIBLE_EXPRESSION_VALUE = "NON_COERCIBLE_EXPRESSION_VALUE"
     INFINITE_EXPRESSION_VALUE = "INFINITE_EXPRESSION_VALUE"
     NUMERICAL_RANGE_ERROR = "NUMERICAL_RANGE_ERROR"
@@ -65,6 +65,7 @@ class GeneExpressionResult:
     gene_id: str
     sample_count: int
     condition_count: int
+    missing_value_count: int
     metadata_order_matches_expression: bool
     all_values_equal: bool
     sample_expression: pd.DataFrame
@@ -79,6 +80,7 @@ SAMPLE_EXPRESSION_COLUMNS = (
 CONDITION_EXPRESSION_SUMMARY_COLUMNS = (
     "condition",
     "sample_count",
+    "missing_value_count",
     "sample_ids",
     "minimum_expression",
     "median_expression",
@@ -151,8 +153,12 @@ def lookup_gene_expression(
     """Return a non-mutating descriptive lookup for one exact supplied gene ID.
 
     The expression and metadata tables are both defensively validated. No
-    identifiers are trimmed or case-folded, no samples are intersected, and no
-    missing or invalid expression cells are skipped or imputed.
+    identifiers are trimmed or case-folded, no samples are intersected, and
+    no invalid expression cell is skipped or imputed. A missing expression
+    cell is retained as missing (never imputed): it is shown as missing in
+    the per-sample table, excluded from that condition's summary statistics
+    (disclosed via ``missing_value_count``), and a condition with no defined
+    value at all reports every summary statistic as undefined (``NaN``).
     """
 
     gene_ids, sample_columns, sample_ids, numeric_expression = (
@@ -197,8 +203,9 @@ def lookup_gene_expression(
         gene_id=selected_gene_id,
         sample_count=len(sample_ids),
         condition_count=len(condition_summary.index),
+        missing_value_count=int(numeric_values.isna().sum()),
         metadata_order_matches_expression=(metadata_sample_ids == sample_ids),
-        all_values_equal=bool(numeric_values.nunique(dropna=False) == 1),
+        all_values_equal=bool(numeric_values.nunique(dropna=True) == 1),
         sample_expression=sample_expression,
         condition_summary=condition_summary,
     )
@@ -383,6 +390,12 @@ def build_gene_expression_observations(
     """Build deterministic structural observations without interpretation."""
 
     observations: list[str] = []
+    if result.missing_value_count:
+        observations.append(
+            f"The selected gene has {result.missing_value_count} missing "
+            "value(s) among its samples, retained as missing and excluded "
+            "from condition summary statistics; no value was imputed."
+        )
     if not result.metadata_order_matches_expression:
         observations.append(
             "Metadata sample order differs from expression-column order. "
@@ -499,14 +512,32 @@ def _build_condition_summary(
     records: list[dict[str, object]] = []
     for condition, positions in positions_by_condition.items():
         values = numeric_values.iloc[positions]
+        defined_mask = values.notna()
+        missing_value_count = int((~defined_mask).sum())
+        condition_sample_ids = tuple(sample_ids[position] for position in positions)
+        if not defined_mask.any():
+            minimum = median = mean = maximum = standard_deviation = float("nan")
+            records.append(
+                {
+                    "condition": condition,
+                    "sample_count": len(positions),
+                    "missing_value_count": missing_value_count,
+                    "sample_ids": condition_sample_ids,
+                    "minimum_expression": minimum,
+                    "median_expression": median,
+                    "mean_expression": mean,
+                    "maximum_expression": maximum,
+                    "standard_deviation": standard_deviation,
+                }
+            )
+            continue
         try:
-            finite_values = [float(value) for value in values.tolist()]
+            finite_values = [float(value) for value in values[defined_mask].tolist()]
         except (OverflowError, TypeError, ValueError) as error:
             raise GeneExpressionComputationError(
                 GeneExpressionErrorReason.NUMERICAL_RANGE_ERROR,
                 _NUMERICAL_RANGE_MESSAGE,
             ) from error
-        condition_sample_ids = tuple(sample_ids[position] for position in positions)
         minimum = min(finite_values)
         median = _stable_median(finite_values)
         mean = _stable_mean(finite_values)
@@ -527,6 +558,7 @@ def _build_condition_summary(
             {
                 "condition": condition,
                 "sample_count": len(positions),
+                "missing_value_count": missing_value_count,
                 "sample_ids": condition_sample_ids,
                 "minimum_expression": minimum,
                 "median_expression": median,
@@ -763,18 +795,22 @@ def _numeric_expression_copy(
 ) -> pd.DataFrame:
     working = expression.loc[:, sample_columns].copy(deep=True)
     missing_mask = working.apply(lambda column: column.map(_is_missing_or_blank))
-    missing_count = int(missing_mask.sum().sum())
-    if missing_count:
+    empty_columns = [
+        sample_id
+        for column, sample_id in zip(sample_columns, sample_ids, strict=True)
+        if missing_mask[column].all()
+    ]
+    if empty_columns:
         raise GeneExpressionComputationError(
-            GeneExpressionErrorReason.MISSING_EXPRESSION_VALUE,
-            f"The expression matrix contains {missing_count} missing or blank "
-            "sample value(s). No values were imputed or omitted.",
+            GeneExpressionErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN,
+            "Sample column(s) contain only missing or blank values: "
+            + ", ".join(empty_columns) + ".",
         )
 
     boolean_mask = working.apply(lambda column: column.map(is_bool))
     complex_mask = working.apply(lambda column: column.map(is_complex))
-    boolean_count = int(boolean_mask.sum().sum())
-    complex_count = int(complex_mask.sum().sum())
+    boolean_count = int((boolean_mask & ~missing_mask).sum().sum())
+    complex_count = int((complex_mask & ~missing_mask).sum().sum())
     if boolean_count or complex_count:
         raise GeneExpressionComputationError(
             GeneExpressionErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
@@ -785,7 +821,7 @@ def _numeric_expression_copy(
         )
 
     numeric = working.apply(lambda column: pd.to_numeric(column, errors="coerce"))
-    non_coercible_count = int(numeric.isna().sum().sum())
+    non_coercible_count = int((numeric.isna() & ~missing_mask).sum().sum())
     if non_coercible_count:
         raise GeneExpressionComputationError(
             GeneExpressionErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,

@@ -27,7 +27,7 @@ class CorrelationErrorReason(StrEnum):
     DUPLICATE_REQUIRED_IDENTIFIER = "DUPLICATE_REQUIRED_IDENTIFIER"
     MISSING_REQUIRED_VALUE = "MISSING_REQUIRED_VALUE"
     NON_COERCIBLE_EXPRESSION_VALUE = "NON_COERCIBLE_EXPRESSION_VALUE"
-    MISSING_EXPRESSION_VALUE = "MISSING_EXPRESSION_VALUE"
+    EMPTY_EXPRESSION_SAMPLE_COLUMN = "EMPTY_EXPRESSION_SAMPLE_COLUMN"
     INFINITE_EXPRESSION_VALUE = "INFINITE_EXPRESSION_VALUE"
     SAMPLE_MISMATCH = "SAMPLE_MISMATCH"
 
@@ -58,6 +58,7 @@ class SampleCorrelationResult:
     method: Literal["pearson"]
     gene_count: int
     sample_count: int
+    missing_value_count: int
     metadata_order_matches_expression: bool
     correlation_matrix: pd.DataFrame
     pair_summary: pd.DataFrame
@@ -106,6 +107,7 @@ HEATMAP_DATA_COLUMNS = (
 )
 
 _MATRIX_TOLERANCE = 1e-12
+_MINIMUM_PAIRWISE_COMPLETE_GENES = 2
 _RELEVANT_VALIDATION_OBSERVATIONS = frozenset(
     {
         IssueCode.COERCIBLE_NUMERIC_STRING,
@@ -124,14 +126,19 @@ def compute_sample_correlation(
     """Calculate non-mutating descriptive Pearson sample correlations.
 
     Safely coercible numeric strings are converted only in a temporary working
-    copy. Missing, boolean, complex, non-coercible, and infinite values cause a
-    controlled error; no invalid cells, genes, or samples are skipped, imputed,
-    or removed.
+    copy. A missing expression cell is retained as missing (never imputed);
+    each sample pair's correlation is computed only from the gene rows where
+    both samples have a value ("pairwise complete observations"), and a pair
+    with fewer than 2 such shared rows is reported as undefined, identically
+    to a pair involving an exactly constant sample. A sample column that is
+    entirely missing, a boolean/complex, non-coercible, or infinite value
+    each cause a controlled error; no other cell, gene, or sample is
+    skipped, imputed, or removed.
 
     Expected input failures have a fixed priority: table types; expression row,
     column, and identifier structure; metadata columns, identifiers, and
     conditions; cross-table sample matching; then expression values in the
-    order missing/blank, boolean/complex, non-coercible, and infinite.
+    order empty-column, boolean/complex, non-coercible, and infinite.
     """
 
     _require_dataframe(expression, "Expression matrix")
@@ -222,6 +229,7 @@ def compute_sample_correlation(
         method="pearson",
         gene_count=len(gene_ids),
         sample_count=len(sample_ids),
+        missing_value_count=int(numeric_expression.isna().sum().sum()),
         metadata_order_matches_expression=(
             metadata_sample_ids == sample_ids
         ),
@@ -399,6 +407,14 @@ def build_correlation_observations(
     """Build exact observations without thresholds or quality classification."""
 
     observations: list[str] = []
+    if result.missing_value_count:
+        observations.append(
+            f"The matrix contains {result.missing_value_count} missing "
+            "value(s), retained as missing and excluded pairwise (per "
+            "sample pair, not imputed) from Pearson correlation; a pair "
+            "with fewer than 2 shared non-missing gene values is reported "
+            "as undefined."
+        )
     if result.constant_samples:
         observations.append(
             f"Constant sample column(s) with undefined Pearson values: "
@@ -730,18 +746,22 @@ def _numeric_expression_copy(
     missing_mask = working.apply(
         lambda column: column.map(_is_missing_or_blank)
     )
-    missing_count = int(missing_mask.sum().sum())
-    if missing_count:
+    empty_columns = [
+        sample_id
+        for column, sample_id in zip(sample_columns, sample_ids, strict=True)
+        if missing_mask[column].all()
+    ]
+    if empty_columns:
         raise CorrelationComputationError(
-            CorrelationErrorReason.MISSING_EXPRESSION_VALUE,
-            f"The expression matrix contains {missing_count} missing or blank "
-            "sample value(s).",
+            CorrelationErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN,
+            "Sample column(s) contain only missing or blank values: "
+            + ", ".join(empty_columns) + ".",
         )
 
     boolean_mask = working.apply(lambda column: column.map(is_bool))
     complex_mask = working.apply(lambda column: column.map(is_complex))
-    boolean_count = int(boolean_mask.sum().sum())
-    complex_count = int(complex_mask.sum().sum())
+    boolean_count = int((boolean_mask & ~missing_mask).sum().sum())
+    complex_count = int((complex_mask & ~missing_mask).sum().sum())
     if boolean_count or complex_count:
         raise CorrelationComputationError(
             CorrelationErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
@@ -754,7 +774,7 @@ def _numeric_expression_copy(
     numeric = working.apply(
         lambda column: pd.to_numeric(column, errors="coerce")
     )
-    non_coercible_count = int(numeric.isna().sum().sum())
+    non_coercible_count = int((numeric.isna() & ~missing_mask).sum().sum())
     if non_coercible_count:
         raise CorrelationComputationError(
             CorrelationErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
@@ -783,7 +803,7 @@ def _pearson_matrix(
 ) -> pd.DataFrame:
     matrix = numeric_expression.corr(
         method="pearson",
-        min_periods=len(numeric_expression.index),
+        min_periods=_MINIMUM_PAIRWISE_COMPLETE_GENES,
     )
     matrix = matrix.reindex(index=sample_ids, columns=sample_ids).copy(deep=True)
     constant_set = set(constant_samples)

@@ -24,7 +24,7 @@ class QcErrorReason(StrEnum):
     DUPLICATE_REQUIRED_IDENTIFIER = "DUPLICATE_REQUIRED_IDENTIFIER"
     MISSING_REQUIRED_VALUE = "MISSING_REQUIRED_VALUE"
     NON_COERCIBLE_EXPRESSION_VALUE = "NON_COERCIBLE_EXPRESSION_VALUE"
-    MISSING_EXPRESSION_VALUE = "MISSING_EXPRESSION_VALUE"
+    EMPTY_EXPRESSION_SAMPLE_COLUMN = "EMPTY_EXPRESSION_SAMPLE_COLUMN"
     INFINITE_EXPRESSION_VALUE = "INFINITE_EXPRESSION_VALUE"
     SAMPLE_MISMATCH = "SAMPLE_MISMATCH"
 
@@ -118,8 +118,11 @@ def compute_sample_qc(
     """Calculate non-mutating descriptive summaries for one validated dataset.
 
     Safely coercible numeric strings are converted only in a temporary working
-    copy. Missing, non-coercible, or infinite expression values cause a
-    :class:`QcComputationError`; no invalid cells, genes, or samples are skipped.
+    copy. A missing expression cell is retained as missing (never imputed)
+    and excluded from any statistic that requires a value for that cell; a
+    sample column that is entirely missing, a non-coercible value, or an
+    infinite value each cause a :class:`QcComputationError`. No non-missing
+    cell, gene, or sample is skipped.
     """
 
     _require_dataframe(expression, "Expression matrix")
@@ -211,7 +214,7 @@ def compute_sample_qc(
         gene_count=len(expression.index),
         sample_count=len(sample_ids),
         expression_cell_count=len(expression.index) * len(sample_ids),
-        missing_value_count=0,
+        missing_value_count=int(numeric_expression.isna().sum().sum()),
         non_finite_value_count=0,
         zero_value_count=int(numeric_expression.eq(0).sum().sum()),
         negative_value_count=int(numeric_expression.lt(0).sum().sum()),
@@ -375,9 +378,14 @@ def _metadata_column_lookup(
 def find_constant_samples(
     numeric_expression: pd.DataFrame,
 ) -> tuple[str, ...]:
-    """Return sample IDs whose values are exactly identical across all genes."""
+    """Return sample IDs whose non-missing values are identical across genes.
 
-    unique_counts = numeric_expression.nunique(axis=0, dropna=False)
+    A sample with no non-missing value at all is not considered constant;
+    missing values are excluded from the comparison rather than treated as
+    a distinct value.
+    """
+
+    unique_counts = numeric_expression.nunique(axis=0, dropna=True)
     return tuple(
         str(sample_id)
         for sample_id in numeric_expression.columns
@@ -386,9 +394,14 @@ def find_constant_samples(
 
 
 def count_zero_variance_genes(numeric_expression: pd.DataFrame) -> int:
-    """Count genes whose values are exactly identical across all samples."""
+    """Count genes whose non-missing values are identical across samples.
 
-    return int(numeric_expression.nunique(axis=1, dropna=False).eq(1).sum())
+    A gene with no non-missing value at all is not counted; missing values
+    are excluded from the comparison rather than treated as a distinct
+    value.
+    """
+
+    return int(numeric_expression.nunique(axis=1, dropna=True).eq(1).sum())
 
 
 def build_qc_observations(
@@ -423,6 +436,13 @@ def build_qc_observations(
             "Metadata sample order differs from expression-column order. "
             "Conditions were mapped by exact sample ID without modifying "
             "either table."
+        )
+    if result.missing_value_count:
+        observations.append(
+            f"The matrix contains {result.missing_value_count} missing "
+            "value(s), retained as missing and excluded from statistics "
+            "that require a value for that cell; per-sample counts are "
+            "shown in the table above. No value was imputed."
         )
     if result.zero_value_count:
         observations.append(
@@ -564,18 +584,22 @@ def _numeric_expression_copy(
     missing_mask = working.apply(
         lambda column: column.map(_is_missing_or_blank)
     )
-    missing_count = int(missing_mask.sum().sum())
-    if missing_count:
+    empty_columns = [
+        sample_id
+        for column, sample_id in zip(sample_columns, sample_ids, strict=True)
+        if missing_mask[column].all()
+    ]
+    if empty_columns:
         raise QcComputationError(
-            QcErrorReason.MISSING_EXPRESSION_VALUE,
-            f"The expression matrix contains {missing_count} missing or "
-            "blank sample value(s).",
+            QcErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN,
+            "Sample column(s) contain only missing or blank values: "
+            + ", ".join(empty_columns) + ".",
         )
 
     numeric = working.apply(
         lambda column: pd.to_numeric(column, errors="coerce")
     )
-    non_coercible_count = int(numeric.isna().sum().sum())
+    non_coercible_count = int((numeric.isna() & ~missing_mask).sum().sum())
     if non_coercible_count:
         raise QcComputationError(
             QcErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,

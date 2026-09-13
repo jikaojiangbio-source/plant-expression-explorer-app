@@ -77,5 +77,16 @@ when supplied, Differential Expression), previewing every section on
 screen before download and noting, rather than silently omitting, a
 section whose computation is not currently possible for the active
 dataset.
+
+A missing expression value is tolerated (never imputed) rather than
+blocking upload: Sample Quality Control's per-sample statistics exclude it;
+PCA excludes any gene with a missing value from that calculation entirely,
+disclosing the exact excluded count; Sample Correlation computes each
+sample pair from only the gene rows where both samples have a value
+("pairwise complete"), reporting an under-covered pair as undefined exactly
+like a constant-sample pair; and Gene Expression excludes a missing sample
+from that gene's condition summary statistics. A sample column with no
+non-missing value at all remains a blocking Error.
+
 Differential-expression modelling and clustering remain intentionally
 deferred.

@@ -454,13 +454,24 @@ def _expression_value_issues(series: pd.Series, column: str) -> list[ValidationI
                 column=column,
             )
         )
-    if missing.any():
+    if len(series) and missing.all():
+        issues.append(
+            _issue(
+                IssueCode.NO_USABLE_VALUES,
+                Severity.ERROR,
+                table_name,
+                f"Expression column '{column}' contains no usable values.",
+                column=column,
+                count=int(missing.sum()),
+            )
+        )
+    elif missing.any():
         issues.append(
             _issue_from_mask(
                 IssueCode.MISSING_EXPRESSION_VALUE,
-                Severity.ERROR,
+                Severity.WARNING,
                 table_name,
-                f"Expression column '{column}' contains {{count}} missing value(s). Provide complete values; validation did not impute or remove data.",
+                f"Expression column '{column}' contains {{count}} missing value(s). They are retained as missing (never imputed) and are excluded, gene-wise or pairwise, from any calculation that requires a value for that cell.",
                 series,
                 missing,
                 column=column,

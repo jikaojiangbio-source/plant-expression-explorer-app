@@ -681,7 +681,19 @@ dataset bundle available to downstream pages.
 - At least two sample columns are required in addition to `gene_id`.
 - Gene identifiers must be non-empty and unique.
 - Expression values must be numeric or safely coercible to numeric values,
-  finite, and non-missing.
+  and finite.
+- A missing expression value is permitted (a Warning, not an Error): it is
+  retained as missing and never imputed. Each descriptive calculation
+  documents its own handling — Sample Quality Control's per-sample
+  statistics and PCA's and Sample Correlation's constant-sample check
+  exclude missing values gene-wise; PCA excludes any gene with a missing
+  value from that calculation entirely (disclosed exact count); Sample
+  Correlation computes each sample pair from only the gene rows where both
+  samples have a value ("pairwise complete"), reporting a pair as undefined
+  when fewer than 2 such rows exist; Gene Expression excludes a missing
+  sample from that gene's condition summary statistics. A sample column
+  with no non-missing value at all is still a blocking Error, since there is
+  nothing to summarize.
 - Negative expression values are permitted because transformed or centred
   matrices may legitimately contain them. They produce a Warning, remain
   unchanged, and are not treated as an Error.

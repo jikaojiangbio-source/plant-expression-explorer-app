@@ -541,7 +541,87 @@ def test_one_gene_proceeds_with_observation() -> None:
 
     assert result.component_count == 1
     assert result.total_variance > 0
-    assert any("only one gene" in item.lower() for item in observations)
+    assert any("only one complete gene" in item.lower() for item in observations)
+
+
+def test_a_gene_with_a_missing_value_is_excluded_and_disclosed() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3"],
+            "sample_a": [1.0, 2.0, None],
+            "sample_b": [4.0, 6.0, 9.0],
+            "sample_c": [7.0, 10.0, 13.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b", "sample_c"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    result = compute_sample_pca(expression, metadata)
+
+    assert result.gene_count == 3
+    assert result.genes_excluded_for_missing_values == 1
+    assert result.complete_gene_count == 2
+    assert result.component_count == min(2, 2)
+    observations = build_pca_observations(result, ValidationReport())
+    assert any(
+        "1 gene(s) had at least one missing value" in item for item in observations
+    )
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
+
+
+def test_no_genes_excluded_reports_zero_and_no_observation() -> None:
+    expression, metadata = _some_constant_gene_tables()
+
+    result = compute_sample_pca(expression, metadata)
+    observations = build_pca_observations(result, ValidationReport())
+
+    assert result.genes_excluded_for_missing_values == 0
+    assert result.complete_gene_count == result.gene_count
+    assert not any("missing value" in item for item in observations)
+
+
+def test_a_sample_column_that_is_entirely_missing_is_a_controlled_failure() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "sample_a": [None, None],
+            "sample_b": [3.0, 4.0],
+            "sample_c": [5.0, 6.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b", "sample_c"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+
+    error = _assert_reason(
+        expression, metadata, PcaErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN
+    )
+    assert "sample_a" in str(error)
+
+
+def test_every_gene_excluded_for_missing_values_is_a_controlled_failure() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "sample_a": [None, 2.0],
+            "sample_b": [3.0, None],
+        }
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["sample_a", "sample_b"], "condition": ["control", "treated"]}
+    )
+
+    _assert_reason(expression, metadata, PcaErrorReason.NO_COMPLETE_GENE_ROWS)
 
 
 def test_constant_genes_retained_with_positive_total_variance_proceeds() -> None:
@@ -873,16 +953,6 @@ def test_metadata_expression_mismatch_has_both_directions(
             "1 non-coercible",
         ),
         (
-            None,
-            PcaErrorReason.MISSING_EXPRESSION_VALUE,
-            "1 missing or blank",
-        ),
-        (
-            "   ",
-            PcaErrorReason.MISSING_EXPRESSION_VALUE,
-            "1 missing or blank",
-        ),
-        (
             True,
             PcaErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
             "1 boolean and 0 complex",
@@ -1036,15 +1106,25 @@ def test_multiple_invalid_inputs_follow_fixed_error_priority() -> None:
     )
     _assert_reason(expr_missing_value, mismatch_metadata, PcaErrorReason.SAMPLE_MISMATCH)
 
+    expr_empty_column_and_boolean = pd.DataFrame(
+        {"gene_id": ["g1", "g2"], "sample_1": [None, None], "sample_2": [3, True]}
+    )
+    empty_column_error = _assert_reason(
+        expr_empty_column_and_boolean,
+        valid_metadata,
+        PcaErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN,
+    )
+    assert "sample_1" in str(empty_column_error)
+
     expr_missing_and_boolean = pd.DataFrame(
         {"gene_id": ["g1", "g2"], "sample_1": [None, True], "sample_2": [3, 4]}
     )
-    missing_error = _assert_reason(
+    boolean_over_missing_error = _assert_reason(
         expr_missing_and_boolean,
         valid_metadata,
-        PcaErrorReason.MISSING_EXPRESSION_VALUE,
+        PcaErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
     )
-    assert "1 missing or blank" in str(missing_error)
+    assert "1 boolean and 0 complex" in str(boolean_over_missing_error)
 
     expr_boolean_and_text = pd.DataFrame(
         {"gene_id": ["g1", "g2"], "sample_1": [True, "not-numeric"], "sample_2": [3, 4]}
@@ -1074,6 +1154,15 @@ def test_multiple_invalid_inputs_follow_fixed_error_priority() -> None:
         {"gene_id": ["g1", "g2"], "sample_1": [float("inf"), 2], "sample_2": [3, 4]}
     )
     _assert_reason(expr_inf, valid_metadata, PcaErrorReason.INFINITE_EXPRESSION_VALUE)
+
+    expr_no_complete_genes = pd.DataFrame(
+        {"gene_id": ["g1", "g2"], "sample_1": [None, 2], "sample_2": [3, None]}
+    )
+    _assert_reason(
+        expr_no_complete_genes,
+        valid_metadata,
+        PcaErrorReason.NO_COMPLETE_GENE_ROWS,
+    )
 
     all_constant_expression, all_constant_metadata = _all_constant_tables()
     _assert_reason(

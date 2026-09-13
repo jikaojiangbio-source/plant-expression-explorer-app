@@ -35,9 +35,10 @@ class PcaErrorReason(StrEnum):
     DUPLICATE_REQUIRED_IDENTIFIER = "DUPLICATE_REQUIRED_IDENTIFIER"
     MISSING_REQUIRED_VALUE = "MISSING_REQUIRED_VALUE"
     NON_COERCIBLE_EXPRESSION_VALUE = "NON_COERCIBLE_EXPRESSION_VALUE"
-    MISSING_EXPRESSION_VALUE = "MISSING_EXPRESSION_VALUE"
+    EMPTY_EXPRESSION_SAMPLE_COLUMN = "EMPTY_EXPRESSION_SAMPLE_COLUMN"
     INFINITE_EXPRESSION_VALUE = "INFINITE_EXPRESSION_VALUE"
     SAMPLE_MISMATCH = "SAMPLE_MISMATCH"
+    NO_COMPLETE_GENE_ROWS = "NO_COMPLETE_GENE_ROWS"
     ZERO_TOTAL_VARIANCE = "ZERO_TOTAL_VARIANCE"
     NUMERICAL_RANGE_ERROR = "NUMERICAL_RANGE_ERROR"
     DECOMPOSITION_FAILED = "DECOMPOSITION_FAILED"
@@ -71,12 +72,24 @@ class SamplePcaResult:
 
     sample_count: int
     gene_count: int
+    genes_excluded_for_missing_values: int
     component_count: int
     metadata_order_matches_expression: bool
     total_variance: float
     zero_variance_gene_count: int
     score_table: pd.DataFrame
     variance_table: pd.DataFrame
+
+    @property
+    def complete_gene_count(self) -> int:
+        """Genes with no missing value among the included samples.
+
+        This is the number of gene rows actually used for the decomposition;
+        ``gene_count`` is the total supplied, before excluding any gene with
+        a missing value.
+        """
+
+        return self.gene_count - self.genes_excluded_for_missing_values
 
 
 SCORE_TABLE_FIXED_COLUMNS = ("sample_id", "condition")
@@ -116,16 +129,23 @@ def compute_sample_pca(
     mean-centred across samples in a temporary numeric copy; genes are not
     scaled to unit variance. Conditions are mapped by exact sample ID and are
     never used to fit the components. Safely coercible numeric strings are
-    converted only in the temporary copy. Missing, blank, boolean, complex,
-    non-coercible, and infinite values cause a controlled error; no gene or
-    sample is filtered, trimmed, imputed, or reordered.
+    converted only in the temporary copy.
+
+    Principal component analysis requires a complete matrix: a gene with a
+    missing value in any included sample is excluded from this calculation
+    (never imputed), and the exact excluded count is reported on the
+    result. A sample column that is entirely missing, a non-coercible
+    value, an infinite value, or every gene being excluded for missing
+    values each cause a controlled error; no remaining gene or sample is
+    filtered, trimmed, imputed, or reordered.
 
     Expected input failures have a fixed priority: table types; expression
     row, column, and identifier structure; metadata columns, identifiers,
     and conditions; cross-table sample matching; then expression values in
-    missing/blank, boolean/complex, non-coercible, and infinite order; then
-    the zero-total-variance check; then numerical-range checks (finite
-    source values that cannot be safely represented through the float64
+    empty-column, boolean/complex, non-coercible, and infinite order; then
+    exhausting every gene to missing-value exclusion; then the
+    zero-total-variance check; then numerical-range checks (finite source
+    values that cannot be safely represented through the float64
     calculation, distinguished from zero variance using the already
     computed exact constant-gene count); then decomposition failure.
     """
@@ -191,6 +211,19 @@ def compute_sample_pca(
 
     gene_count = len(gene_ids)
     sample_count = len(sample_ids)
+
+    complete_gene_mask = ~numeric_expression.isna().any(axis=1)
+    genes_excluded_for_missing_values = int((~complete_gene_mask).sum())
+    numeric_expression = numeric_expression.loc[complete_gene_mask]
+    complete_gene_count = len(numeric_expression.index)
+    if complete_gene_count == 0:
+        raise PcaComputationError(
+            PcaErrorReason.NO_COMPLETE_GENE_ROWS,
+            "Every gene has at least one missing value among the included "
+            "samples, so no complete gene row remains for principal "
+            "component analysis.",
+        )
+
     zero_variance_gene_count = count_zero_variance_genes(numeric_expression)
 
     with np.errstate(over="ignore", invalid="ignore"):
@@ -199,7 +232,7 @@ def compute_sample_pca(
         )
     _require_finite_scalar(raw_total_variance)
     if raw_total_variance == 0.0:
-        if zero_variance_gene_count == gene_count:
+        if zero_variance_gene_count == complete_gene_count:
             raise PcaComputationError(
                 PcaErrorReason.ZERO_TOTAL_VARIANCE,
                 "Principal component analysis cannot produce informative "
@@ -237,7 +270,7 @@ def compute_sample_pca(
         ) from exc
     _require_finite_array(singular_values)
 
-    component_count = min(sample_count - 1, gene_count)
+    component_count = min(sample_count - 1, complete_gene_count)
     left_vectors_k = left_vectors[:, :component_count]
     singular_values_k = singular_values[:component_count].copy()
 
@@ -245,7 +278,7 @@ def compute_sample_pca(
         # Multiply the (small) dimension/epsilon factor first to reduce the
         # risk of unnecessary intermediate overflow when the largest
         # singular value is itself large but still finite.
-        dimension_scale = max(sample_count, gene_count) * np.finfo(float).eps
+        dimension_scale = max(sample_count, complete_gene_count) * np.finfo(float).eps
         tolerance = float(singular_values.max()) * dimension_scale
     _require_finite_scalar(tolerance)
     singular_values_snapped = np.where(
@@ -317,6 +350,7 @@ def compute_sample_pca(
     return SamplePcaResult(
         sample_count=sample_count,
         gene_count=gene_count,
+        genes_excluded_for_missing_values=genes_excluded_for_missing_values,
         component_count=component_count,
         metadata_order_matches_expression=(
             metadata_sample_ids == sample_ids
@@ -335,6 +369,14 @@ def build_pca_observations(
     """Build exact observations without thresholds or quality classification."""
 
     observations: list[str] = []
+    if result.genes_excluded_for_missing_values:
+        observations.append(
+            f"{result.genes_excluded_for_missing_values} gene(s) had at "
+            "least one missing value among the included samples and were "
+            f"excluded from this calculation; the remaining "
+            f"{result.complete_gene_count} complete gene(s) were used. No "
+            "value was imputed."
+        )
     if result.zero_variance_gene_count:
         observations.append(
             f"{result.zero_variance_gene_count} gene(s) have exactly "
@@ -352,11 +394,11 @@ def build_pca_observations(
             "Exactly two samples are present, so only one principal "
             "component exists; a PC1-versus-PC2 plot is not available."
         )
-    if result.gene_count == 1:
+    if result.complete_gene_count == 1:
         observations.append(
-            "Only one gene is present; the single principal component "
-            "reproduces its centred values and no dimensionality reduction "
-            "occurs."
+            "Only one complete gene is available for this calculation; the "
+            "single principal component reproduces its centred values and "
+            "no dimensionality reduction occurs."
         )
     if result.component_count >= 2:
         second_component = result.variance_table.loc[
@@ -634,18 +676,22 @@ def _numeric_expression_copy(
     missing_mask = working.apply(
         lambda column: column.map(_is_missing_or_blank)
     )
-    missing_count = int(missing_mask.sum().sum())
-    if missing_count:
+    empty_columns = [
+        sample_id
+        for column, sample_id in zip(sample_columns, sample_ids, strict=True)
+        if missing_mask[column].all()
+    ]
+    if empty_columns:
         raise PcaComputationError(
-            PcaErrorReason.MISSING_EXPRESSION_VALUE,
-            f"The expression matrix contains {missing_count} missing or blank "
-            "sample value(s).",
+            PcaErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN,
+            "Sample column(s) contain only missing or blank values: "
+            + ", ".join(empty_columns) + ".",
         )
 
     boolean_mask = working.apply(lambda column: column.map(is_bool))
     complex_mask = working.apply(lambda column: column.map(is_complex))
-    boolean_count = int(boolean_mask.sum().sum())
-    complex_count = int(complex_mask.sum().sum())
+    boolean_count = int((boolean_mask & ~missing_mask).sum().sum())
+    complex_count = int((complex_mask & ~missing_mask).sum().sum())
     if boolean_count or complex_count:
         raise PcaComputationError(
             PcaErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
@@ -658,7 +704,7 @@ def _numeric_expression_copy(
     numeric = working.apply(
         lambda column: pd.to_numeric(column, errors="coerce")
     )
-    non_coercible_count = int(numeric.isna().sum().sum())
+    non_coercible_count = int((numeric.isna() & ~missing_mask).sum().sum())
     if non_coercible_count:
         raise PcaComputationError(
             PcaErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,

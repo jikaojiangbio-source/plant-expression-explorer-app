@@ -442,18 +442,100 @@ def test_non_coercible_expression_value_is_a_controlled_failure() -> None:
 
 
 @pytest.mark.parametrize("missing_value", [None, pd.NA, "", "   "])
-def test_missing_expression_value_is_a_controlled_failure(
+def test_missing_expression_value_is_tolerated_and_disclosed(
     missing_value: object,
 ) -> None:
     expression, metadata = _simple_tables()
     expression["s1"] = expression["s1"].astype("object")
     expression.loc[0, "s1"] = missing_value
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    result = compute_sample_qc(expression, metadata)
+
+    assert result.missing_value_count == 1
+    s1_row = result.sample_summary.loc[
+        result.sample_summary["sample_id"] == "s1"
+    ].iloc[0]
+    assert s1_row["missing_value_count"] == 1
+    assert s1_row["gene_count"] == 2
+    # g2's value (2.0) is the only non-missing value left for s1.
+    assert s1_row["mean"] == pytest.approx(2.0)
+    assert s1_row["minimum"] == pytest.approx(2.0)
+    assert s1_row["maximum"] == pytest.approx(2.0)
+    _assert_inputs_unchanged(
+        expression, metadata, original_expression, original_metadata
+    )
+
+
+def test_a_sample_column_that_is_entirely_missing_is_a_controlled_failure() -> None:
+    expression, metadata = _simple_tables()
+    expression["s1"] = [None, None]
 
     with pytest.raises(QcComputationError) as raised:
         compute_sample_qc(expression, metadata)
 
-    assert raised.value.reason is QcErrorReason.MISSING_EXPRESSION_VALUE
-    assert "1 missing or blank" in str(raised.value)
+    assert raised.value.reason is QcErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN
+    assert "s1" in str(raised.value)
+
+
+def test_missing_values_do_not_count_as_zero_or_negative() -> None:
+    expression, metadata = _simple_tables()
+    expression["s1"] = [None, 2.0]
+
+    result = compute_sample_qc(expression, metadata)
+
+    assert result.zero_value_count == 0
+    assert result.negative_value_count == 0
+
+
+def test_a_sample_with_missing_and_differing_remaining_values_is_not_constant() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3"],
+            "s1": [None, 2.0, 5.0],
+            "s2": [1.0, 2.0, 3.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1", "s2"], "condition": ["control", "treated"]}
+    )
+
+    result = compute_sample_qc(expression, metadata)
+
+    assert "s1" not in result.constant_samples
+
+
+def test_a_sample_with_exactly_one_remaining_value_is_trivially_constant() -> None:
+    expression, metadata = _simple_tables()
+    expression["s1"] = [None, 2.0]
+
+    result = compute_sample_qc(expression, metadata)
+
+    assert "s1" in result.constant_samples
+
+
+def test_missing_values_are_excluded_not_treated_as_a_distinct_constant_value() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3"],
+            "s1": [5.0, 5.0, None],
+            "s2": [1.0, 2.0, 3.0],
+            "s3": [7.0, 8.0, 9.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["s1", "s2", "s3"],
+            "condition": ["control", "treated", "treated"],
+        }
+    )
+
+    result = compute_sample_qc(expression, metadata)
+
+    assert "s1" in result.constant_samples
+    # g3's remaining (non-missing) values across s2/s3 are 3.0 and 9.0: not constant.
+    assert result.zero_variance_gene_count == 0
 
 
 @pytest.mark.parametrize(

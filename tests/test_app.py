@@ -1498,7 +1498,7 @@ def test_pca_page_one_gene_renders_with_observation_not_error() -> None:
     assert not app.exception
     assert len(app.error) == 0
     visible_text = _visible_text(app)
-    assert "Only one gene is present" in visible_text
+    assert "Only one complete gene is available" in visible_text
     assert len(app.dataframe) == 2
     assert _pca_session_keys(app) == []
 

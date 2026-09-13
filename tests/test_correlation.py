@@ -459,6 +459,88 @@ def test_duplicate_sample_column_identifier_is_controlled() -> None:
     )
 
 
+def test_a_missing_value_is_excluded_pairwise_and_disclosed() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3", "g4"],
+            "s1": [1.0, 2.0, 3.0, 4.0],
+            "s2": [2.0, 4.0, 6.0, 8.0],
+            "s3": [10.0, None, 5.0, 1.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["s1", "s2", "s3"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    result = compute_sample_correlation(expression, metadata)
+
+    assert result.missing_value_count == 1
+    # s1 vs s2 is unaffected by s3's missing value: perfectly correlated.
+    assert result.correlation_matrix.loc["s1", "s2"] == pytest.approx(1.0)
+    # s1 vs s3 uses only the 3 gene rows where both are non-missing (g1, g3, g4).
+    expected = np.corrcoef([1.0, 3.0, 4.0], [10.0, 5.0, 1.0])[0, 1]
+    assert result.correlation_matrix.loc["s1", "s3"] == pytest.approx(expected)
+    observations = build_correlation_observations(result, ValidationReport())
+    assert any(
+        "1 missing" in item and "pairwise" in item for item in observations
+    )
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
+
+
+def test_a_pair_with_fewer_than_two_shared_values_is_undefined() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3"],
+            "s1": [1.0, 2.0, 3.0],
+            "s2": [None, None, 6.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1", "s2"], "condition": ["control", "treated"]}
+    )
+
+    result = compute_sample_correlation(expression, metadata)
+
+    assert pd.isna(result.correlation_matrix.loc["s1", "s2"])
+    assert result.undefined_pair_count == 1
+
+
+def test_no_missing_values_reports_zero_and_no_observation(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+
+    result = compute_sample_correlation(expression, metadata)
+    observations = build_correlation_observations(result, ValidationReport())
+
+    assert result.missing_value_count == 0
+    assert not any("missing" in item.lower() for item in observations)
+
+
+def test_a_sample_column_that_is_entirely_missing_is_a_controlled_failure() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "s1": [None, None],
+            "s2": [1.0, 2.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1", "s2"], "condition": ["control", "treated"]}
+    )
+
+    error = _assert_reason(
+        expression, metadata, CorrelationErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN
+    )
+    assert "s1" in str(error)
+
+
 def test_one_constant_sample_has_nan_axis_and_n_minus_one_undefined_pairs() -> None:
     expression, metadata = _constant_tables()
 
@@ -640,12 +722,22 @@ def test_multiple_invalid_inputs_follow_fixed_error_priority() -> None:
         mismatch_metadata,
         CorrelationErrorReason.SAMPLE_MISMATCH,
     )
-    missing_error = _assert_reason(
+    boolean_over_missing_error = _assert_reason(
         expression_with_missing_value,
         valid_metadata,
-        CorrelationErrorReason.MISSING_EXPRESSION_VALUE,
+        CorrelationErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
     )
-    assert "1 missing or blank" in str(missing_error)
+    assert "1 boolean and 0 complex" in str(boolean_over_missing_error)
+
+    expression_with_empty_column = pd.DataFrame(
+        {"gene_id": ["g1", "g2"], "sample_1": [None, None]}
+    )
+    empty_column_error = _assert_reason(
+        expression_with_empty_column,
+        valid_metadata,
+        CorrelationErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN,
+    )
+    assert "sample_1" in str(empty_column_error)
 
     boolean_before_non_numeric = pd.DataFrame(
         {"gene_id": ["g1", "g2"], "sample_1": [True, "not-numeric"]}
@@ -665,16 +757,6 @@ def test_multiple_invalid_inputs_follow_fixed_error_priority() -> None:
             "not-numeric",
             CorrelationErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
             "1 non-coercible",
-        ),
-        (
-            None,
-            CorrelationErrorReason.MISSING_EXPRESSION_VALUE,
-            "1 missing or blank",
-        ),
-        (
-            "   ",
-            CorrelationErrorReason.MISSING_EXPRESSION_VALUE,
-            "1 missing or blank",
         ),
         (
             True,
