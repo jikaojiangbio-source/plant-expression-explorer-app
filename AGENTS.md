@@ -68,7 +68,11 @@ with a descriptive (never a lookup-affecting) note when an unmatched gene
 ID's shape matches a well-documented alternate identifier system for that
 species (e.g. rice RAP-DB vs MSU/TIGR, maize Zm00001eb vs GRMZM/Zm00001d,
 soybean underscore- vs dot-notation, or a versioned Arabidopsis locus ID);
-an
+an independent "Upload gene annotation CSV" uploader on the Gene
+Expression page indexing a user-supplied gene_id/symbol/description(/
+source) table by exact gene_id for any species, whose accuracy this
+application never independently verifies (unlike the bundled per-species
+lists); an
 optional multi-gene panel on the Gene Expression page comparing several
 independently looked-up exact gene IDs in one chart and wide table without
 averaging or ranking them against each other; and an optional "Chart

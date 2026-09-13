@@ -1,10 +1,15 @@
 """Core validation functionality for Plant Expression Explorer."""
 
 from plant_expression_explorer.annotations import (
+    CUSTOM_ANNOTATION_REQUIRED_COLUMNS,
+    CUSTOM_ANNOTATION_SOURCE_LABEL,
+    CustomAnnotationError,
+    CustomAnnotationErrorReason,
     GeneAnnotation,
     identifier_format_hint,
     list_supported_species,
     lookup_gene_annotation,
+    parse_custom_annotation_table,
 )
 from plant_expression_explorer.consistency import (
     validate_expression_de_consistency,
@@ -169,10 +174,15 @@ from plant_expression_explorer.validation import (
 
 __all__ = [
     "ACTIVE_GROUP_COLUMN_KEY",
+    "CUSTOM_ANNOTATION_REQUIRED_COLUMNS",
+    "CUSTOM_ANNOTATION_SOURCE_LABEL",
+    "CustomAnnotationError",
+    "CustomAnnotationErrorReason",
     "GeneAnnotation",
     "identifier_format_hint",
     "list_supported_species",
     "lookup_gene_annotation",
+    "parse_custom_annotation_table",
     "CANDIDATE_LABEL_KEY",
     "CANDIDATE_REPORT_KEY",
     "CANDIDATE_SOURCE_KEY",

@@ -12,7 +12,10 @@ import csv
 import functools
 import re
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
+
+import pandas as pd
 
 ANNOTATIONS_DIRECTORY = Path(__file__).resolve().parents[1] / "data" / "annotations"
 
@@ -145,3 +148,116 @@ def _load_species_table(species_key: str) -> dict[str, GeneAnnotation]:
                 source=row["source"],
             )
     return table
+
+
+class CustomAnnotationErrorReason(StrEnum):
+    """Stable reasons a user-supplied annotation table cannot be indexed."""
+
+    INVALID_TABLE = "INVALID_TABLE"
+    EMPTY_TABLE = "EMPTY_TABLE"
+    MISSING_REQUIRED_COLUMN = "MISSING_REQUIRED_COLUMN"
+    MISSING_REQUIRED_VALUE = "MISSING_REQUIRED_VALUE"
+    DUPLICATE_GENE_ID = "DUPLICATE_GENE_ID"
+
+
+class CustomAnnotationError(ValueError):
+    """Expected failure when a user-supplied annotation table is malformed."""
+
+    def __init__(self, reason: CustomAnnotationErrorReason, message: str) -> None:
+        self.reason = reason
+        super().__init__(message)
+
+
+CUSTOM_ANNOTATION_REQUIRED_COLUMNS = ("gene_id", "symbol", "description")
+CUSTOM_ANNOTATION_SOURCE_LABEL = (
+    "user-uploaded annotation file (not independently verified by this "
+    "application)"
+)
+
+
+def parse_custom_annotation_table(table: object) -> dict[str, GeneAnnotation]:
+    """Validate and index a user-supplied gene-annotation table by exact ID.
+
+    Required columns: ``gene_id``, ``symbol``, ``description``. An optional
+    ``source`` column is carried verbatim when present and non-blank for a
+    row; otherwise that row's source is reported as
+    :data:`CUSTOM_ANNOTATION_SOURCE_LABEL`. Gene identifiers must be
+    non-empty and unique, matched later by the same exact ``str(value)``
+    equality as every other identifier lookup in this application.
+
+    Unlike the bundled per-species reference lists, this application never
+    independently verifies a user-supplied annotation's accuracy; the
+    uploader is responsible for its contents, exactly as for the expression,
+    metadata, and differential-expression tables.
+    """
+
+    if not isinstance(table, pd.DataFrame):
+        raise CustomAnnotationError(
+            CustomAnnotationErrorReason.INVALID_TABLE,
+            "The annotation table must be a pandas DataFrame.",
+        )
+    if len(table.index) == 0:
+        raise CustomAnnotationError(
+            CustomAnnotationErrorReason.EMPTY_TABLE,
+            "The annotation table contains no rows.",
+        )
+    missing_columns = [
+        column
+        for column in CUSTOM_ANNOTATION_REQUIRED_COLUMNS
+        if column not in table.columns
+    ]
+    if missing_columns:
+        raise CustomAnnotationError(
+            CustomAnnotationErrorReason.MISSING_REQUIRED_COLUMN,
+            "The annotation table is missing required column(s): "
+            + ", ".join(missing_columns) + ".",
+        )
+
+    has_source_column = "source" in table.columns
+    result: dict[str, GeneAnnotation] = {}
+    seen_ids: set[str] = set()
+    duplicate_ids: list[str] = []
+    for _, row in table.iterrows():
+        gene_id = row["gene_id"]
+        symbol = row["symbol"]
+        description = row["description"]
+        if _is_missing_or_blank(gene_id) or _is_missing_or_blank(symbol):
+            raise CustomAnnotationError(
+                CustomAnnotationErrorReason.MISSING_REQUIRED_VALUE,
+                "Every row must supply a non-blank 'gene_id' and 'symbol'.",
+            )
+        gene_id_text = str(gene_id)
+        if gene_id_text in seen_ids:
+            duplicate_ids.append(gene_id_text)
+            continue
+        seen_ids.add(gene_id_text)
+        source_value = row["source"] if has_source_column else None
+        source_text = (
+            CUSTOM_ANNOTATION_SOURCE_LABEL
+            if _is_missing_or_blank(source_value)
+            else str(source_value)
+        )
+        result[gene_id_text] = GeneAnnotation(
+            gene_id=gene_id_text,
+            symbol=str(symbol),
+            description=(
+                "" if _is_missing_or_blank(description) else str(description)
+            ),
+            source=source_text,
+        )
+    if duplicate_ids:
+        raise CustomAnnotationError(
+            CustomAnnotationErrorReason.DUPLICATE_GENE_ID,
+            "The annotation table contains duplicate gene_id value(s): "
+            + ", ".join(sorted(set(duplicate_ids))) + ".",
+        )
+    return result
+
+
+def _is_missing_or_blank(value: object) -> bool:
+    if isinstance(value, str):
+        return not value.strip()
+    try:
+        return bool(pd.isna(value))
+    except (TypeError, ValueError):
+        return False

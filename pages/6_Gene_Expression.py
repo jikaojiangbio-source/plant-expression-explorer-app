@@ -5,10 +5,13 @@ import plotly.express as px
 import streamlit as st
 
 from plant_expression_explorer.annotations import (
+    CustomAnnotationError,
     identifier_format_hint,
     list_supported_species,
     lookup_gene_annotation,
+    parse_custom_annotation_table,
 )
+from plant_expression_explorer.data import CsvReadError, read_csv
 from plant_expression_explorer.dataset import (
     ACTIVE_GROUP_COLUMN_KEY,
     ensure_valid_group_column_state,
@@ -368,6 +371,53 @@ if species_label != "Not selected":
             f"**{annotation.symbol}** — {annotation.description}  \n"
             f"Source: {annotation.source}."
         )
+
+st.subheader("Custom annotation upload (optional)")
+st.write(
+    "The bundled species reference above covers only a few dozen "
+    "well-known marker genes across four species. Upload your own "
+    "gene-annotation CSV to look up any gene ID, for any species, against "
+    "your own reference instead."
+)
+custom_annotation_file = st.file_uploader(
+    "Upload gene annotation CSV",
+    type=["csv"],
+    key="pee_custom_annotation_file",
+    help=(
+        "Required columns: gene_id, symbol, description. An optional "
+        "'source' column is shown verbatim; a blank or absent source is "
+        "labelled as an unverified user upload. Matching is exact "
+        "str(value) equality, identical to every other identifier match "
+        "in this application. This application does not verify the "
+        "accuracy of an uploaded annotation file: you are responsible "
+        "for its contents, exactly as for the expression, metadata, and "
+        "differential-expression tables. It is never used in any "
+        "calculation."
+    ),
+)
+if custom_annotation_file is not None:
+    try:
+        custom_annotation_table = read_csv(custom_annotation_file)
+        custom_annotations = parse_custom_annotation_table(custom_annotation_table)
+    except (CsvReadError, CustomAnnotationError) as error:
+        reason = getattr(error, "reason", None)
+        reason_text = f" ({reason.value})" if reason is not None else ""
+        st.error(
+            f"The uploaded annotation file could not be used{reason_text}: "
+            f"{error}"
+        )
+    else:
+        custom_annotation = custom_annotations.get(result.gene_id)
+        if custom_annotation is None:
+            st.caption(
+                f"No entry for '{result.gene_id}' in the uploaded annotation "
+                f"file ({len(custom_annotations):,} gene ID(s) loaded)."
+            )
+        else:
+            st.info(
+                f"**{custom_annotation.symbol}** — {custom_annotation.description}  \n"
+                f"Source: {custom_annotation.source}."
+            )
 
 summary_columns = st.columns(3)
 summary_columns[0].metric("Samples displayed", result.sample_count)

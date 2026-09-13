@@ -630,6 +630,25 @@ is a descriptive note only: `plant_expression_explorer/annotations.py`
 never rewrites, strips, or looks up the identifier under any other form,
 consistent with the exact-match-only contract above.
 
+## Custom annotation upload (optional, display-only)
+
+The bundled species reference above covers only a few dozen marker genes
+across four species, so the Gene Expression page also offers an
+independent "Upload gene annotation CSV" file uploader. A user-supplied
+CSV with `gene_id`, `symbol`, and `description` columns (an optional
+`source` column is shown verbatim when present and non-blank; otherwise a
+row's source is reported as an unverified user upload) is indexed by exact
+`gene_id` and matched against the currently selected gene, using the same
+exact `str(value)` equality as every other identifier lookup in this
+application. Unlike the bundled per-species lists, an uploaded annotation
+file's accuracy is never independently verified by this application: the
+uploader is responsible for its contents, exactly as for the expression,
+metadata, and differential-expression tables. Like the bundled species
+reference, this is never a genome annotation and is never used in any
+calculation, and a malformed file (missing a required column, a blank
+`gene_id`/`symbol`, or a duplicate `gene_id`) produces a controlled error
+naming the problem rather than a partial or guessed table.
+
 ## Multi-gene panel (optional)
 
 The Gene Expression page offers an optional "Compare with additional gene

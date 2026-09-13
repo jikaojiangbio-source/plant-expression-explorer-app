@@ -2254,6 +2254,70 @@ def test_gene_page_species_reference_hints_at_a_recognised_alternate_id_shape() 
     assert "never rewritten or searched under any other form" in visible_text
 
 
+def test_gene_page_custom_annotation_upload_shows_a_matching_entry() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    csv_bytes = (
+        b"gene_id,symbol,description,source\n"
+        b"g1,MySymbol,My custom description,lab notes\n"
+    )
+    app.file_uploader[0].set_value(
+        ("custom_annotation.csv", csv_bytes, "text/csv")
+    ).run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "MySymbol" in visible_text
+    assert "My custom description" in visible_text
+    assert "lab notes" in visible_text
+
+
+def test_gene_page_custom_annotation_upload_reports_no_entry() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    csv_bytes = b"gene_id,symbol,description\nother_gene,Sym,Desc\n"
+    app.file_uploader[0].set_value(
+        ("custom_annotation.csv", csv_bytes, "text/csv")
+    ).run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "No entry for 'g1' in the uploaded annotation file" in visible_text
+    assert "1 gene ID(s) loaded" in visible_text
+
+
+def test_gene_page_custom_annotation_upload_without_source_uses_disclosed_label() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    csv_bytes = b"gene_id,symbol,description\ng1,MySymbol,My custom description\n"
+    app.file_uploader[0].set_value(
+        ("custom_annotation.csv", csv_bytes, "text/csv")
+    ).run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "not independently verified by this application" in visible_text
+
+
+def test_gene_page_custom_annotation_upload_reports_a_controlled_parse_error() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    csv_bytes = b"gene_id,symbol\ng1,MySymbol\n"
+    app.file_uploader[0].set_value(
+        ("custom_annotation.csv", csv_bytes, "text/csv")
+    ).run()
+
+    assert not app.exception
+    assert app.error
+    error_text = " ".join(element.value for element in app.error)
+    assert "MISSING_REQUIRED_COLUMN" in error_text
+    assert "description" in error_text
+
+
 def test_gene_page_multi_gene_panel_is_absent_without_additional_genes() -> None:
     app = _run_gene_page(_uploaded_bundle())
     app.selectbox[0].select("g1").run()
