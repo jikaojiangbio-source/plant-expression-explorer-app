@@ -13,6 +13,7 @@ from plant_expression_explorer.differential_expression import (
     DifferentialExpressionErrorReason,
     DifferentialExpressionStatus,
     build_category_summary,
+    build_ma_plot_data,
     build_volcano_plot_data,
     classify_differential_expression_results,
     select_rows_by_status,
@@ -318,6 +319,12 @@ st.write(
     "significance call is calculated here; the dashed guides mark the "
     "exact thresholds already applied."
 )
+category_order = [
+    _CATEGORY_LABELS[status.value]
+    for status in DifferentialExpressionStatus
+    if status is not DifferentialExpressionStatus.NOT_EVALUABLE
+]
+
 volcano = build_volcano_plot_data(result)
 if volcano.excluded_zero_padj_count:
     st.info(
@@ -332,11 +339,6 @@ else:
     volcano_data = volcano.plot_rows.assign(
         category=volcano.plot_rows[STATUS_COLUMN].map(_CATEGORY_LABELS)
     )
-    category_order = [
-        _CATEGORY_LABELS[status.value]
-        for status in DifferentialExpressionStatus
-        if status is not DifferentialExpressionStatus.NOT_EVALUABLE
-    ]
     volcano_figure = px.scatter(
         volcano_data,
         x="log2FoldChange",
@@ -386,6 +388,73 @@ else:
         "and colour are descriptive only and are not a claim of biological "
         "importance. Zoom, pan, and hover are Plotly's built-in interactions "
         "and do not change the underlying values."
+    )
+
+st.header("MA plot")
+st.write(
+    "A pure scatter view of each evaluable gene's mean supplied expression "
+    "value against the supplied `log2FoldChange`, coloured by the same "
+    "exploratory threshold status shown above. `mean_expression` is the "
+    "arithmetic mean of that gene's own supplied per-sample expression "
+    "values on the Gene Expression / Sample Quality Control pages' scale; "
+    "it is not a library-size-normalized 'baseMean' or 'AveExpr' statistic "
+    "from any specific external differential-expression tool, and no "
+    "statistic is calculated, adjusted, or inferred here."
+)
+ma_plot = build_ma_plot_data(result, current.expression)
+if ma_plot.excluded_no_expression_match_count:
+    st.info(
+        f"{ma_plot.excluded_no_expression_match_count:,} evaluable row(s) are "
+        "excluded from this plot because their exact gene_id has no "
+        "unambiguous match in the active expression matrix; they remain "
+        "classified and visible in every table above and in the downloads "
+        "below."
+    )
+if ma_plot.excluded_all_missing_expression_count:
+    st.info(
+        f"{ma_plot.excluded_all_missing_expression_count:,} evaluable row(s) "
+        "are excluded from this plot because every supplied expression "
+        "value for that gene is missing; they remain classified and "
+        "visible in every table above and in the downloads below."
+    )
+if ma_plot.plot_rows.empty:
+    st.info("No evaluable rows are available to plot.")
+else:
+    ma_data = ma_plot.plot_rows.assign(
+        category=ma_plot.plot_rows[STATUS_COLUMN].map(_CATEGORY_LABELS)
+    )
+    ma_figure = px.scatter(
+        ma_data,
+        x="mean_expression",
+        y="log2FoldChange",
+        color="category",
+        category_orders={"category": category_order},
+        hover_name="gene_id",
+        hover_data={
+            "mean_expression": ":.4f",
+            "log2FoldChange": ":.4f",
+            "category": True,
+        },
+        labels={
+            "mean_expression": "Mean supplied expression value",
+            "log2FoldChange": "Supplied log2FoldChange",
+            "category": "Exploratory status",
+        },
+    )
+    ma_figure.update_traces(marker=dict(size=8, opacity=0.75, line=dict(width=0)))
+    ma_figure.add_hline(y=0.0, line_dash="dot", line_color="#bbbbbb")
+    ma_figure.update_layout(
+        height=440,
+        margin=dict(l=10, r=10, t=10, b=10),
+        legend_title_text="Exploratory status",
+    )
+    st.plotly_chart(ma_figure, width="stretch")
+    st.caption(
+        "The dotted line marks log2FoldChange = 0 (no change), for visual "
+        "reference only. Point position and colour are descriptive only "
+        "and are not a claim of biological importance. Zoom, pan, and "
+        "hover are Plotly's built-in interactions and do not change the "
+        "underlying values."
     )
 
 st.header("Complete annotated supplied results")

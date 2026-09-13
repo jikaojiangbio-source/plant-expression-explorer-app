@@ -588,6 +588,21 @@ supplied `padj` of exactly 0 has no finite `-log10` value, so such rows are
 excluded from the plot only (never from any table or download) and counted in
 an explicit disclosure message.
 
+## MA plot
+
+The Differential Expression page also includes a descriptive MA plot: each
+evaluable gene's `mean_expression` (the arithmetic mean of that gene's own
+supplied per-sample expression values, missing values excluded and never
+imputed) against the supplied `log2FoldChange`, coloured by the same
+exploratory threshold status. `mean_expression` is computed from the active
+expression matrix already used elsewhere in this application; it is not a
+library-size-normalized `baseMean` (DESeq2) or `AveExpr` (limma) statistic
+from any specific external tool, and no statistic is calculated, adjusted,
+or inferred here. An evaluable row whose gene_id has no exact, unambiguous
+match in the expression matrix, or whose every supplied expression value
+for that gene is missing, is excluded from the plot only (never from any
+table or download) and counted in an explicit disclosure message.
+
 ## Visual design system
 
 `plant_expression_explorer/theme.py` defines a shared, presentation-only

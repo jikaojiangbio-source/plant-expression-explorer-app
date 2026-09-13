@@ -1972,6 +1972,40 @@ def test_de_page_repeated_runs_preserve_active_bundle_and_all_input_tables() -> 
         pd.testing.assert_frame_equal(actual, expected, check_exact=True)
 
 
+def test_de_page_ma_plot_renders_with_mean_expression_and_status_colours() -> None:
+    app = _run_de_page(_de_uploaded_bundle())
+
+    assert not app.exception
+    figures = _plotly_figures(app)
+    ma_figure = next(
+        figure
+        for figure in figures
+        if figure["layout"]["xaxis"]["title"]["text"]
+        == "Mean supplied expression value"
+    )
+    trace_names = {trace["name"] for trace in ma_figure["data"]}
+    assert trace_names == {
+        "Positive fold-change rows meeting both thresholds",
+        "Negative fold-change rows meeting both thresholds",
+        "Evaluable rows that do not meet both thresholds",
+    }
+    visible_text = _visible_text(app)
+    assert "no statistic is calculated, adjusted, or inferred here" in visible_text
+    assert "excluded from this plot because their exact gene_id" not in visible_text
+    assert "excluded from this plot because every supplied" not in visible_text
+
+
+def test_de_page_ma_plot_discloses_genes_absent_from_expression() -> None:
+    app = _run_de_page(_de_uploaded_bundle(gene_mismatch=True))
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert (
+        "excluded from this plot because their exact gene_id has no "
+        "unambiguous match" in visible_text
+    )
+
+
 def test_de_page_has_required_scientific_wording_and_no_later_features() -> None:
     for bundle in (_demo_bundle(), _de_uploaded_bundle()):
         app = _run_de_page(bundle)
@@ -1994,7 +2028,8 @@ def test_de_page_has_required_scientific_wording_and_no_later_features() -> None
         assert "deseq2 was run" not in lower_text
         assert "fastq processing is available" not in lower_text
         assert len(app.button) == 0
-        assert len(app.get("plotly_chart")) == 1
+        # Volcano plot and MA plot.
+        assert len(app.get("plotly_chart")) == 2
 
 
 def test_gene_page_no_data_state_is_clear_and_has_no_analysis_side_effects() -> None:

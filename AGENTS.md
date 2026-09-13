@@ -54,12 +54,17 @@ error messages for common real-world upload mistakes (delimiter mismatch,
 blank spreadsheet-export columns, ad hoc missing-value placeholders); and
 a descriptive volcano plot on the Differential Expression page, plotting
 the already-supplied, already-classified log2FoldChange/padj values with
-no model fit and no calculated statistic; a "sort by group" checkbox on
+no model fit and no calculated statistic; a descriptive MA plot on the
+same page, plotting each evaluable gene's mean supplied expression value
+(from the active expression matrix, missing values excluded) against the
+same supplied log2FoldChange, excluding and counting rather than guessing
+a gene absent from the expression matrix or entirely missing there; a
+"sort by group" checkbox on
 the Sample Correlation heatmap that groups identical labels together
 without computing any similarity or distance (not a clustering or
 dendrogram-based reordering); Plotly-rendered interactive charts (zoom,
 pan, box/lasso-select, hover) for the PCA sample plot, correlation
-heatmap, gene-expression plot, and volcano plot; and GitHub
+heatmap, gene-expression plot, volcano plot, and MA plot; and GitHub
 release-readiness foundations comprising an exact Python 3.13.9 version
 pin, pinned Python dependencies, least-privilege continuous integration,
 contributor guidance, and repository-readiness regression tests; an
