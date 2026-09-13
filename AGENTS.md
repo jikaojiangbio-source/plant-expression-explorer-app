@@ -63,7 +63,12 @@ contributor guidance, and repository-readiness regression tests; an
 optional, display-only "Species reference" lookup on the Gene Expression
 page against a small, hand-curated, individually source-verified
 per-species gene table (`data/annotations/`), matched by the same exact
-`str(value)` identifier equality as everywhere else in the application; an
+`str(value)` identifier equality as everywhere else in the application,
+with a descriptive (never a lookup-affecting) note when an unmatched gene
+ID's shape matches a well-documented alternate identifier system for that
+species (e.g. rice RAP-DB vs MSU/TIGR, maize Zm00001eb vs GRMZM/Zm00001d,
+soybean underscore- vs dot-notation, or a versioned Arabidopsis locus ID);
+an
 optional multi-gene panel on the Gene Expression page comparing several
 independently looked-up exact gene IDs in one chart and wide table without
 averaging or ranking them against each other; and an optional "Chart

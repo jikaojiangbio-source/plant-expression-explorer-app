@@ -4,7 +4,9 @@ import csv
 
 from plant_expression_explorer.annotations import (
     ANNOTATIONS_DIRECTORY,
+    SPECIES_LABELS,
     GeneAnnotation,
+    identifier_format_hint,
     list_supported_species,
     lookup_gene_annotation,
 )
@@ -68,9 +70,62 @@ def test_every_bundled_species_file_matches_the_documented_contract() -> None:
             )
 
 
-def test_every_bundled_species_key_has_a_documented_label() -> None:
-    from plant_expression_explorer.annotations import SPECIES_LABELS
+def test_identifier_format_hint_recognizes_versioned_arabidopsis_ids() -> None:
+    hint = identifier_format_hint("Arabidopsis thaliana", "AT1G65480.1")
+    assert hint is not None
+    assert "version suffix" in hint
 
+
+def test_identifier_format_hint_recognizes_msu_rice_ids() -> None:
+    hint = identifier_format_hint("Oryza sativa (rice)", "LOC_Os01g67980")
+    assert hint is not None
+    assert "MSU/TIGR" in hint
+    assert "RAP-DB" in hint
+
+
+def test_identifier_format_hint_recognizes_older_maize_ids() -> None:
+    grmzm_hint = identifier_format_hint("Zea mays (maize)", "GRMZM2G017053")
+    assert grmzm_hint is not None
+    assert "GRMZM" in grmzm_hint
+
+    zm00001d_hint = identifier_format_hint("Zea mays (maize)", "Zm00001d048373")
+    assert zm00001d_hint is not None
+    assert "RefGen_v4" in zm00001d_hint
+
+
+def test_identifier_format_hint_recognizes_dot_notation_soybean_ids() -> None:
+    hint = identifier_format_hint("Glycine max (soybean)", "Glyma.10G246300")
+    assert hint is not None
+    assert "dot-notation" in hint
+
+
+def test_identifier_format_hint_returns_none_for_an_unrecognized_shape() -> None:
+    assert identifier_format_hint("Arabidopsis thaliana", "AT1G65480") is None
+    assert identifier_format_hint("Arabidopsis thaliana", "totally-unrelated") is None
+
+
+def test_identifier_format_hint_returns_none_for_an_unrecognised_species() -> None:
+    assert identifier_format_hint("Solanum lycopersicum", "Solyc05g012020") is None
+    assert identifier_format_hint("", "AT1G65480.1") is None
+
+
+def test_identifier_format_hint_accepts_non_string_gene_id_values() -> None:
+    assert identifier_format_hint("Arabidopsis thaliana", 12345) is None
+
+
+def test_identifier_format_hint_never_matches_a_bundled_gene_id() -> None:
+    # A format hint should only ever fire when the exact lookup already
+    # failed; bundled IDs themselves must never also match an "alternate
+    # system" pattern, which would make the two messages contradict.
+    for key, label in SPECIES_LABELS:
+        path = ANNOTATIONS_DIRECTORY / f"{key}.csv"
+        with path.open(encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            for row in reader:
+                assert identifier_format_hint(label, row["gene_id"]) is None
+
+
+def test_every_bundled_species_key_has_a_documented_label() -> None:
     bundled_keys = {path.stem for path in ANNOTATIONS_DIRECTORY.glob("*.csv")}
     documented_keys = {key for key, _label in SPECIES_LABELS}
     assert bundled_keys == documented_keys

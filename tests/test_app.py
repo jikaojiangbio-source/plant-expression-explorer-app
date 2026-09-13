@@ -2185,9 +2185,9 @@ def test_gene_page_search_box_shows_no_match_message() -> None:
 def _species_reference_bundle() -> DatasetBundle:
     expression = pd.DataFrame(
         {
-            "gene_id": ["AT1G65480", "NOT_A_REAL_GENE"],
-            "sample_a": ["1.0", "2.0"],
-            "sample_b": ["3.0", "4.0"],
+            "gene_id": ["AT1G65480", "NOT_A_REAL_GENE", "AT1G65480.1"],
+            "sample_a": ["1.0", "2.0", "5.0"],
+            "sample_b": ["3.0", "4.0", "6.0"],
         }
     )
     metadata = pd.DataFrame(
@@ -2234,6 +2234,24 @@ def test_gene_page_species_reference_reports_no_entry_for_an_unmatched_gene() ->
     assert not app.exception
     visible_text = _visible_text(app)
     assert "No entry for 'NOT_A_REAL_GENE'" in visible_text
+    assert "version suffix" not in visible_text
+    assert "MSU/TIGR" not in visible_text
+
+
+def test_gene_page_species_reference_hints_at_a_recognised_alternate_id_shape() -> None:
+    app = _run_gene_page(_species_reference_bundle())
+    app.selectbox[0].select("AT1G65480.1").run()
+
+    species_selector = next(
+        box for box in app.selectbox if box.label == "Species reference (optional)"
+    )
+    species_selector.select("Arabidopsis thaliana").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "No entry for 'AT1G65480.1'" in visible_text
+    assert "version suffix" in visible_text
+    assert "never rewritten or searched under any other form" in visible_text
 
 
 def test_gene_page_multi_gene_panel_is_absent_without_additional_genes() -> None:

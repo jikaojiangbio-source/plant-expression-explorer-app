@@ -2,6 +2,7 @@
 
 from plant_expression_explorer.annotations import (
     GeneAnnotation,
+    identifier_format_hint,
     list_supported_species,
     lookup_gene_annotation,
 )
@@ -169,6 +170,7 @@ from plant_expression_explorer.validation import (
 __all__ = [
     "ACTIVE_GROUP_COLUMN_KEY",
     "GeneAnnotation",
+    "identifier_format_hint",
     "list_supported_species",
     "lookup_gene_annotation",
     "CANDIDATE_LABEL_KEY",

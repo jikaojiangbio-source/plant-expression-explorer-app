@@ -617,6 +617,19 @@ was hand-written from established literature (because the API returned
 none) are labelled as such in the `source` column rather than attributed to
 Ensembl.
 
+An unmatched gene ID is often not because the gene is unlisted, but because
+several of these species have two or more non-interchangeable identifier
+systems for the same genome (for example rice's RAP-DB vs MSU/TIGR locus
+IDs, maize's Ensembl Plants Zm00001eb-style IDs vs older GRMZM/Zm00001d
+IDs from earlier assembly versions, soybean's underscore- vs dot-notation
+Wm82.a2 IDs, or an Arabidopsis TAIR locus ID with a transcript/splice-
+variant version suffix). When the supplied gene ID's shape matches one of
+these well-documented alternate systems, an additional caption names which
+system it looks like and which system the bundled list actually uses. This
+is a descriptive note only: `plant_expression_explorer/annotations.py`
+never rewrites, strips, or looks up the identifier under any other form,
+consistent with the exact-match-only contract above.
+
 ## Multi-gene panel (optional)
 
 The Gene Expression page offers an optional "Compare with additional gene

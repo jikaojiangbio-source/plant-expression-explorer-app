@@ -5,6 +5,7 @@ import plotly.express as px
 import streamlit as st
 
 from plant_expression_explorer.annotations import (
+    identifier_format_hint,
     list_supported_species,
     lookup_gene_annotation,
 )
@@ -355,6 +356,13 @@ if species_label != "Not selected":
             f"list for {species_label}. This is expected for most gene IDs; "
             "it does not indicate a problem with the gene ID."
         )
+        format_hint = identifier_format_hint(species_label, result.gene_id)
+        if format_hint is not None:
+            st.caption(
+                f"⚠️ {format_hint} This is a descriptive note about "
+                "identifier shape, not a lookup: the gene ID is never "
+                "rewritten or searched under any other form."
+            )
     else:
         st.info(
             f"**{annotation.symbol}** — {annotation.description}  \n"
