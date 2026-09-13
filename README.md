@@ -644,6 +644,32 @@ plotted individually rather than averaged. If the chosen column is not
 numeric for every sample, the page shows a controlled error naming every
 offending sample instead of skipping, coercing, or guessing values.
 
+## Report export (optional, PDF)
+
+The Report Export page assembles a single downloadable PDF from
+already-computed descriptive result tables: a dataset summary, dataset
+context, the Sample Quality Control condition summary, the PCA explained-
+variance table, the Sample Correlation condition-pair summary, and (when
+supplied) the Differential Expression category summary. It performs no new
+calculation; every table is produced by the same functions used on their
+respective pages, using the same shared "group by" column and, for
+Differential Expression, the same exploratory thresholds set on that page
+(or the same defaults it uses when unvisited). The page also renders every
+section on screen before offering the download, so the PDF never contains
+content the user has not already seen. A section whose underlying
+computation is not currently possible for the active dataset (for example,
+no differential-expression results supplied) is included as an explicit
+note rather than silently dropped.
+
+The report does not include the Gene Expression page's per-gene lookup or
+its multi-gene/time-series charts, since those depend on a page-local gene
+and chart choice rather than dataset-level state; it also contains no chart
+images. `plant_expression_explorer/report.py` builds the PDF with
+`reportlab`; a table cell, title, or note containing a character its
+built-in font cannot render (outside Windows-1252) produces a controlled
+error naming the offending section instead of silently dropping or
+mangling that character.
+
 ## Input validation
 
 Phase 2 validates three preprocessed CSV tables before making a validated

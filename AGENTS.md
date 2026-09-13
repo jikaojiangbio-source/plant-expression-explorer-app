@@ -70,6 +70,12 @@ averaging or ranking them against each other; and an optional "Chart
 x-axis" selector on the Gene Expression page that re-renders the per-sample
 plot ordered by one numeric supplied metadata column instead of upload
 order, with a controlled error (not silent coercion) when that column is
-not numeric for every sample.
+not numeric for every sample; and a Report Export page that assembles a
+single PDF from already-computed descriptive result tables (dataset
+summary and context, Sample Quality Control, PCA, Sample Correlation, and,
+when supplied, Differential Expression), previewing every section on
+screen before download and noting, rather than silently omitting, a
+section whose computation is not currently possible for the active
+dataset.
 Differential-expression modelling and clustering remain intentionally
 deferred.

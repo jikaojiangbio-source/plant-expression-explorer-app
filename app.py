@@ -53,7 +53,7 @@ st.markdown(
 <li>Inspect descriptive <strong>sample correlation</strong> summaries.</li>
 <li>Explore supplied <strong>differential-expression results</strong> with descriptive thresholds.</li>
 <li>Look up one exact supplied gene in descriptive <strong>gene expression</strong> views.</li>
-<li>Download the current descriptive result tables as dedicated UTF-8 CSV files.</li>
+<li>Download the current descriptive result tables as dedicated UTF-8 CSV files, or assemble them into one PDF report.</li>
 </ol>
 </div>
 """,
@@ -80,6 +80,7 @@ render_chip_row(
         "Gene lookup",
         "Dataset provenance",
         "CSV exports",
+        "PDF report export",
     ]
 )
 st.info(
@@ -116,4 +117,9 @@ link_columns2[1].page_link(
     "pages/6_Gene_Expression.py",
     label="Explore Gene Expression",
     icon="🌿",
+)
+link_columns2[2].page_link(
+    "pages/8_Report_Export.py",
+    label="Export a Report",
+    icon="📄",
 )

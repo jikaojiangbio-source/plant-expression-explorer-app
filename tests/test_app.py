@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 from streamlit.testing.v1 import AppTest
 
 import plant_expression_explorer.exports as exports_module
@@ -363,6 +364,13 @@ def _correlation_session_keys(app: AppTest) -> list[str]:
 
 def _run_pca_page(bundle: DatasetBundle | None = None) -> AppTest:
     app = AppTest.from_file("pages/3_PCA.py")
+    if bundle is not None:
+        app.session_state[CURRENT_DATASET_KEY] = bundle
+    return app.run()
+
+
+def _run_report_page(bundle: DatasetBundle | None = None) -> AppTest:
+    app = AppTest.from_file("pages/8_Report_Export.py")
     if bundle is not None:
         app.session_state[CURRENT_DATASET_KEY] = bundle
     return app.run()
@@ -726,6 +734,7 @@ def test_home_page_analysis_link_order_includes_phase_9_gene_expression() -> Non
         "Sample_Correlation",
         "Differential_Expression",
         "Gene_Expression",
+        "Report_Export",
     ]
 
 
@@ -2824,6 +2833,111 @@ def test_phase_10_download_wording_discloses_csv_boundaries() -> None:
     assert "gene id is added as an explicit context column" in gene_text
 
 
+def test_report_page_prompts_for_upload_when_no_dataset_is_active() -> None:
+    app = _run_report_page()
+
+    assert not app.exception
+    assert app.get("download_button") == []
+    assert (
+        "No validated dataset is currently loaded"
+        in _visible_text(app)
+    )
+
+
+def test_report_page_shows_all_sections_and_a_download_button_for_the_demo() -> None:
+    app = _run_report_page(_demo_bundle())
+
+    assert not app.exception
+    assert not app.error
+    assert [subheader.value for subheader in app.subheader] == [
+        "Dataset summary",
+        "Dataset context",
+        "Sample quality control — condition summary",
+        "PCA — explained variance",
+        "Sample correlation — condition-pair summary",
+        "Differential expression — category summary",
+    ]
+    assert len(app.dataframe) == 6
+    assert [button.label for button in app.get("download_button")] == [
+        "Download descriptive report (PDF)"
+    ]
+
+
+def test_report_page_notes_missing_differential_expression_when_not_supplied() -> None:
+    app = _run_report_page(_without_de_bundle())
+
+    assert not app.exception
+    assert not app.error
+    info_text = [info.value for info in app.info]
+    assert (
+        "Not included: no differential-expression results were supplied "
+        "for this dataset."
+        in info_text
+    )
+    assert len(app.dataframe) == 5
+    assert [button.label for button in app.get("download_button")] == [
+        "Download descriptive report (PDF)"
+    ]
+
+
+def test_report_page_uses_the_shared_group_by_selector() -> None:
+    app = _run_report_page(_uploaded_bundle_with_genotype())
+    group_selector = next(
+        box for box in app.selectbox if box.label == "Group report tables by"
+    )
+
+    group_selector.select("genotype").run()
+
+    assert not app.exception
+    qc_table = app.dataframe[2].value
+    correlation_table = app.dataframe[4].value
+    assert "genotype" in qc_table.columns
+    assert "genotype_a" in correlation_table.columns
+    assert "genotype_b" in correlation_table.columns
+
+
+def test_report_page_reflects_de_thresholds_set_on_the_de_page() -> None:
+    bundle = _uploaded_bundle_with_genotype()
+
+    baseline_app = AppTest.from_file("pages/8_Report_Export.py")
+    baseline_app.session_state[CURRENT_DATASET_KEY] = bundle
+    baseline_app.run()
+    baseline_text = _visible_text(baseline_app)
+    assert "padj <= 0.05" in baseline_text
+
+    report_app = AppTest.from_file("pages/8_Report_Export.py")
+    report_app.session_state[CURRENT_DATASET_KEY] = bundle
+    report_app.session_state["pee_de_adjusted_p_value_threshold"] = 0.9
+    report_app.run()
+
+    assert not report_app.exception
+    assert "padj <= 0.9" in _visible_text(report_app)
+
+
+def test_report_page_reports_a_controlled_error_and_no_download_button_when_pdf_assembly_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import plant_expression_explorer.report as report_module
+
+    def _boom(**kwargs: object) -> None:
+        raise report_module.ReportExportError(
+            report_module.ReportExportErrorReason.UNSUPPORTED_CHARACTER,
+            "forced failure for testing",
+        )
+
+    monkeypatch.setattr(report_module, "build_report_pdf", _boom)
+
+    app = AppTest.from_file("pages/8_Report_Export.py")
+    app.session_state[CURRENT_DATASET_KEY] = _demo_bundle()
+    app.run()
+
+    assert not app.exception
+    assert app.get("download_button") == []
+    assert any(
+        "forced failure for testing" in error.value for error in app.error
+    )
+
+
 def test_phase_11_navigation_and_documentation_keep_later_work_planned() -> None:
     home = AppTest.from_file("app.py").run()
     page_links = home.get("page_link")
@@ -2834,6 +2948,7 @@ def test_phase_11_navigation_and_documentation_keep_later_work_planned() -> None
         "Sample_Correlation",
         "Differential_Expression",
         "Gene_Expression",
+        "Report_Export",
     ]
     matching = [link for link in page_links if link.proto.page == "Gene_Expression"]
     assert len(matching) == 1
