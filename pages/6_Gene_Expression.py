@@ -25,6 +25,7 @@ from plant_expression_explorer.provenance import (
     provenance_display_rows,
 )
 from plant_expression_explorer.qc import list_additional_metadata_columns
+from plant_expression_explorer.theme import inject_global_styles
 from plant_expression_explorer.validation import Severity, ValidationIssue
 
 _SEARCH_BOX_GENE_COUNT_THRESHOLD = 200
@@ -105,6 +106,7 @@ def _render_csv_downloads(
         )
 
 
+inject_global_styles()
 st.title("🌿 Gene Expression")
 st.write(
     "This page displays the supplied preprocessed expression values for one "

@@ -24,8 +24,9 @@ from plant_expression_explorer.qc import (
     list_additional_metadata_columns,
     should_display_count_chart,
 )
+from plant_expression_explorer.theme import inject_global_styles
 
-
+inject_global_styles()
 st.html(
     """
     <style>

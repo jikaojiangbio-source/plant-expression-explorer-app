@@ -576,6 +576,27 @@ supplied `padj` of exactly 0 has no finite `-log10` value, so such rows are
 excluded from the plot only (never from any table or download) and counted in
 an explicit disclosure message.
 
+## Visual design system
+
+`plant_expression_explorer/theme.py` defines a shared, presentation-only
+stylesheet (`inject_global_styles()`) called near the top of every page. It
+restyles existing Streamlit elements only — alerts as quieter cards with a
+coloured left accent instead of a solid pastel fill, `st.metric` as a small
+card with a brand-coloured top border, buttons and `st.page_link` rows as
+rounded cards with a hover lift, a sidebar-link hover state, and the Inter
+typeface — and hides the Streamlit Community Cloud "Deploy" affordance, since
+this is a finished, purpose-built app rather than a work-in-progress
+template. No rule changes any element's text, order, or presence, and no
+rule affects computation.
+
+The home page adds a two-column hero (title/scope/primary call to action
+beside a hand-authored, clearly-labelled illustrative SVG preview of the
+app's chart types — abstract shapes, not real data), a dark rounded "How it
+works" panel presenting the same seven workflow steps as numbered cards, and
+a row of capability chips. These are additive presentational elements built
+from the same underlying text already required elsewhere; no scientific
+wording changed.
+
 ## Input validation
 
 Phase 2 validates three preprocessed CSV tables before making a validated

@@ -22,6 +22,7 @@ from plant_expression_explorer.provenance import (
     provenance_display_rows,
 )
 from plant_expression_explorer.qc import list_additional_metadata_columns
+from plant_expression_explorer.theme import inject_global_styles
 
 
 def _display_variance_table(variance_table: pd.DataFrame) -> pd.DataFrame:
@@ -80,6 +81,7 @@ def _render_csv_downloads(
         )
 
 
+inject_global_styles()
 st.title("📊 PCA")
 st.write(
     "Principal component analysis (PCA) is a descriptive, unsupervised summary "

@@ -2,7 +2,9 @@
 
 import streamlit as st
 
+from plant_expression_explorer.theme import inject_global_styles
 
+inject_global_styles()
 st.title("⚠️ Scientific Limitations")
 st.warning(
     "Plant Expression Explorer is an exploratory visualization tool for "

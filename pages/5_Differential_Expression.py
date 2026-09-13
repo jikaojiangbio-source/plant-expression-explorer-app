@@ -22,6 +22,7 @@ from plant_expression_explorer.provenance import (
     DatasetProvenance,
     provenance_display_rows,
 )
+from plant_expression_explorer.theme import inject_global_styles
 from plant_expression_explorer.validation import Severity, ValidationIssue
 
 
@@ -144,6 +145,7 @@ def _render_csv_downloads(
         )
 
 
+inject_global_styles()
 st.title("🧬 Differential Expression")
 st.write(
     "This page applies user-selected exploratory thresholds to supplied, "

@@ -25,6 +25,7 @@ from plant_expression_explorer.provenance import (
     provenance_display_rows,
 )
 from plant_expression_explorer.qc import list_additional_metadata_columns
+from plant_expression_explorer.theme import inject_global_styles
 
 
 def _display_matrix(correlation_matrix: pd.DataFrame) -> pd.DataFrame:
@@ -82,6 +83,7 @@ def _render_csv_downloads(
         )
 
 
+inject_global_styles()
 st.title("🔥 Sample Correlation")
 st.write(
     "Pearson sample-to-sample correlations are descriptive summaries of the "

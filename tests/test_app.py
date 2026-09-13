@@ -635,6 +635,20 @@ def test_home_page_loads_and_describes_scope() -> None:
     assert "does not process FASTQ files" in visible_text
 
 
+def test_home_page_renders_hero_illustration_and_capability_chips() -> None:
+    app = AppTest.from_file("app.py").run()
+
+    assert not app.exception
+    html_bodies = [element.proto.body for element in app.get("html")]
+    assert any(
+        element.value.strip().startswith("<svg") for element in app.markdown
+    )
+    assert any("pee-eyebrow" in body for body in html_bodies)
+    assert any('class="pee-chip"' in body for body in html_bodies)
+    assert any("<style>" in body for body in html_bodies)
+    assert "Browse pages" in _visible_text(app)
+
+
 def test_home_page_workflow_order_matches_sidebar_page_sequence() -> None:
     app = AppTest.from_file("app.py").run()
 

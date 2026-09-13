@@ -40,6 +40,7 @@ from plant_expression_explorer.provenance import (
     DatasetProvenance,
     provenance_display_rows,
 )
+from plant_expression_explorer.theme import inject_global_styles
 from plant_expression_explorer.templates import (
     build_example_de_results_template,
     build_example_expression_template,
@@ -237,6 +238,7 @@ def _render_table_summary(
 
 clear_legacy_data_state(st.session_state)
 
+inject_global_styles()
 st.title("📤 Upload Data")
 st.write(
     "Load a preprocessed expression matrix and matching sample metadata. A "
