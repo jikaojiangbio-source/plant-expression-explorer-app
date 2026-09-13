@@ -17,6 +17,7 @@ from plant_expression_explorer.dataset import (
     CANDIDATE_LABEL_KEY,
     CANDIDATE_REPORT_KEY,
     CANDIDATE_SOURCE_KEY,
+    DATASET_CONTEXT_KEYS,
     CURRENT_DATASET_KEY,
     DE_RESULTS_UPLOAD_KEY,
     DEMO_DIRECTORY,
@@ -27,6 +28,7 @@ from plant_expression_explorer.dataset import (
     CandidateResult,
     DatasetBundle,
     build_dataset_bundle,
+    clear_dataset_context_state,
     clear_legacy_data_state,
     clear_uploader_state,
     get_current_dataset,
@@ -38,6 +40,7 @@ from plant_expression_explorer.dataset import (
     table_preview,
     uploaded_source_label,
 )
+from plant_expression_explorer.provenance import DatasetProvenance
 from plant_expression_explorer.validation import (
     IssueCode,
     Severity,
@@ -251,7 +254,7 @@ def test_valid_uploaded_sources_return_a_valid_candidate() -> None:
     assert candidate.report.issues == ()
 
 
-@pytest.mark.parametrize("missing_index", [0, 1, 2])
+@pytest.mark.parametrize("missing_index", [0, 1])
 def test_partial_uploaded_sources_return_incomplete(
     missing_index: int,
 ) -> None:
@@ -263,6 +266,40 @@ def test_partial_uploaded_sources_return_incomplete(
     assert candidate.status == "incomplete"
     assert candidate.tables is None
     assert candidate.report.issues == ()
+
+
+def test_expression_and_metadata_without_de_results_are_a_valid_candidate() -> None:
+    expression, metadata, _ = _valid_uploaded_sources()
+
+    candidate = load_uploaded_candidate(expression, metadata, None)
+
+    assert candidate.status == "valid"
+    assert candidate.tables is not None
+    assert candidate.tables[2] is None
+    assert not candidate.report.has_errors
+    assert [issue.code for issue in candidate.report.information] == [
+        IssueCode.DE_RESULTS_NOT_SUPPLIED
+    ]
+
+
+def test_optional_de_candidate_reads_only_supplied_sources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expression, metadata, _ = _valid_uploaded_sources()
+    reader_calls = 0
+    original_reader = dataset_module.read_csv
+
+    def read_spy(source):
+        nonlocal reader_calls
+        reader_calls += 1
+        return original_reader(source)
+
+    monkeypatch.setattr(dataset_module, "read_csv", read_spy)
+
+    candidate = load_uploaded_candidate(expression, metadata, None)
+
+    assert candidate.status == "valid"
+    assert reader_calls == 2
 
 
 def test_partial_upload_does_not_call_reader_or_validator(
@@ -420,6 +457,16 @@ def test_demo_and_uploaded_source_labels_are_explicit() -> None:
     assert "expression.csv" in uploaded_bundle.source_label
     assert "metadata.csv" in uploaded_bundle.source_label
     assert "deg.csv" in uploaded_bundle.source_label
+
+
+def test_uploaded_source_label_omits_optional_de_when_not_supplied() -> None:
+    expression, metadata, _ = _valid_uploaded_sources()
+
+    label = uploaded_source_label(expression, metadata, None)
+
+    assert "expression.csv" in label
+    assert "metadata.csv" in label
+    assert "deg.csv" not in label
 
 
 def test_demo_to_uploaded_replacement_is_a_single_bundle_assignment() -> None:
@@ -589,6 +636,22 @@ def test_reset_deletes_only_explicit_application_keys_and_preserves_unrelated() 
     }
 
 
+def test_dataset_context_clear_removes_only_documented_context_keys() -> None:
+    state = {key: object() for key in DATASET_CONTEXT_KEYS}
+    state[CURRENT_DATASET_KEY] = "keep current"
+    state[EXPRESSION_UPLOAD_KEY] = "keep upload"
+    state["other"] = "keep"
+
+    clear_dataset_context_state(state)
+
+    assert all(key not in state for key in DATASET_CONTEXT_KEYS)
+    assert state == {
+        CURRENT_DATASET_KEY: "keep current",
+        EXPRESSION_UPLOAD_KEY: "keep upload",
+        "other": "keep",
+    }
+
+
 def test_reset_is_idempotent_and_leaves_no_application_data_state() -> None:
     state = {key: object() for key in APPLICATION_DATA_KEYS}
 
@@ -659,6 +722,45 @@ def test_bundle_state_and_preview_helpers_do_not_mutate_dataframes() -> None:
 
     for actual, expected in zip(candidate.tables, originals, strict=True):
         assert_frame_equal(actual, expected)
+
+
+def test_bundle_accepts_optional_de_and_preserves_provenance_identity() -> None:
+    expression, metadata, _ = _valid_uploaded_sources()
+    candidate = load_uploaded_candidate(expression, metadata, None)
+    assert candidate.tables is not None
+    provenance = DatasetProvenance(
+        dataset_title="  exact title  ",
+        expression_scale_description="VST",
+        notes="备注",
+    )
+
+    bundle = build_dataset_bundle(
+        candidate.tables,
+        source="uploaded",
+        source_label="Expression and metadata only",
+        report=candidate.report,
+        provenance=provenance,
+    )
+
+    assert bundle.de_results is None
+    assert bundle.has_de_results is False
+    assert bundle.de_row_count == 0
+    assert bundle.provenance is provenance
+    assert bundle.provenance.dataset_title == "  exact title  "
+
+
+def test_bundle_rejects_invalid_provenance_without_coercion() -> None:
+    candidate = load_demo_candidate()
+    assert candidate.tables is not None
+
+    with pytest.raises(TypeError, match="DatasetProvenance"):
+        build_dataset_bundle(
+            candidate.tables,
+            source="demo",
+            source_label=DEMO_SOURCE_LABEL,
+            report=candidate.report,
+            provenance={"organism": "tomato"},  # type: ignore[arg-type]
+        )
 
 
 def test_preview_preserves_row_and_column_order_and_returns_a_copy() -> None:
@@ -782,11 +884,17 @@ def test_existing_phase_2_issue_code_and_severity_values_are_unchanged() -> None
         "EXPRESSION_GENE_NOT_IN_DE",
         "NO_GENE_OVERLAP",
     )
-    loading_codes = {IssueCode.CSV_READ_ERROR, IssueCode.DEMO_FILE_MISSING}
+    non_phase_2_codes = {
+        IssueCode.CSV_READ_ERROR,
+        IssueCode.POSSIBLE_DELIMITER_MISMATCH,
+        IssueCode.DEMO_FILE_MISSING,
+        IssueCode.DE_RESULTS_NOT_SUPPLIED,
+    }
 
     assert tuple(
-        code.value for code in IssueCode if code not in loading_codes
+        code.value for code in IssueCode if code not in non_phase_2_codes
     ) == expected_phase_2_codes
+    assert IssueCode.DE_RESULTS_NOT_SUPPLIED.value == "DE_RESULTS_NOT_SUPPLIED"
     assert tuple(severity.value for severity in Severity) == (
         "error",
         "warning",

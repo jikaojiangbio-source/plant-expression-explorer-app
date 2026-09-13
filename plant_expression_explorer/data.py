@@ -64,7 +64,26 @@ def _read_raw_header(source: str | Path | IO[Any]) -> list[str]:
         raise CsvReadError("Could not read this file as CSV: the file is empty.") from exc
 
 
+_ALTERNATE_DELIMITERS: tuple[tuple[str, str], ...] = (
+    (";", "semicolon"),
+    ("\t", "tab"),
+    ("|", "pipe"),
+)
+
+
 def _validate_raw_header(header: list[str]) -> None:
+    if len(header) == 1:
+        candidate = header[0]
+        for delimiter, name in _ALTERNATE_DELIMITERS:
+            if delimiter in candidate:
+                raise CsvReadError(
+                    "Could not read this file as CSV: only one column was found, "
+                    f"but the header row contains '{delimiter}' character(s), "
+                    f"suggesting a {name}-separated file. Re-save or re-export "
+                    "this file as comma-separated (CSV) before uploading.",
+                    code=IssueCode.POSSIBLE_DELIMITER_MISMATCH,
+                )
+
     duplicate_names = list(
         dict.fromkeys(name for name in header if header.count(name) > 1)
     )

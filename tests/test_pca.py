@@ -14,10 +14,12 @@ from plant_expression_explorer.pca import (
     PcaComputationError,
     PcaErrorReason,
     SamplePcaResult,
+    build_grouped_score_plot_data,
     build_pca_observations,
     build_score_plot_data,
     compute_sample_pca,
 )
+from plant_expression_explorer.qc import list_additional_metadata_columns
 from plant_expression_explorer.validation import (
     IssueCode,
     Severity,
@@ -1338,3 +1340,94 @@ def test_build_score_plot_data_raises_value_error_below_two_components() -> None
 
     with pytest.raises(ValueError, match="requires at least two"):
         build_score_plot_data(result)
+
+
+def test_list_additional_metadata_columns_excludes_required_columns() -> None:
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a"],
+            "condition": ["control"],
+            "genotype": ["WT"],
+            "batch": ["1"],
+        }
+    )
+
+    assert list_additional_metadata_columns(metadata) == ("genotype", "batch")
+
+
+def test_list_additional_metadata_columns_empty_for_two_column_metadata() -> None:
+    metadata = pd.DataFrame({"sample_id": ["sample_a"], "condition": ["control"]})
+
+    assert list_additional_metadata_columns(metadata) == ()
+
+
+def test_list_additional_metadata_columns_returns_empty_for_non_dataframe() -> None:
+    assert list_additional_metadata_columns(None) == ()
+
+
+def test_build_grouped_score_plot_data_matches_condition_plot_by_default(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+    result = compute_sample_pca(expression, metadata)
+
+    pd.testing.assert_frame_equal(
+        build_grouped_score_plot_data(result, metadata, "condition"),
+        build_score_plot_data(result),
+    )
+
+
+def test_build_grouped_score_plot_data_joins_arbitrary_metadata_column_by_sample_id(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+    expected_genotype_by_sample = {
+        "sample_d": "mutant",
+        "sample_a": "WT",
+        "sample_c": "mutant",
+        "sample_b": "WT",
+    }
+    metadata = metadata.assign(
+        genotype=[
+            expected_genotype_by_sample[sample_id]
+            for sample_id in metadata["sample_id"]
+        ]
+    )
+    result = compute_sample_pca(expression, metadata)
+
+    plot_data = build_grouped_score_plot_data(result, metadata, "genotype")
+
+    assert list(plot_data.columns) == ["sample_id", "genotype", "pc1", "pc2"]
+    for sample_id, genotype in zip(
+        plot_data["sample_id"], plot_data["genotype"], strict=True
+    ):
+        assert genotype == expected_genotype_by_sample[sample_id]
+
+
+def test_build_grouped_score_plot_data_rejects_unknown_column(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+    result = compute_sample_pca(expression, metadata)
+
+    with pytest.raises(ValueError, match="does not contain column"):
+        build_grouped_score_plot_data(result, metadata, "tissue")
+
+
+def test_build_grouped_score_plot_data_raises_value_error_below_two_components() -> (
+    None
+):
+    expression = pd.DataFrame(
+        {"gene_id": ["g1", "g2", "g3"], "sample_a": [1, 2, 3], "sample_b": [4, 6, 9]}
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b"],
+            "condition": ["control", "treated"],
+            "genotype": ["WT", "WT"],
+        }
+    )
+    result = compute_sample_pca(expression, metadata)
+
+    with pytest.raises(ValueError, match="requires at least two"):
+        build_grouped_score_plot_data(result, metadata, "genotype")

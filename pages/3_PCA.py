@@ -7,10 +7,16 @@ from plant_expression_explorer.dataset import get_current_dataset
 from plant_expression_explorer.exports import CsvExportError, build_csv_export
 from plant_expression_explorer.pca import (
     PcaComputationError,
+    build_grouped_score_plot_data,
     build_pca_observations,
     build_score_plot_data,
     compute_sample_pca,
 )
+from plant_expression_explorer.provenance import (
+    DatasetProvenance,
+    provenance_display_rows,
+)
+from plant_expression_explorer.qc import list_additional_metadata_columns
 
 
 def _display_variance_table(variance_table: pd.DataFrame) -> pd.DataFrame:
@@ -32,6 +38,17 @@ def _display_score_table(score_table: pd.DataFrame) -> pd.DataFrame:
         if column.startswith("pc"):
             display[column] = display[column].round(3)
     return display
+
+
+def _render_dataset_context(provenance: DatasetProvenance | None) -> None:
+    with st.expander("Dataset context (descriptive only)"):
+        st.caption(
+            "Context is displayed verbatim and is not scientifically verified, "
+            "parsed, or used in this calculation."
+        )
+        for label, value in provenance_display_rows(provenance):
+            st.caption(label)
+            st.code(value, language=None)
 
 
 def _render_csv_downloads(
@@ -89,6 +106,7 @@ st.write(
     f"**Expression contents:** {current.gene_count:,} genes and "
     f"{current.sample_count:,} samples."
 )
+_render_dataset_context(current.provenance)
 
 report = current.validation_report
 validation_columns = st.columns(3)
@@ -99,24 +117,24 @@ validation_columns[2].metric(
     len(report.information),
 )
 
-st.header("Method")
-st.write(
-    "Each gene is mean-centred across samples in a temporary computation copy "
-    "before singular value decomposition; the active expression matrix is "
-    "never rewritten. Genes are not scaled to unit variance. This preserves "
-    "the relative variance structure of the supplied preprocessed matrix and "
-    "avoids adding a separate standardization step. Genes with larger "
-    "variance in the supplied matrix consequently contribute more strongly to "
-    "the components; this is a disclosed analysis policy, not a claim that "
-    "such genes are more biologically informative, and not a claim that this "
-    "is a universally superior PCA method."
-)
-st.caption(
-    "Finite expression values that cannot be safely represented through the "
-    "float64 PCA calculation (for example, extremely large or extremely "
-    "small magnitudes) produce a controlled error; they are never "
-    "automatically rescaled or rewritten."
-)
+with st.expander("Method"):
+    st.write(
+        "Each gene is mean-centred across samples in a temporary computation copy "
+        "before singular value decomposition; the active expression matrix is "
+        "never rewritten. Genes are not scaled to unit variance. This preserves "
+        "the relative variance structure of the supplied preprocessed matrix and "
+        "avoids adding a separate standardization step. Genes with larger "
+        "variance in the supplied matrix consequently contribute more strongly to "
+        "the components; this is a disclosed analysis policy, not a claim that "
+        "such genes are more biologically informative, and not a claim that this "
+        "is a universally superior PCA method."
+    )
+    st.caption(
+        "Finite expression values that cannot be safely represented through the "
+        "float64 PCA calculation (for example, extremely large or extremely "
+        "small magnitudes) produce a controlled error; they are never "
+        "automatically rescaled or rewritten."
+    )
 
 try:
     result = compute_sample_pca(current.expression, current.metadata)
@@ -133,8 +151,12 @@ summary_columns[0].metric("Samples", result.sample_count)
 summary_columns[1].metric("Genes", result.gene_count)
 summary_columns[2].metric("Components", result.component_count)
 summary_columns[3].metric(
-    "Constant genes retained",
+    "Constant genes",
     result.zero_variance_gene_count,
+    help=(
+        "Genes with zero variance across samples. They are retained in the "
+        "matrix, not removed, and contribute no signal to the PCA."
+    ),
 )
 st.write(
     "**Metadata order relative to expression columns:** "
@@ -185,13 +207,26 @@ st.caption(
 
 if result.component_count >= 2:
     st.subheader("PC1-versus-PC2 sample plot")
-    plot_data = build_score_plot_data(result)
+    additional_columns = list_additional_metadata_columns(current.metadata)
+    group_column = "condition"
+    if additional_columns:
+        group_column = st.selectbox(
+            "Colour points by",
+            options=("condition", *additional_columns),
+            help=(
+                "Any column present in the uploaded sample metadata beyond "
+                "'sample_id' and 'condition' can be used for visual grouping "
+                "only; the choice never changes how components were fit."
+            ),
+        )
+    plot_data = build_grouped_score_plot_data(result, current.metadata, group_column)
     ratio_by_component = result.variance_table.set_index("component")[
         "explained_variance_ratio"
     ]
     pc1_ratio = float(ratio_by_component.loc[1])
     pc2_ratio = float(ratio_by_component.loc[2])
-    condition_order = list(dict.fromkeys(plot_data["condition"]))
+    group_order = list(dict.fromkeys(plot_data[group_column]))
+    group_title = group_column.replace("_", " ").capitalize()
     scatter_spec = {
         "mark": {"type": "circle", "size": 120},
         "encoding": {
@@ -206,14 +241,14 @@ if result.component_count >= 2:
                 "title": f"PC2 ({pc2_ratio:.1%} explained variance)",
             },
             "color": {
-                "field": "condition",
+                "field": group_column,
                 "type": "nominal",
-                "sort": condition_order,
-                "legend": {"title": "Condition"},
+                "sort": group_order,
+                "legend": {"title": group_title},
             },
             "tooltip": [
                 {"field": "sample_id", "type": "nominal", "title": "Sample"},
-                {"field": "condition", "type": "nominal", "title": "Condition"},
+                {"field": group_column, "type": "nominal", "title": group_title},
                 {"field": "pc1", "type": "quantitative", "title": "PC1"},
                 {"field": "pc2", "type": "quantitative", "title": "PC2"},
             ],
@@ -226,10 +261,10 @@ if result.component_count >= 2:
         height=420,
     )
     st.caption(
-        "Colour reflects sample condition for visual grouping only; "
-        "conditions were not used to fit the components. Proximity does not "
-        "prove biological similarity, and separation does not prove a "
-        "condition effect."
+        "Colour reflects the selected metadata column for visual grouping "
+        "only; it was not used to fit the components. Proximity does not "
+        "prove biological similarity, and separation does not prove a group "
+        "effect."
     )
 else:
     st.info(
@@ -255,24 +290,24 @@ if current.source == "demo":
         "support tomato biological conclusions."
     )
 
-st.header("Scientific and statistical limitations")
-st.info(
-    "PCA is descriptive and unsupervised. It does not calculate a hypothesis "
-    "test, a confidence interval, or a correlation p-value, and it does not "
-    "perform differential-expression inference."
-)
-st.info(
-    "This page does not cluster samples, assign quality scores, classify or "
-    "rank samples, or recommend sample exclusion. Axes within a subspace of "
-    "equal or near-equal explained variance are not uniquely identified and "
-    "may differ between runs on different NumPy, BLAS, or platform "
-    "combinations."
-)
-st.info(
-    "No samples or genes are modified or removed. Upstream normalization, "
-    "transformation, filtering, and gene selection materially affect every "
-    "displayed value."
-)
+with st.expander("Scientific and statistical limitations"):
+    st.info(
+        "PCA is descriptive and unsupervised. It does not calculate a hypothesis "
+        "test, a confidence interval, or a correlation p-value, and it does not "
+        "perform differential-expression inference."
+    )
+    st.info(
+        "This page does not cluster samples, assign quality scores, classify or "
+        "rank samples, or recommend sample exclusion. Axes within a subspace of "
+        "equal or near-equal explained variance are not uniquely identified and "
+        "may differ between runs on different NumPy, BLAS, or platform "
+        "combinations."
+    )
+    st.info(
+        "No samples or genes are modified or removed. Upstream normalization, "
+        "transformation, filtering, and gene selection materially affect every "
+        "displayed value."
+    )
 
 st.header("Download descriptive results")
 st.write(

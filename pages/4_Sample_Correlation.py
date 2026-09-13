@@ -6,11 +6,19 @@ import streamlit as st
 from plant_expression_explorer.correlation import (
     CorrelationComputationError,
     build_correlation_observations,
+    build_grouped_condition_correlation_summary,
+    build_grouped_pair_summary,
+    build_grouped_sample_correlation_summary,
     build_heatmap_data,
     compute_sample_correlation,
 )
 from plant_expression_explorer.dataset import get_current_dataset
 from plant_expression_explorer.exports import CsvExportError, build_csv_export
+from plant_expression_explorer.provenance import (
+    DatasetProvenance,
+    provenance_display_rows,
+)
+from plant_expression_explorer.qc import list_additional_metadata_columns
 
 
 def _display_matrix(correlation_matrix: pd.DataFrame) -> pd.DataFrame:
@@ -31,6 +39,17 @@ def _display_summary(
         values = display[column].round(3).astype("object")
         display[column] = values.where(values.notna(), "N/A")
     return display
+
+
+def _render_dataset_context(provenance: DatasetProvenance | None) -> None:
+    with st.expander("Dataset context (descriptive only)"):
+        st.caption(
+            "Context is displayed verbatim and is not scientifically verified, "
+            "parsed, or used in this calculation."
+        )
+        for label, value in provenance_display_rows(provenance):
+            st.caption(label)
+            st.code(value, language=None)
 
 
 def _render_csv_downloads(
@@ -84,6 +103,7 @@ st.write(
     f"**Expression contents:** {current.gene_count:,} genes and "
     f"{current.sample_count:,} samples."
 )
+_render_dataset_context(current.provenance)
 
 report = current.validation_report
 validation_columns = st.columns(3)
@@ -94,12 +114,12 @@ validation_columns[2].metric(
     len(report.information),
 )
 
-st.header("Method")
-st.write(
-    "Pearson correlation is calculated between every sample pair across all "
-    "gene rows using complete observations. Sample order follows the "
-    "expression-matrix columns; no similarity-based reordering is performed."
-)
+with st.expander("Method"):
+    st.write(
+        "Pearson correlation is calculated between every sample pair across all "
+        "gene rows using complete observations. Sample order follows the "
+        "expression-matrix columns; no similarity-based reordering is performed."
+    )
 
 try:
     result = compute_sample_correlation(current.expression, current.metadata)
@@ -211,10 +231,35 @@ st.caption(
     "Undefined correlations remain N/A and are never replaced with zero or one."
 )
 
+additional_columns = list_additional_metadata_columns(current.metadata)
+group_column = "condition"
+if additional_columns:
+    group_column = st.selectbox(
+        "Group summaries by",
+        options=("condition", *additional_columns),
+        help=(
+            "Any column present in the uploaded sample metadata beyond "
+            "'sample_id' and 'condition' can relabel the tables below. No "
+            "Pearson correlation is recalculated for the new grouping; only "
+            "the group label and within/between-group membership change."
+        ),
+    )
+grouped_sample_summary = build_grouped_sample_correlation_summary(
+    result, current.metadata, group_column
+)
+grouped_pair_summary = build_grouped_pair_summary(
+    result, current.metadata, group_column
+)
+grouped_condition_summary = build_grouped_condition_correlation_summary(
+    result, current.metadata, group_column
+)
+
 st.header("Per-sample correlation summary")
+if group_column != "condition":
+    st.caption(f"Grouped by metadata column '{group_column}', not 'condition'.")
 st.dataframe(
     _display_summary(
-        result.sample_summary,
+        grouped_sample_summary,
         (
             "minimum_correlation",
             "median_correlation",
@@ -232,7 +277,7 @@ st.caption(
 
 st.header("Unique sample-pair summary")
 st.dataframe(
-    _display_summary(result.pair_summary, ("correlation",)),
+    _display_summary(grouped_pair_summary, ("correlation",)),
     hide_index=True,
     width="stretch",
 )
@@ -244,7 +289,7 @@ st.caption(
 st.header("Condition-pair descriptive summary")
 st.dataframe(
     _display_summary(
-        result.condition_summary,
+        grouped_condition_summary,
         ("median_correlation",),
     ),
     hide_index=True,
@@ -274,22 +319,22 @@ if current.source == "demo":
         "thresholds or support tomato biological conclusions."
     )
 
-st.header("Scientific and statistical limitations")
-st.info(
-    "Input scale and transformation affect Pearson correlation, and gene "
-    "filtering or selection can change every displayed value. Broad expression "
-    "distributions may dominate these summaries."
-)
-st.info(
-    "High correlation does not prove replicate validity. A low or negative "
-    "correlation alone does not prove that a sample is unsuitable. Constant "
-    "samples produce undefined Pearson correlations."
-)
-st.info(
-    "No samples or genes are modified or removed. This page performs no PCA, "
-    "clustering, distance analysis, batch correction, hypothesis testing, "
-    "correlation p-value calculation, or differential-expression inference."
-)
+with st.expander("Scientific and statistical limitations"):
+    st.info(
+        "Input scale and transformation affect Pearson correlation, and gene "
+        "filtering or selection can change every displayed value. Broad expression "
+        "distributions may dominate these summaries."
+    )
+    st.info(
+        "High correlation does not prove replicate validity. A low or negative "
+        "correlation alone does not prove that a sample is unsuitable. Constant "
+        "samples produce undefined Pearson correlations."
+    )
+    st.info(
+        "No samples or genes are modified or removed. This page performs no PCA, "
+        "clustering, distance analysis, batch correction, hypothesis testing, "
+        "correlation p-value calculation, or differential-expression inference."
+    )
 
 st.header("Download descriptive results")
 st.write(
@@ -305,6 +350,7 @@ st.warning(
 matrix_long = heatmap_data.loc[
     :, ["row_sample", "column_sample", "correlation", "defined"]
 ].copy(deep=True)
+_group_file_suffix = "" if group_column == "condition" else f"-by-{group_column}"
 _render_csv_downloads(
     (
         (
@@ -314,18 +360,18 @@ _render_csv_downloads(
         ),
         (
             "Download per-sample correlation summary (CSV)",
-            result.sample_summary,
-            "sample-correlation-sample-summary.csv",
+            grouped_sample_summary,
+            f"sample-correlation-sample-summary{_group_file_suffix}.csv",
         ),
         (
             "Download unique sample pairs (CSV)",
-            result.pair_summary,
-            "sample-correlation-unique-pairs.csv",
+            grouped_pair_summary,
+            f"sample-correlation-unique-pairs{_group_file_suffix}.csv",
         ),
         (
             "Download condition-pair summary (CSV)",
-            result.condition_summary,
-            "sample-correlation-condition-pairs.csv",
+            grouped_condition_summary,
+            f"sample-correlation-condition-pairs{_group_file_suffix}.csv",
         ),
     )
 )

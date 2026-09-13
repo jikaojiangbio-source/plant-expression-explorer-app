@@ -16,10 +16,14 @@ from plant_expression_explorer.correlation import (
     CorrelationErrorReason,
     SampleCorrelationResult,
     build_correlation_observations,
+    build_grouped_condition_correlation_summary,
+    build_grouped_pair_summary,
+    build_grouped_sample_correlation_summary,
     build_heatmap_data,
     compute_sample_correlation,
 )
 from plant_expression_explorer.dataset import load_demo_candidate
+from plant_expression_explorer.qc import list_additional_metadata_columns
 from plant_expression_explorer.validation import (
     IssueCode,
     Severity,
@@ -227,6 +231,101 @@ def test_metadata_maps_by_exact_id_and_reports_reordered_input(
         "treated",
         "treated",
     ]
+
+
+def test_list_additional_metadata_columns_excludes_required_columns() -> None:
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1"], "condition": ["control"], "genotype": ["WT"]}
+    )
+
+    assert list_additional_metadata_columns(metadata) == ("genotype",)
+
+
+def test_build_grouped_summaries_match_defaults_for_condition(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+    result = compute_sample_correlation(expression, metadata)
+
+    pd.testing.assert_frame_equal(
+        build_grouped_pair_summary(result, metadata, "condition"),
+        result.pair_summary,
+    )
+    pd.testing.assert_frame_equal(
+        build_grouped_sample_correlation_summary(result, metadata, "condition"),
+        result.sample_summary,
+    )
+    pd.testing.assert_frame_equal(
+        build_grouped_condition_correlation_summary(result, metadata, "condition"),
+        result.condition_summary,
+    )
+
+
+def test_build_grouped_summaries_relabel_by_alternate_metadata_column(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+    expected_genotype_by_sample = {
+        "sample_d": "mutant",
+        "sample_a": "WT",
+        "sample_c": "mutant",
+        "sample_b": "WT",
+    }
+    metadata = metadata.assign(
+        genotype=[
+            expected_genotype_by_sample[sample_id]
+            for sample_id in metadata["sample_id"]
+        ]
+    )
+    result = compute_sample_correlation(expression, metadata)
+
+    grouped_pairs = build_grouped_pair_summary(result, metadata, "genotype")
+    assert "genotype_a" in grouped_pairs.columns
+    assert "genotype_b" in grouped_pairs.columns
+    assert "condition_a" not in grouped_pairs.columns
+    for _, row in grouped_pairs.iterrows():
+        assert row["genotype_a"] == expected_genotype_by_sample[row["sample_a"]]
+        assert row["genotype_b"] == expected_genotype_by_sample[row["sample_b"]]
+
+    grouped_samples = build_grouped_sample_correlation_summary(
+        result, metadata, "genotype"
+    )
+    assert "genotype" in grouped_samples.columns
+    for sample_id, genotype in zip(
+        grouped_samples["sample_id"], grouped_samples["genotype"], strict=True
+    ):
+        assert genotype == expected_genotype_by_sample[sample_id]
+    # Correlation statistics are untouched by the relabelling.
+    for column in (
+        "minimum_correlation",
+        "median_correlation",
+        "mean_correlation",
+        "maximum_correlation",
+    ):
+        pd.testing.assert_series_equal(
+            grouped_samples[column],
+            result.sample_summary[column],
+            check_names=False,
+        )
+
+    grouped_conditions = build_grouped_condition_correlation_summary(
+        result, metadata, "genotype"
+    )
+    assert "genotype_a" in grouped_conditions.columns
+    assert "genotype_b" in grouped_conditions.columns
+    by_group = grouped_conditions.set_index(["genotype_a", "genotype_b"])
+    assert by_group.loc[("WT", "WT"), "sample_count_a"] == 2
+    assert by_group.loc[("mutant", "mutant"), "sample_count_a"] == 2
+
+
+def test_build_grouped_summary_rejects_unknown_column(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+    result = compute_sample_correlation(expression, metadata)
+
+    with pytest.raises(ValueError, match="does not contain column"):
+        build_grouped_pair_summary(result, metadata, "tissue")
 
 
 def test_matching_metadata_order_is_recorded(

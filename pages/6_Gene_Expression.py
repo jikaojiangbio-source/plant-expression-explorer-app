@@ -12,6 +12,10 @@ from plant_expression_explorer.gene_expression import (
     list_gene_ids,
     lookup_gene_expression,
 )
+from plant_expression_explorer.provenance import (
+    DatasetProvenance,
+    provenance_display_rows,
+)
 from plant_expression_explorer.validation import Severity, ValidationIssue
 
 
@@ -26,6 +30,17 @@ def _render_issue(issue: ValidationIssue) -> None:
         st.warning(details)
     else:
         st.info(details)
+
+
+def _render_dataset_context(provenance: DatasetProvenance | None) -> None:
+    with st.expander("Dataset context (descriptive only)"):
+        st.caption(
+            "Context is displayed verbatim and is not scientifically verified, "
+            "parsed, or used in this calculation."
+        )
+        for label, value in provenance_display_rows(provenance):
+            st.caption(label)
+            st.code(value, language=None)
 
 
 def _is_expression_metadata_issue(issue: ValidationIssue) -> bool:
@@ -108,6 +123,7 @@ st.write(
     f"**Expression contents:** {current.gene_count:,} genes and "
     f"{current.sample_count:,} samples."
 )
+_render_dataset_context(current.provenance)
 
 report = current.validation_report
 validation_columns = st.columns(3)
@@ -306,21 +322,21 @@ else:
         "selected gene."
     )
 
-st.header("Scientific and statistical limitations")
-st.info(
-    "Condition labels provide display context only. This page does not infer "
-    "a reference level, contrast direction, regulation, a condition effect, "
-    "statistical significance, or biological importance."
-)
-st.info(
-    "No genes, samples, identifiers, conditions, or expression values are "
-    "trimmed, normalized, transformed, deduplicated, aggregated into the source "
-    "data, imputed, intersected, reordered, or discarded."
-)
-st.info(
-    "This page performs no FASTQ processing, batch correction, hypothesis "
-    "testing, differential-expression inference, or volcano plotting."
-)
+with st.expander("Scientific and statistical limitations"):
+    st.info(
+        "Condition labels provide display context only. This page does not infer "
+        "a reference level, contrast direction, regulation, a condition effect, "
+        "statistical significance, or biological importance."
+    )
+    st.info(
+        "No genes, samples, identifiers, conditions, or expression values are "
+        "trimmed, normalized, transformed, deduplicated, aggregated into the source "
+        "data, imputed, intersected, reordered, or discarded."
+    )
+    st.info(
+        "This page performs no FASTQ processing, batch correction, hypothesis "
+        "testing, differential-expression inference, or volcano plotting."
+    )
 
 st.header("Download descriptive results")
 st.write(

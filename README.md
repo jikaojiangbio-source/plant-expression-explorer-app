@@ -489,6 +489,58 @@ the Streamlit application publicly available. Any later hosted deployment must
 separately disclose its file-retention, logging, access-control, upload-size,
 and privacy policies before users submit non-demo data.
 
+## Phase 12 real-world usability
+
+Phase 12 makes precomputed differential-expression results optional. A dataset
+bundle with only a validated expression matrix and sample metadata is now
+active; Sample Quality Control, PCA, Sample Correlation, and Gene Expression do
+not require a differential-expression file, and the Differential Expression
+page explains that one was not supplied instead of blocking upload.
+
+Phase 12 also adds descriptive, optional dataset context (`DatasetProvenance`):
+a dataset title, organism/taxon, expression-scale description, upstream
+normalization method, reference genome/annotation, feature level, and a
+differential-expression contrast description, plus free-text notes. Every
+field is carried and displayed verbatim, in a fixed-width block that does not
+reinterpret whitespace, on every analysis page; it is never parsed, verified,
+or used in any calculation. The bundled synthetic demo dataset supplies its own
+fixed, disclosed context.
+
+Phase 12 improves CSV error clarity for common real-world upload mistakes
+without changing any validation rule's outcome:
+
+- A single-column CSV whose header contains `;`, a tab, or `|` is reported as a
+  likely delimiter mismatch (for example, a semicolon-separated European
+  spreadsheet export) instead of a confusing missing-column error.
+- A column pandas auto-names `Unnamed: N` (typically a spreadsheet export's
+  trailing empty column) is reported as a blank column header, naming the
+  likely cause.
+- A non-numeric expression or differential-expression value that looks like an
+  ad hoc missing-value placeholder (for example `-`, `.`, or `na`) receives an
+  added note to leave the cell blank instead, since such placeholders are not
+  treated as missing values automatically.
+
+Sample metadata may carry additional columns beyond `sample_id` and
+`condition` (for example `genotype`, `tissue`, `batch`, or
+`biological_replicate`); they are preserved and every analysis page that
+groups by condition (PCA, Sample Quality Control, Sample Correlation) offers a
+"Group by" / "Colour points by" selector for any such column. This always
+relabels or rejoins already-computed results by exact sample ID; no PCA
+component, per-sample statistic, or Pearson correlation is recalculated for
+the new grouping.
+
+The Upload Data page shows an at-a-glance overview card (gene count, sample
+count, DE-row count or "Not supplied", and a samples-per-condition chart) as
+soon as a dataset is active, and offers example CSV templates (fabricated
+placeholder values only) showing the exact required column layout for each
+table. The maximum upload size is raised to 500 MB per file to accommodate
+genome-scale matrices.
+
+Each analysis page's "Method" and "Scientific and statistical limitations"
+text is collapsed into an expander so descriptive results are not visually
+crowded by disclosures; the wording itself is unchanged and still applies in
+full.
+
 ## Input validation
 
 Phase 2 validates three preprocessed CSV tables before making a validated
@@ -511,7 +563,9 @@ dataset bundle available to downstream pages.
 - Sample identifiers must be non-empty and unique.
 - Condition values must be non-empty.
 - Additional columns are preserved but are not scientifically interpreted by
-  Phase 2 validation.
+  Phase 2 validation. Phase 12 lets the PCA page use one such column, chosen
+  by the user, for display-only sample-plot colouring (see "Phase 12 real-world
+  usability").
 
 ### Precomputed differential-expression results
 

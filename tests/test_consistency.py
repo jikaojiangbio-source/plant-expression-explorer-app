@@ -83,6 +83,10 @@ def test_partial_gene_mismatches_warn_in_both_directions() -> None:
     ]
     assert report.warnings[0].example_values == ("g3",)
     assert report.warnings[1].example_values == ("g1",)
+    for issue in report.warnings:
+        assert "annotation releases" in issue.message
+        assert "gene-versus-transcript" in issue.message
+        assert "did not rewrite any identifier" in issue.message
 
 
 def test_no_gene_overlap_emits_only_specific_blocking_error() -> None:
@@ -100,6 +104,31 @@ def test_no_gene_overlap_emits_only_specific_blocking_error() -> None:
 
     assert _codes(report) == [IssueCode.NO_GENE_OVERLAP]
     assert report.has_errors
+    assert "isoform or version suffixes" in report.errors[0].message
+    assert "did not rewrite any identifier" in report.errors[0].message
+
+
+def test_input_validation_without_de_is_informational_and_non_mutating() -> None:
+    expression = pd.DataFrame(
+        {"gene_id": ["g1", "g2"], "s1": [1.0, 2.0], "s2": [2.0, 3.0]}
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1", "s2"], "condition": ["control", "treated"]}
+    )
+    expression_original = expression.copy(deep=True)
+    metadata_original = metadata.copy(deep=True)
+
+    report = validate_input_tables(expression, metadata, None)
+
+    assert not report.has_errors
+    assert _codes(report) == [
+        IssueCode.CONDITION_WITH_SINGLE_SAMPLE,
+        IssueCode.DE_RESULTS_NOT_SUPPLIED,
+    ]
+    assert report.information[0].table == "Differential-expression results"
+    assert "remain available" in report.information[0].message
+    assert_frame_equal(expression, expression_original)
+    assert_frame_equal(metadata, metadata_original)
 
 
 def test_input_validation_aggregates_table_and_cross_file_reports() -> None:

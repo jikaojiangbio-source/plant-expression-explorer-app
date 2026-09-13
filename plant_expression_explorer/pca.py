@@ -411,6 +411,42 @@ def build_score_plot_data(result: SamplePcaResult) -> pd.DataFrame:
     ].copy(deep=True)
 
 
+def build_grouped_score_plot_data(
+    result: SamplePcaResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return a PC1-versus-PC2 plotting copy coloured by one metadata column.
+
+    ``group_column`` values are joined from ``metadata`` by exact sample ID,
+    for display only, exactly like the ``condition`` column already carried
+    on ``result.score_table``; they are never used to fit the components.
+    Requires two or more components; see :func:`build_score_plot_data`.
+    """
+
+    if group_column == "condition":
+        return build_score_plot_data(result)
+    if result.component_count < 2:
+        raise ValueError(
+            "A PC1-versus-PC2 plot requires at least two principal "
+            f"components; this result has {result.component_count}."
+        )
+    if not isinstance(metadata, pd.DataFrame) or "sample_id" not in metadata.columns:
+        raise ValueError("Sample metadata is missing required column 'sample_id'.")
+    if group_column not in metadata.columns:
+        raise ValueError(f"Sample metadata does not contain column '{group_column}'.")
+
+    lookup = {
+        str(sample_id): value
+        for sample_id, value in zip(
+            metadata["sample_id"], metadata[group_column], strict=True
+        )
+    }
+    plot_data = result.score_table.loc[:, ["sample_id", "pc1", "pc2"]].copy(deep=True)
+    plot_data[group_column] = plot_data["sample_id"].map(lookup)
+    return plot_data.loc[:, ["sample_id", group_column, "pc1", "pc2"]]
+
+
 def _require_finite_scalar(value: float) -> None:
     if not math.isfinite(value):
         raise PcaComputationError(

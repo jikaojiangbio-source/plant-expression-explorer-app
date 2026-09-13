@@ -11,6 +11,7 @@ import pandas as pd
 
 from plant_expression_explorer.consistency import validate_input_tables
 from plant_expression_explorer.data import CsvReadError, read_csv
+from plant_expression_explorer.provenance import DatasetProvenance
 from plant_expression_explorer.validation import (
     IssueCode,
     Severity,
@@ -21,7 +22,7 @@ from plant_expression_explorer.validation import (
 DatasetSource: TypeAlias = Literal["demo", "uploaded"]
 CandidateStatus: TypeAlias = Literal["incomplete", "invalid", "valid"]
 CsvSource: TypeAlias = str | Path | IO[Any]
-DatasetTables: TypeAlias = tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]
+DatasetTables: TypeAlias = tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]
 
 CURRENT_DATASET_KEY = "pee_current_dataset"
 CANDIDATE_REPORT_KEY = "pee_candidate_report"
@@ -30,6 +31,14 @@ CANDIDATE_LABEL_KEY = "pee_candidate_label"
 EXPRESSION_UPLOAD_KEY = "pee_upload_expression"
 METADATA_UPLOAD_KEY = "pee_upload_metadata"
 DE_RESULTS_UPLOAD_KEY = "pee_upload_de_results"
+DATASET_TITLE_KEY = "pee_context_dataset_title"
+ORGANISM_KEY = "pee_context_organism"
+EXPRESSION_SCALE_KEY = "pee_context_expression_scale"
+UPSTREAM_NORMALIZATION_KEY = "pee_context_upstream_normalization"
+REFERENCE_ANNOTATION_KEY = "pee_context_reference_annotation"
+FEATURE_LEVEL_KEY = "pee_context_feature_level"
+DE_CONTRAST_KEY = "pee_context_de_contrast"
+CONTEXT_NOTES_KEY = "pee_context_notes"
 
 CANDIDATE_FEEDBACK_KEYS = (
     CANDIDATE_REPORT_KEY,
@@ -41,11 +50,22 @@ UPLOADER_KEYS = (
     METADATA_UPLOAD_KEY,
     DE_RESULTS_UPLOAD_KEY,
 )
+DATASET_CONTEXT_KEYS = (
+    DATASET_TITLE_KEY,
+    ORGANISM_KEY,
+    EXPRESSION_SCALE_KEY,
+    UPSTREAM_NORMALIZATION_KEY,
+    REFERENCE_ANNOTATION_KEY,
+    FEATURE_LEVEL_KEY,
+    DE_CONTRAST_KEY,
+    CONTEXT_NOTES_KEY,
+)
 LEGACY_DATA_KEYS = ("expression", "metadata", "de_results")
 APPLICATION_DATA_KEYS = (
     CURRENT_DATASET_KEY,
     *CANDIDATE_FEEDBACK_KEYS,
     *UPLOADER_KEYS,
+    *DATASET_CONTEXT_KEYS,
     *LEGACY_DATA_KEYS,
 )
 
@@ -73,10 +93,11 @@ class DatasetBundle:
 
     expression: pd.DataFrame
     metadata: pd.DataFrame
-    de_results: pd.DataFrame
+    de_results: pd.DataFrame | None
     source: DatasetSource
     source_label: str
     validation_report: ValidationReport
+    provenance: DatasetProvenance | None = None
 
     @property
     def gene_count(self) -> int:
@@ -88,7 +109,11 @@ class DatasetBundle:
 
     @property
     def de_row_count(self) -> int:
-        return len(self.de_results)
+        return 0 if self.de_results is None else len(self.de_results)
+
+    @property
+    def has_de_results(self) -> bool:
+        return self.de_results is not None
 
 
 @dataclass(frozen=True)
@@ -119,11 +144,18 @@ class CandidateResult:
                 raise ValueError(
                     "A valid candidate must contain tables and have no Errors."
                 )
-            if len(self.tables) != 3 or not all(
-                isinstance(table, pd.DataFrame) for table in self.tables
+            if (
+                len(self.tables) != 3
+                or not isinstance(self.tables[0], pd.DataFrame)
+                or not isinstance(self.tables[1], pd.DataFrame)
+                or (
+                    self.tables[2] is not None
+                    and not isinstance(self.tables[2], pd.DataFrame)
+                )
             ):
                 raise ValueError(
-                    "A valid candidate must contain three pandas DataFrames."
+                    "A valid candidate must contain expression and metadata "
+                    "DataFrames plus an optional differential-expression DataFrame."
                 )
             return
 
@@ -173,26 +205,21 @@ def load_uploaded_candidate(
 ) -> CandidateResult:
     """Load and validate uploaded sources, or report an incomplete selection."""
 
-    supplied_sources = (
-        expression_source,
-        metadata_source,
-        de_results_source,
-    )
-    if any(source is None for source in supplied_sources):
+    if expression_source is None or metadata_source is None:
         return CandidateResult(
             status="incomplete",
             tables=None,
             report=ValidationReport(),
         )
 
-    sources = tuple(
-        (key, table_name, source)
-        for (key, table_name, _), source in zip(
-            _TABLE_SPECS,
-            supplied_sources,
-            strict=True,
-        )
+    sources: tuple[tuple[str, str, CsvSource], ...] = (
+        (_TABLE_SPECS[0][0], _TABLE_SPECS[0][1], expression_source),
+        (_TABLE_SPECS[1][0], _TABLE_SPECS[1][1], metadata_source),
     )
+    if de_results_source is not None:
+        sources += (
+            (_TABLE_SPECS[2][0], _TABLE_SPECS[2][1], de_results_source),
+        )
     return _load_and_validate_sources(
         sources,
         missing_code=IssueCode.CSV_READ_ERROR,
@@ -205,6 +232,7 @@ def build_dataset_bundle(
     source: DatasetSource,
     source_label: str,
     report: ValidationReport,
+    provenance: DatasetProvenance | None = None,
 ) -> DatasetBundle:
     """Build a complete bundle only from a non-blocking validation report."""
 
@@ -212,12 +240,20 @@ def build_dataset_bundle(
         raise ValueError("Cannot build a dataset bundle from a report with Errors.")
     if source not in ("demo", "uploaded"):
         raise ValueError(f"Unsupported dataset source: {source!r}.")
-    if len(tables) != 3 or not all(
-        isinstance(table, pd.DataFrame) for table in tables
+    if (
+        len(tables) != 3
+        or not isinstance(tables[0], pd.DataFrame)
+        or not isinstance(tables[1], pd.DataFrame)
+        or (tables[2] is not None and not isinstance(tables[2], pd.DataFrame))
     ):
-        raise ValueError("A dataset bundle requires three pandas DataFrames.")
+        raise ValueError(
+            "A dataset bundle requires expression and metadata DataFrames plus "
+            "an optional differential-expression DataFrame."
+        )
     if not source_label.strip():
         raise ValueError("A dataset bundle requires a source label.")
+    if provenance is not None and not isinstance(provenance, DatasetProvenance):
+        raise TypeError("provenance must be a DatasetProvenance instance or None.")
 
     expression, metadata, de_results = tables
     return DatasetBundle(
@@ -227,13 +263,14 @@ def build_dataset_bundle(
         source=source,
         source_label=source_label,
         validation_report=report,
+        provenance=provenance,
     )
 
 
 def uploaded_source_label(
     expression_source: CsvSource,
     metadata_source: CsvSource,
-    de_results_source: CsvSource,
+    de_results_source: CsvSource | None,
 ) -> str:
     """Return a human-readable label without exposing local directory paths."""
 
@@ -302,6 +339,13 @@ def clear_uploader_state(state: MutableMapping[str, Any]) -> None:
     """Remove the three uploader widget values before widget instantiation."""
 
     for key in UPLOADER_KEYS:
+        state.pop(key, None)
+
+
+def clear_dataset_context_state(state: MutableMapping[str, Any]) -> None:
+    """Remove only optional dataset-context widget values."""
+
+    for key in DATASET_CONTEXT_KEYS:
         state.pop(key, None)
 
 
@@ -379,7 +423,7 @@ def _load_and_validate_sources(
     dataset_tables = (
         tables["expression"],
         tables["metadata"],
-        tables["de_results"],
+        tables.get("de_results"),
     )
     report = validate_input_tables(*dataset_tables)
     if report.has_errors:

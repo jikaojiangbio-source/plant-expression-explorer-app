@@ -288,6 +288,90 @@ def build_condition_summary(
     )
 
 
+def list_additional_metadata_columns(metadata: pd.DataFrame) -> tuple[str, ...]:
+    """List metadata columns beyond 'sample_id'/'condition', in file order."""
+
+    if not isinstance(metadata, pd.DataFrame):
+        return ()
+    return tuple(
+        str(column)
+        for column in metadata.columns
+        if str(column) not in ("sample_id", "condition")
+    )
+
+
+def build_grouped_sample_summary(
+    result: SampleQcResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return the per-sample summary labelled by one metadata column.
+
+    ``group_column`` values are joined from ``metadata`` by exact sample ID,
+    for display only, exactly like 'condition' on ``result.sample_summary``.
+    Every per-sample numeric statistic is copied unchanged from
+    :func:`compute_sample_qc`; none is recalculated for the new grouping.
+    """
+
+    if group_column == "condition":
+        return result.sample_summary.copy(deep=True)
+    lookup = _metadata_column_lookup(metadata, group_column)
+    display = result.sample_summary.copy(deep=True)
+    display[group_column] = display["sample_id"].map(lookup)
+    columns = [
+        group_column if column == "condition" else column
+        for column in SAMPLE_SUMMARY_COLUMNS
+    ]
+    return display.loc[:, columns]
+
+
+def build_grouped_condition_summary(
+    result: SampleQcResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return group membership counts for one metadata column.
+
+    Reuses :func:`build_condition_summary` with an alternate grouping; no
+    per-sample numeric statistic is touched.
+    """
+
+    if group_column == "condition":
+        return result.condition_summary.copy(deep=True)
+    lookup = _metadata_column_lookup(metadata, group_column)
+    sample_ids = result.sample_summary["sample_id"].tolist()
+    groups = [lookup[sample_id] for sample_id in sample_ids]
+    summary = build_condition_summary(sample_ids, groups)
+    return summary.rename(columns={"condition": group_column})
+
+
+def build_grouped_condition_chart_data(
+    result: SampleQcResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return ordered group counts for charting under one metadata column."""
+
+    summary = build_grouped_condition_summary(result, metadata, group_column)
+    return summary.loc[:, [group_column, "sample_count"]].copy(deep=True)
+
+
+def _metadata_column_lookup(
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> dict[str, object]:
+    if not isinstance(metadata, pd.DataFrame) or "sample_id" not in metadata.columns:
+        raise ValueError("Sample metadata is missing required column 'sample_id'.")
+    if group_column not in metadata.columns:
+        raise ValueError(f"Sample metadata does not contain column '{group_column}'.")
+    return {
+        str(sample_id): ("(missing)" if _is_missing_or_blank(value) else value)
+        for sample_id, value in zip(
+            metadata["sample_id"], metadata[group_column], strict=True
+        )
+    }
+
+
 def find_constant_samples(
     numeric_expression: pd.DataFrame,
 ) -> tuple[str, ...]:

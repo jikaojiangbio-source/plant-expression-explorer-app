@@ -13,8 +13,8 @@ st.title("🌱 Plant Expression Explorer")
 st.subheader("Explore preprocessed plant transcriptomics data")
 
 st.write(
-    "Plant Expression Explorer analyses normalized expression matrices, "
-    "sample metadata, and precomputed differential-expression results."
+    "Plant Expression Explorer analyses preprocessed expression matrices and "
+    "sample metadata, with optional precomputed differential-expression results."
 )
 
 st.info(
@@ -25,7 +25,7 @@ st.info(
 st.header("Planned workflow")
 st.markdown(
     """
-1. **Upload data** and check that the three input tables are compatible.
+1. **Upload data** and check that the required expression and metadata tables are compatible.
 2. Review **sample quality-control summaries**.
 3. Explore descriptive **PCA** sample scores and explained variance.
 4. Inspect descriptive **sample correlation** summaries.
@@ -35,9 +35,10 @@ st.markdown(
 """
 )
 
-st.header("Phase 10")
+st.header("Phase 12")
 st.write(
-    "Validated synthetic-demo loading, three-file CSV upload, and session Reset "
+    "Validated synthetic-demo loading, expression-plus-metadata CSV upload, and "
+    "session Reset "
     "are available. Descriptive Sample Quality Control summaries are also "
     "available, together with descriptive Pearson Sample Correlation summaries "
     "and descriptive PCA sample scores and explained variance, for the active "
@@ -45,7 +46,10 @@ st.write(
     "differential-expression results is also available. Exact, descriptive "
     "single-gene expression lookup is available for the active dataset. "
     "Dedicated in-memory CSV downloads of the current unrounded descriptive "
-    "result tables are available on each analysis page."
+    "result tables are available on each analysis page. Precomputed "
+    "differential-expression results are now optional, and descriptive dataset "
+    "context can record the supplied scale, organism, reference annotation, "
+    "feature level, and analysis provenance without changing calculations."
 )
 st.info(
     "Clustering, differential-expression modelling, and volcano plots remain "

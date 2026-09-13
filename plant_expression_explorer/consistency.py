@@ -1,4 +1,4 @@
-"""Non-mutating consistency checks across the three input tables."""
+"""Non-mutating consistency checks across the biological input tables."""
 
 from __future__ import annotations
 
@@ -121,7 +121,13 @@ def validate_expression_de_consistency(
                     severity=Severity.ERROR,
                     table="Expression matrix",
                     related_table="Differential-expression results",
-                    message="The expression matrix and differential-expression results share no gene identifiers.",
+                    message=(
+                        "The expression matrix and differential-expression results "
+                        "share no gene identifiers. Common plant-genomics causes "
+                        "include different annotation releases, gene-versus-transcript "
+                        "identifiers, isoform or version suffixes, and alias conventions. "
+                        "Validation did not rewrite any identifier."
+                    ),
                 ),
             )
         )
@@ -138,7 +144,10 @@ def validate_expression_de_consistency(
                 "Expression matrix",
                 f"{len(de_only)} differential-expression gene identifier(s) are absent from the expression matrix: "
                 + _format_examples(de_only)
-                + ". The rows have been retained.",
+                + ". The rows have been retained. Common plant-genomics causes "
+                "include different annotation releases, gene-versus-transcript "
+                "identifiers, isoform or version suffixes, and alias conventions; "
+                "validation did not rewrite any identifier.",
                 de_only,
             )
         )
@@ -151,7 +160,10 @@ def validate_expression_de_consistency(
                 "Differential-expression results",
                 f"{len(expression_only)} expression gene identifier(s) are absent from the differential-expression results: "
                 + _format_examples(expression_only)
-                + ". No expression rows were removed.",
+                + ". No expression rows were removed. Common plant-genomics causes "
+                "include different annotation releases, gene-versus-transcript "
+                "identifiers, isoform or version suffixes, and alias conventions; "
+                "validation did not rewrite any identifier.",
                 expression_only,
             )
         )
@@ -161,17 +173,40 @@ def validate_expression_de_consistency(
 def validate_input_tables(
     expression: pd.DataFrame,
     metadata: pd.DataFrame,
-    de_results: pd.DataFrame,
+    de_results: pd.DataFrame | None,
 ) -> ValidationReport:
-    """Combine all Phase 2 table and cross-file validation reports."""
+    """Combine table and applicable cross-file validation reports."""
 
-    reports = (
+    reports = [
         validate_expression_matrix(expression),
         validate_sample_metadata(metadata),
-        validate_de_results(de_results),
         validate_expression_metadata_consistency(expression, metadata),
-        validate_expression_de_consistency(expression, de_results),
-    )
+    ]
+    if de_results is None:
+        reports.append(
+            ValidationReport(
+                (
+                    ValidationIssue(
+                        code=IssueCode.DE_RESULTS_NOT_SUPPLIED,
+                        severity=Severity.INFORMATION,
+                        table="Differential-expression results",
+                        message=(
+                            "No precomputed differential-expression results were "
+                            "supplied. Expression- and metadata-based descriptive "
+                            "pages remain available; Differential Expression is "
+                            "unavailable for this dataset."
+                        ),
+                    ),
+                )
+            )
+        )
+    else:
+        reports.extend(
+            (
+                validate_de_results(de_results),
+                validate_expression_de_consistency(expression, de_results),
+            )
+        )
     return ValidationReport(tuple(issue for report in reports for issue in report.issues))
 
 

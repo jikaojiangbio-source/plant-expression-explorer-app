@@ -15,11 +15,15 @@ from plant_expression_explorer.qc import (
     QcComputationError,
     QcErrorReason,
     build_condition_chart_data,
+    build_grouped_condition_chart_data,
+    build_grouped_condition_summary,
+    build_grouped_sample_summary,
     build_qc_observations,
     build_sample_chart_data,
     compute_sample_qc,
     count_zero_variance_genes,
     find_constant_samples,
+    list_additional_metadata_columns,
     should_display_count_chart,
 )
 from plant_expression_explorer.validation import (
@@ -276,6 +280,96 @@ def test_condition_summary_uses_first_appearance_and_metadata_row_order() -> Non
         ("s3",),
         ("s4",),
     ]
+
+
+def test_list_additional_metadata_columns_excludes_required_columns() -> None:
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["s1"],
+            "condition": ["control"],
+            "genotype": ["WT"],
+            "batch": ["1"],
+        }
+    )
+
+    assert list_additional_metadata_columns(metadata) == ("genotype", "batch")
+
+
+def test_list_additional_metadata_columns_returns_empty_for_non_dataframe() -> None:
+    assert list_additional_metadata_columns(None) == ()
+
+
+def test_build_grouped_sample_summary_matches_default_for_condition() -> None:
+    expression, metadata = _known_tables()
+    result = compute_sample_qc(expression, metadata)
+
+    assert_frame_equal(
+        build_grouped_sample_summary(result, metadata, "condition"),
+        result.sample_summary,
+    )
+
+
+def test_build_grouped_sample_summary_relabels_without_recomputing_statistics() -> None:
+    expression, metadata = _known_tables()
+    metadata = metadata.assign(genotype=["mutant", "WT", "WT"])
+    result = compute_sample_qc(expression, metadata)
+
+    grouped = build_grouped_sample_summary(result, metadata, "genotype")
+
+    assert "genotype" in grouped.columns
+    assert "condition" not in grouped.columns
+    expected_genotype = {"s1": "mutant", "s2": "WT", "s3": "WT"}
+    for sample_id, genotype in zip(
+        grouped["sample_id"], grouped["genotype"], strict=True
+    ):
+        assert genotype == expected_genotype[sample_id]
+    # Numeric statistics are untouched by the relabelling.
+    for column in ("minimum", "median", "mean", "maximum"):
+        pd.testing.assert_series_equal(
+            grouped[column], result.sample_summary[column], check_names=False
+        )
+
+
+def test_build_grouped_condition_summary_matches_default_for_condition() -> None:
+    expression, metadata = _known_tables()
+    result = compute_sample_qc(expression, metadata)
+
+    assert_frame_equal(
+        build_grouped_condition_summary(result, metadata, "condition"),
+        result.condition_summary,
+    )
+
+
+def test_build_grouped_condition_summary_reuses_build_condition_summary() -> None:
+    expression, metadata = _known_tables()
+    metadata = metadata.assign(genotype=["mutant", "WT", "WT"])
+    result = compute_sample_qc(expression, metadata)
+
+    grouped = build_grouped_condition_summary(result, metadata, "genotype")
+
+    assert list(grouped.columns) == ["genotype", "sample_count", "sample_ids"]
+    by_genotype = grouped.set_index("genotype")
+    assert by_genotype.loc["WT", "sample_count"] == 2
+    assert sorted(by_genotype.loc["WT", "sample_ids"]) == ["s2", "s3"]
+    assert by_genotype.loc["mutant", "sample_count"] == 1
+
+
+def test_build_grouped_condition_chart_data_uses_the_group_column_name() -> None:
+    expression, metadata = _known_tables()
+    metadata = metadata.assign(genotype=["mutant", "WT", "WT"])
+    result = compute_sample_qc(expression, metadata)
+
+    chart_data = build_grouped_condition_chart_data(result, metadata, "genotype")
+
+    assert list(chart_data.columns) == ["genotype", "sample_count"]
+
+
+def test_build_grouped_summary_rejects_unknown_column() -> None:
+    expression, metadata = _known_tables()
+    result = compute_sample_qc(expression, metadata)
+
+    with pytest.raises(ValueError, match="does not contain column"):
+        build_grouped_sample_summary(result, metadata, "tissue")
 
 
 def test_single_condition_and_one_replicate_observations_reuse_report() -> None:

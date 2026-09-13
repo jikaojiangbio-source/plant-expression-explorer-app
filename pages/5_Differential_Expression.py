@@ -13,6 +13,10 @@ from plant_expression_explorer.differential_expression import (
     select_rows_by_status,
 )
 from plant_expression_explorer.exports import CsvExportError, build_csv_export
+from plant_expression_explorer.provenance import (
+    DatasetProvenance,
+    provenance_display_rows,
+)
 from plant_expression_explorer.validation import Severity, ValidationIssue
 
 
@@ -35,6 +39,18 @@ _CATEGORY_LABELS = {
         "Evaluable rows that do not meet both thresholds"
     ),
 }
+
+
+def _render_dataset_context(provenance: DatasetProvenance | None) -> None:
+    with st.expander("Dataset context (descriptive only)"):
+        st.caption(
+            "Context is displayed verbatim and is not scientifically verified, "
+            "parsed, or used in this calculation. A supplied contrast description "
+            "is not used to infer direction or a reference level."
+        )
+        for label, value in provenance_display_rows(provenance):
+            st.caption(label)
+            st.code(value, language=None)
 
 
 def _is_relevant_issue(issue: ValidationIssue) -> bool:
@@ -150,6 +166,18 @@ st.header("Current active dataset")
 st.write(f"**Source label:** {current.source_label}")
 st.write(f"**Source type:** {current.source}")
 st.write(f"**Differential-expression rows supplied:** {current.de_row_count:,}")
+_render_dataset_context(current.provenance)
+
+if current.de_results is None:
+    st.info(
+        "No differential-expression results were supplied for this dataset. "
+        "Return to Upload Data to add a precomputed results file, or continue "
+        "using Sample Quality Control, PCA, Sample Correlation, and Gene "
+        "Expression, which do not require one."
+    )
+    st.stop()
+
+de_results = current.de_results
 
 report = current.validation_report
 validation_columns = st.columns(3)
@@ -213,7 +241,7 @@ absolute_log2_fold_change_threshold = threshold_columns[1].number_input(
 
 try:
     result = classify_differential_expression_results(
-        current.de_results,
+        de_results,
         adjusted_p_value_threshold=adjusted_p_value_threshold,
         absolute_log2_fold_change_threshold=absolute_log2_fold_change_threshold,
     )
@@ -323,22 +351,22 @@ _show_derived_table(
     "These rows have a missing or blank padj or log2FoldChange value; missing pvalue alone does not determine this category.",
 )
 
-st.header("Scientific and statistical limitations")
-st.info(
-    "The application uses the supplied padj and log2FoldChange values as-is. It "
-    "does not calculate, adjust, replace, or modify p-values, and it does not "
-    "run DESeq2 or another differential-expression model."
-)
-st.info(
-    "No contrast direction or reference level is inferred. A positive or "
-    "negative supplied fold change cannot be given a condition-specific "
-    "interpretation here."
-)
-st.info(
-    "No rows are trimmed, normalised, deduplicated, sorted, ranked, intersected, "
-    "aggregated, transformed, imputed, or removed. This phase provides no "
-    "volcano plot or gene lookup."
-)
+with st.expander("Scientific and statistical limitations"):
+    st.info(
+        "The application uses the supplied padj and log2FoldChange values as-is. It "
+        "does not calculate, adjust, replace, or modify p-values, and it does not "
+        "run DESeq2 or another differential-expression model."
+    )
+    st.info(
+        "No contrast direction or reference level is inferred. A positive or "
+        "negative supplied fold change cannot be given a condition-specific "
+        "interpretation here."
+    )
+    st.info(
+        "No rows are trimmed, normalised, deduplicated, sorted, ranked, intersected, "
+        "aggregated, transformed, imputed, or removed. This phase provides no "
+        "volcano plot or gene lookup."
+    )
 
 st.header("Download descriptive results")
 st.write(

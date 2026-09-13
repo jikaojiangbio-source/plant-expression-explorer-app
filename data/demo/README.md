@@ -55,6 +55,11 @@ Condition-specific, condition-centred synthetic noise makes the sample columns
 non-identical while retaining a useful group signal. All numeric values are
 quantised to 8 decimal places before being returned or written.
 
+The replicate noise is deliberately balanced within each condition, and larger
+preset effect sizes are constructed to produce smaller p-values. Neither pattern
+is guaranteed in real experiments; this demo must not be used to learn a general
+relationship between effect size, replicate similarity, and uncertainty.
+
 The p-values are constructed demonstration values. Stronger preset effects
 generally receive smaller values, while unchanged genes generally receive
 larger values. `padj` is calculated across all 120 constructed p-values using

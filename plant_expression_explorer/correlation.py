@@ -466,6 +466,86 @@ def build_correlation_observations(
     return tuple(observations)
 
 
+def build_grouped_pair_summary(
+    result: SampleCorrelationResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return each unique sample pair labelled by one metadata column.
+
+    ``group_column`` values are joined from ``metadata`` by exact sample ID,
+    for display only, exactly like 'condition'. Reuses
+    :func:`build_pair_summary` on the already-computed correlation matrix; no
+    Pearson correlation is recalculated for the new grouping.
+    """
+
+    if group_column == "condition":
+        return result.pair_summary.copy(deep=True)
+    lookup = _metadata_column_lookup(metadata, group_column)
+    summary = build_pair_summary(result.correlation_matrix, lookup)
+    return summary.rename(
+        columns={"condition_a": f"{group_column}_a", "condition_b": f"{group_column}_b"}
+    )
+
+
+def build_grouped_sample_correlation_summary(
+    result: SampleCorrelationResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return per-sample correlation metrics labelled by one metadata column.
+
+    Reuses :func:`build_sample_correlation_summary` on the already-computed
+    correlation matrix; no Pearson correlation is recalculated.
+    """
+
+    if group_column == "condition":
+        return result.sample_summary.copy(deep=True)
+    lookup = _metadata_column_lookup(metadata, group_column)
+    summary = build_sample_correlation_summary(result.correlation_matrix, lookup)
+    return summary.rename(columns={"condition": group_column})
+
+
+def build_grouped_condition_correlation_summary(
+    result: SampleCorrelationResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return group-pair correlation summaries for one metadata column.
+
+    Reuses :func:`build_condition_correlation_summary` on the
+    already-computed pair summary for that grouping; no Pearson correlation
+    is recalculated.
+    """
+
+    if group_column == "condition":
+        return result.condition_summary.copy(deep=True)
+    lookup = _metadata_column_lookup(metadata, group_column)
+    sample_ids = list(result.correlation_matrix.columns)
+    groups = [lookup[sample_id] for sample_id in sample_ids]
+    grouped_pairs = build_pair_summary(result.correlation_matrix, lookup)
+    summary = build_condition_correlation_summary(grouped_pairs, sample_ids, groups)
+    return summary.rename(
+        columns={"condition_a": f"{group_column}_a", "condition_b": f"{group_column}_b"}
+    )
+
+
+def _metadata_column_lookup(
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> dict[str, object]:
+    if not isinstance(metadata, pd.DataFrame) or "sample_id" not in metadata.columns:
+        raise ValueError("Sample metadata is missing required column 'sample_id'.")
+    if group_column not in metadata.columns:
+        raise ValueError(f"Sample metadata does not contain column '{group_column}'.")
+    return {
+        str(sample_id): ("(missing)" if _is_missing_or_blank(value) else value)
+        for sample_id, value in zip(
+            metadata["sample_id"], metadata[group_column], strict=True
+        )
+    }
+
+
 def build_heatmap_data(
     result: SampleCorrelationResult,
 ) -> pd.DataFrame:
