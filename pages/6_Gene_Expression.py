@@ -1,6 +1,7 @@
 """Descriptive expression lookup for one exact supplied gene identifier."""
 
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 from plant_expression_explorer.dataset import (
@@ -293,58 +294,33 @@ if result.sample_count >= 2:
     )
     sample_order = result.sample_expression["sample_id"].tolist()
     group_order = list(dict.fromkeys(chart_data[group_column]))
-    point_spec = {
-        "mark": {"type": "point", "filled": True, "size": 110},
-        "encoding": {
-            "x": {
-                "field": "sample_id",
-                "type": "nominal",
-                "sort": sample_order,
-                "title": "Sample",
-                "axis": {"labelAngle": -45},
-            },
-            "y": {
-                "field": "expression_value",
-                "type": "quantitative",
-                "title": "Supplied preprocessed expression value",
-                "scale": {"zero": True},
-            },
-            "color": {
-                "field": group_column,
-                "type": "nominal",
-                "sort": group_order,
-                "legend": {"title": group_title},
-            },
-            "order": {
-                "field": "sample_position",
-                "type": "quantitative",
-            },
-            "tooltip": [
-                {"field": "sample_id", "type": "nominal", "title": "Sample"},
-                {
-                    "field": group_column,
-                    "type": "nominal",
-                    "title": group_title,
-                },
-                {
-                    "field": "expression_value",
-                    "type": "quantitative",
-                    "title": "Expression value",
-                },
-            ],
-        },
-    }
-    st.vega_lite_chart(
+    point_figure = px.scatter(
         chart_data,
-        spec=point_spec,
-        width="stretch",
-        height=420,
+        x="sample_id",
+        y="expression_value",
+        color=group_column,
+        category_orders={"sample_id": sample_order, group_column: group_order},
+        labels={
+            "sample_id": "Sample",
+            "expression_value": "Supplied preprocessed expression value",
+            group_column: group_title,
+        },
     )
+    point_figure.update_traces(marker=dict(size=12, symbol="circle", line=dict(width=0)))
+    point_figure.update_layout(
+        height=420,
+        margin=dict(l=10, r=10, t=10, b=10),
+        legend_title_text=group_title,
+        xaxis=dict(tickangle=-45),
+        yaxis=dict(rangemode="tozero"),
+    )
+    st.plotly_chart(point_figure, width="stretch")
     st.caption(
         "Each point represents one supplied sample. Colour shows the selected "
         "metadata column for context only. Points are not connected, the "
         "y-axis includes zero on the supplied scale, and no group estimate or "
-        "statistical comparison is shown."
+        "statistical comparison is shown. Zoom, pan, and hover are Plotly's "
+        "built-in interactions and do not change the underlying values."
     )
 else:
     st.info(

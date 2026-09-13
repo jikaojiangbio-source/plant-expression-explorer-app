@@ -615,14 +615,12 @@ def _pca_session_keys(app: AppTest) -> list[str]:
     ]
 
 
+def _plotly_figures(app: AppTest) -> list[dict]:
+    return [json.loads(chart.proto.spec) for chart in app.get("plotly_chart")]
+
+
 def _pca_scatter_chart_count(app: AppTest) -> int:
-    # st.bar_chart also renders as a vega_lite_chart element (mark "bar");
-    # the PC1-versus-PC2 scatter is the only one using a "circle" mark.
-    return sum(
-        1
-        for chart in app.get("vega_lite_chart")
-        if '"circle"' in chart.proto.spec
-    )
+    return len(_plotly_figures(app))
 
 
 def test_home_page_loads_and_describes_scope() -> None:
@@ -731,7 +729,8 @@ def test_home_page_lists_phase_12_scientific_context_as_available() -> None:
 
     info_text = " ".join(element.value for element in app.info).lower()
     assert "differential-expression exploration" not in info_text
-    assert "volcano plots" in info_text
+    assert "volcano plot" in info_text
+    assert "clustering" in info_text
     assert "dedicated exports" not in info_text
     assert "gene lookup" not in info_text
     visible_text = _visible_text(app).lower()
@@ -809,7 +808,8 @@ def test_upload_page_lists_phase_8_exploration_as_available() -> None:
     assert "supplied, precomputed differential-expression results" in visible_text
     assert "exact, descriptive single-gene expression lookup" in visible_text
     assert "Dedicated CSV downloads of current descriptive result tables" in visible_text
-    assert "Differential-expression modelling and volcano plots are not implemented" in visible_text
+    assert "including a descriptive volcano plot" in visible_text
+    assert "Differential-expression modelling and clustering are not implemented" in visible_text
 
 
 def test_upload_page_demo_load_and_reset_are_repeatable() -> None:
@@ -1115,7 +1115,7 @@ def test_correlation_page_demo_renders_matrix_heatmap_and_summaries() -> None:
         ["Control", "High_nitrate"],
         ["High_nitrate", "High_nitrate"],
     ]
-    assert len(app.get("vega_lite_chart")) == 1
+    assert len(app.get("plotly_chart")) == 1
     assert "values are synthetic" in visible_text
     assert "gene IDs are fictional" in visible_text
     assert "p-values are constructed" in visible_text
@@ -1160,7 +1160,7 @@ def test_correlation_page_uploaded_maps_conditions_and_preserves_bundle() -> Non
         ["treated", "control"],
         ["control", "control"],
     ]
-    assert len(app.get("vega_lite_chart")) == 1
+    assert len(app.get("plotly_chart")) == 1
     assert "values are synthetic" not in visible_text
     pd.testing.assert_frame_equal(bundle.expression, original_expression)
     pd.testing.assert_frame_equal(bundle.metadata, original_metadata)
@@ -1215,6 +1215,57 @@ def test_correlation_page_grouping_selector_relabels_summaries_without_recomputa
     assert "Grouped by metadata column 'genotype'" in visible_text
 
 
+def _interleaved_condition_correlation_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "sample_x": [1, 2],
+            "sample_y": [2, 5],
+            "sample_z": [3, 6],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_x", "sample_y", "sample_z"],
+            "condition": ["control", "treated", "control"],
+        }
+    )
+    de_results = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "log2FoldChange": [0.0, 0.0],
+            "pvalue": [0.5, 0.5],
+            "padj": [0.5, 0.5],
+        }
+    )
+    report = validate_input_tables(expression, metadata, de_results)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (expression, metadata, de_results),
+        source="uploaded",
+        source_label="Interleaved-condition correlation bundle (test input)",
+        report=report,
+    )
+
+
+def test_correlation_page_heatmap_sort_checkbox_groups_samples_by_label() -> None:
+    bundle = _interleaved_condition_correlation_bundle()
+
+    app = _run_correlation_page(bundle)
+    assert len(app.checkbox) == 1
+    heatmap_before = _plotly_figures(app)[0]
+    assert heatmap_before["data"][0]["x"] == ["sample_x", "sample_y", "sample_z"]
+    assert heatmap_before["data"][0]["y"] == ["sample_x", "sample_y", "sample_z"]
+
+    app.checkbox[0].set_value(True).run()
+
+    assert not app.exception
+    heatmap_after = _plotly_figures(app)[0]
+    assert heatmap_after["data"][0]["x"] == ["sample_x", "sample_z", "sample_y"]
+    assert heatmap_after["data"][0]["y"] == ["sample_x", "sample_z", "sample_y"]
+    assert "not a clustering or dendrogram-based reordering" in app.checkbox[0].help
+
+
 def test_correlation_page_constant_sample_retains_undefined_values() -> None:
     bundle = _constant_correlation_bundle()
     original_expression = bundle.expression.copy(deep=True)
@@ -1259,7 +1310,7 @@ def test_correlation_page_all_constant_state_renders_without_exception() -> None
     assert app.dataframe[0].value.eq("N/A").all().all()
     assert app.dataframe[1].value["defined_pair_count"].eq(0).all()
     assert app.dataframe[1].value["undefined_pair_count"].eq(2).all()
-    assert len(app.get("vega_lite_chart")) == 1
+    assert len(app.get("plotly_chart")) == 1
     assert _correlation_session_keys(app) == []
 
 
@@ -1510,10 +1561,9 @@ def test_pca_page_grouping_selector_defaults_to_condition() -> None:
     selector = app.selectbox[0]
     assert selector.options == ["condition", "genotype"]
     assert selector.value == "condition"
-    chart = next(
-        chart for chart in app.get("vega_lite_chart") if '"circle"' in chart.proto.spec
-    )
-    assert '"field": "condition"' in chart.proto.spec
+    figure = _plotly_figures(app)[0]
+    assert {trace["name"] for trace in figure["data"]} == {"control", "treated"}
+    assert figure["layout"]["legend"]["title"]["text"] == "Condition"
 
 
 def test_pca_page_grouping_selector_switches_chart_colour_field() -> None:
@@ -1522,11 +1572,9 @@ def test_pca_page_grouping_selector_switches_chart_colour_field() -> None:
     app.selectbox[0].select("genotype").run()
 
     assert not app.exception
-    chart = next(
-        chart for chart in app.get("vega_lite_chart") if '"circle"' in chart.proto.spec
-    )
-    assert '"field": "genotype"' in chart.proto.spec
-    assert "Genotype" in chart.proto.spec
+    figure = _plotly_figures(app)[0]
+    assert {trace["name"] for trace in figure["data"]} == {"WT", "mutant"}
+    assert figure["layout"]["legend"]["title"]["text"] == "Genotype"
 
 
 def test_pca_page_has_no_prohibited_classification_wording() -> None:
@@ -1855,14 +1903,15 @@ def test_de_page_has_required_scientific_wording_and_no_later_features() -> None
         assert "positive and negative labels refer only to the sign" in lower_text
         assert "missing adjusted p-values remain missing" in lower_text
         assert "not a claim of statistical significance" in lower_text
-        assert "no volcano plot or gene lookup" in lower_text
+        assert "no single-gene lookup" in lower_text
         assert "threshold matches are not claims of statistical significance" in lower_text
+        assert "does not fit a model, calculate a" in lower_text
         assert "upregulated" not in lower_text
         assert "downregulated" not in lower_text
         assert "deseq2 was run" not in lower_text
         assert "fastq processing is available" not in lower_text
         assert len(app.button) == 0
-        assert len(app.get("vega_lite_chart")) == 0
+        assert len(app.get("plotly_chart")) == 1
 
 
 def test_gene_page_no_data_state_is_clear_and_has_no_analysis_side_effects() -> None:
@@ -2003,20 +2052,15 @@ def test_gene_page_uploaded_selection_preserves_values_and_visual_order() -> Non
     ]
     assert condition_summary["standard_deviation"].tolist()[1] == "N/A"
 
-    charts = app.get("vega_lite_chart")
-    assert len(charts) == 1
-    chart_spec = json.loads(charts[0].proto.spec)
-    assert chart_spec["mark"]["type"] == "point"
-    assert chart_spec["encoding"]["x"]["sort"] == [
+    figures = _plotly_figures(app)
+    assert len(figures) == 1
+    figure = figures[0]
+    assert figure["layout"]["xaxis"]["categoryarray"] == [
         "sample_b",
         "sample_a",
         "sample_c",
     ]
-    assert chart_spec["encoding"]["order"] == {
-        "field": "sample_position",
-        "type": "quantitative",
-    }
-    assert "line" not in chart_spec["mark"]
+    assert all(trace["mode"] == "markers" for trace in figure["data"])
 
     app.selectbox[0].select("genea").run()
     app.selectbox[0].select("GeneA").run()
@@ -2063,7 +2107,7 @@ def test_gene_page_demo_selection_has_exact_options_and_synthetic_disclaimer() -
     assert "gene IDs are fictional" in visible_text
     assert "does not support conclusions about tomato biology" in visible_text
     assert len(app.dataframe[0].value.index) == 6
-    assert len(app.get("vega_lite_chart")) == 1
+    assert len(app.get("plotly_chart")) == 1
 
 
 def test_gene_page_omits_search_box_below_the_gene_count_threshold() -> None:
@@ -2134,10 +2178,9 @@ def test_gene_page_grouping_selector_relabels_plot_and_summary() -> None:
     assert by_genotype.loc["mutant", "mean_expression"] == 2.0
     visible_text = _visible_text(app)
     assert "Grouped by metadata column 'genotype'" in visible_text
-    chart = next(
-        chart for chart in app.get("vega_lite_chart") if '"point"' in chart.proto.spec
-    )
-    assert '"field": "genotype"' in chart.proto.spec
+    figure = _plotly_figures(app)[0]
+    assert {trace["name"] for trace in figure["data"]} == {"WT", "mutant"}
+    assert figure["layout"]["legend"]["title"]["text"] == "Genotype"
 
 
 def test_gene_page_collapses_limitations_into_an_expander() -> None:
@@ -2617,6 +2660,6 @@ def test_phase_11_navigation_and_documentation_keep_later_work_planned() -> None
     assert "As of Phase 12" in guide
     for text in (readme, guide):
         normalized = " ".join(text.split())
-        assert "volcano plots" in normalized
+        assert "volcano plot" in normalized
         assert "UTF-8 CSV" in normalized
     assert "no partial set of download buttons" in " ".join(readme.split())

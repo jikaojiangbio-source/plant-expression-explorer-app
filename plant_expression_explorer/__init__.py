@@ -22,6 +22,7 @@ from plant_expression_explorer.correlation import (
     build_pair_summary,
     build_sample_correlation_summary,
     compute_sample_correlation,
+    order_samples_by_group,
 )
 from plant_expression_explorer.data import CsvReadError, read_csv
 from plant_expression_explorer.dataset import (
@@ -62,11 +63,14 @@ from plant_expression_explorer.dataset import (
 )
 from plant_expression_explorer.differential_expression import (
     STATUS_COLUMN,
+    VOLCANO_PLOT_COLUMNS,
     DifferentialExpressionComputationError,
     DifferentialExpressionErrorReason,
     DifferentialExpressionResult,
     DifferentialExpressionStatus,
+    VolcanoPlotData,
     build_category_summary,
+    build_volcano_plot_data,
     classify_differential_expression_results,
     select_rows_by_status,
 )
@@ -175,6 +179,8 @@ __all__ = [
     "DifferentialExpressionErrorReason",
     "DifferentialExpressionResult",
     "DifferentialExpressionStatus",
+    "VolcanoPlotData",
+    "VOLCANO_PLOT_COLUMNS",
     "EXPRESSION_UPLOAD_KEY",
     "EXPRESSION_SCALE_KEY",
     "FEATURE_LEVEL_KEY",
@@ -217,6 +223,7 @@ __all__ = [
     "build_condition_summary",
     "build_correlation_observations",
     "build_category_summary",
+    "build_volcano_plot_data",
     "build_gene_expression_chart_data",
     "build_gene_expression_observations",
     "build_grouped_gene_expression_chart_data",
@@ -260,6 +267,7 @@ __all__ = [
     "reset_data_state",
     "set_current_dataset",
     "select_rows_by_status",
+    "order_samples_by_group",
     "should_display_count_chart",
     "table_preview",
     "uploaded_source_label",

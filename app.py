@@ -52,8 +52,10 @@ st.write(
     "feature level, and analysis provenance without changing calculations."
 )
 st.info(
-    "Clustering, differential-expression modelling, and volcano plots remain "
-    "unimplemented."
+    "Clustering and differential-expression modelling remain unimplemented. "
+    "A descriptive volcano plot of already-supplied, already-classified "
+    "differential-expression results is available on the Differential "
+    "Expression page; it fits no model and calculates no statistic."
 )
 st.page_link("pages/1_Upload_Data.py", label="Start with Upload Data", icon="📤")
 st.page_link(

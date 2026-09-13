@@ -1,6 +1,7 @@
 """Descriptive sample principal component analysis (PCA)."""
 
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 from plant_expression_explorer.dataset import (
@@ -236,44 +237,33 @@ if result.component_count >= 2:
     pc2_ratio = float(ratio_by_component.loc[2])
     group_order = list(dict.fromkeys(plot_data[group_column]))
     group_title = group_column.replace("_", " ").capitalize()
-    scatter_spec = {
-        "mark": {"type": "circle", "size": 120},
-        "encoding": {
-            "x": {
-                "field": "pc1",
-                "type": "quantitative",
-                "title": f"PC1 ({pc1_ratio:.1%} explained variance)",
-            },
-            "y": {
-                "field": "pc2",
-                "type": "quantitative",
-                "title": f"PC2 ({pc2_ratio:.1%} explained variance)",
-            },
-            "color": {
-                "field": group_column,
-                "type": "nominal",
-                "sort": group_order,
-                "legend": {"title": group_title},
-            },
-            "tooltip": [
-                {"field": "sample_id", "type": "nominal", "title": "Sample"},
-                {"field": group_column, "type": "nominal", "title": group_title},
-                {"field": "pc1", "type": "quantitative", "title": "PC1"},
-                {"field": "pc2", "type": "quantitative", "title": "PC2"},
-            ],
-        },
-    }
-    st.vega_lite_chart(
+    scatter_figure = px.scatter(
         plot_data,
-        spec=scatter_spec,
-        width="stretch",
-        height=420,
+        x="pc1",
+        y="pc2",
+        color=group_column,
+        category_orders={group_column: group_order},
+        hover_name="sample_id",
+        hover_data={"pc1": ":.4f", "pc2": ":.4f", group_column: True},
+        labels={
+            "pc1": f"PC1 ({pc1_ratio:.1%} explained variance)",
+            "pc2": f"PC2 ({pc2_ratio:.1%} explained variance)",
+            group_column: group_title,
+        },
     )
+    scatter_figure.update_traces(marker=dict(size=12, line=dict(width=0)))
+    scatter_figure.update_layout(
+        height=420,
+        margin=dict(l=10, r=10, t=10, b=10),
+        legend_title_text=group_title,
+    )
+    st.plotly_chart(scatter_figure, width="stretch")
     st.caption(
         "Colour reflects the selected metadata column for visual grouping "
         "only; it was not used to fit the components. Proximity does not "
         "prove biological similarity, and separation does not prove a group "
-        "effect."
+        "effect. Zoom, pan, and hover are Plotly's built-in interactions and "
+        "do not change the underlying values."
     )
 else:
     st.info(

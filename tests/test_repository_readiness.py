@@ -14,6 +14,7 @@ def test_python_and_dependency_versions_are_pinned() -> None:
         "streamlit==1.60.0",
         "pandas==2.3.3",
         "numpy==2.5.3",
+        "plotly==7.0.0",
         "pytest==9.1.1",
     ]
 

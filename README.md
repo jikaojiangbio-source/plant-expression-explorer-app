@@ -29,7 +29,9 @@ Phases 1–11 provide:
 - descriptive, non-mutating sample PCA (mean-centred, unscaled, SVD-based
   sample scores and explained variance) for the active dataset;
 - descriptive, non-mutating threshold exploration of supplied, precomputed
-  differential-expression results;
+  differential-expression results, including a descriptive volcano plot of
+  the already-classified supplied values (no model fit, no calculated
+  statistic);
 - descriptive, non-mutating lookup of one exact supplied gene's expression
   values across samples with sample-condition context;
 - deterministic, non-mutating UTF-8 CSV downloads of current full-precision
@@ -39,8 +41,7 @@ Phases 1–11 provide:
 - placeholders for the later analysis pages;
 - automated tests.
 
-Clustering, differential-expression modelling, and volcano plots are not
-implemented.
+Clustering and differential-expression modelling are not implemented.
 
 ## Setup
 
@@ -551,6 +552,29 @@ The Gene Expression page's gene selector gains a case-insensitive substring
 search box once a dataset supplies more than 200 genes, keeping the
 underlying dropdown responsive; matches beyond 500 are truncated with an
 explicit count, and matching never trims, reorders, or aliases identifiers.
+
+The Sample Correlation heatmap offers a "sort by group" checkbox that groups
+samples sharing the same 'condition' (or selected metadata column) label
+together, preserving each group's original relative order. This computes no
+similarity or distance between samples; it is not a clustering or
+dendrogram-based reordering, and the page's disclosed scope is unchanged.
+
+The PCA sample plot, the Sample Correlation heatmap, the Gene Expression
+per-sample plot, and the Differential Expression volcano plot (below) are
+rendered with Plotly for built-in zoom, pan, box/lasso-select, and hover
+tooltips; QC/DE/PCA bar charts remain native Streamlit charts. No plotted
+value differs from its Vega-Lite predecessor.
+
+## Volcano plot
+
+The Differential Expression page includes a descriptive volcano plot: the
+supplied `log2FoldChange` against `-log10(padj)` for evaluable rows, coloured
+by the same exploratory threshold status already shown in the category table,
+with dashed guides at the exact applied thresholds. It introduces no new
+statistic; it plots values already computed by threshold classification. A
+supplied `padj` of exactly 0 has no finite `-log10` value, so such rows are
+excluded from the plot only (never from any table or download) and counted in
+an explicit disclosure message.
 
 ## Input validation
 

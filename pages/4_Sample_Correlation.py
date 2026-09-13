@@ -1,6 +1,7 @@
 """Descriptive Pearson sample-to-sample correlation summaries."""
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 from plant_expression_explorer.correlation import (
@@ -11,6 +12,7 @@ from plant_expression_explorer.correlation import (
     build_grouped_sample_correlation_summary,
     build_heatmap_data,
     compute_sample_correlation,
+    order_samples_by_group,
 )
 from plant_expression_explorer.dataset import (
     ACTIVE_GROUP_COLUMN_KEY,
@@ -135,6 +137,36 @@ except CorrelationComputationError as error:
     )
     st.stop()
 
+additional_columns = list_additional_metadata_columns(current.metadata)
+group_column = "condition"
+if additional_columns:
+    ensure_valid_group_column_state(st.session_state, additional_columns)
+    group_column = st.selectbox(
+        "Group summaries by",
+        options=("condition", *additional_columns),
+        key=ACTIVE_GROUP_COLUMN_KEY,
+        help=(
+            "Any column present in the uploaded sample metadata beyond "
+            "'sample_id' and 'condition' can relabel the tables below and "
+            "sort the heatmap. No Pearson correlation is recalculated for the "
+            "new grouping; only the group label and within/between-group "
+            "membership change. This choice is shared with the PCA, Sample "
+            "Quality Control, and Gene Expression pages."
+        ),
+    )
+grouped_sample_summary = build_grouped_sample_correlation_summary(
+    result, current.metadata, group_column
+)
+grouped_pair_summary = build_grouped_pair_summary(
+    result, current.metadata, group_column
+)
+grouped_condition_summary = build_grouped_condition_correlation_summary(
+    result, current.metadata, group_column
+)
+group_lookup = dict(
+    zip(grouped_sample_summary["sample_id"], grouped_sample_summary[group_column])
+)
+
 st.header("Correlation matrix")
 st.dataframe(
     _display_matrix(result.correlation_matrix),
@@ -150,67 +182,54 @@ st.caption(
 st.subheader("Correlation heatmap")
 heatmap_data = build_heatmap_data(result)
 sample_order = list(result.correlation_matrix.columns)
-heatmap_spec = {
-    "mark": {
-        "type": "rect",
-        "stroke": "white",
-        "strokeWidth": 0.5,
-    },
-    "encoding": {
-        "x": {
-            "field": "column_sample",
-            "type": "nominal",
-            "sort": sample_order,
-            "title": "Sample",
-            "axis": {"labelAngle": -45},
-        },
-        "y": {
-            "field": "row_sample",
-            "type": "nominal",
-            "sort": sample_order,
-            "title": "Sample",
-        },
-        "color": {
-            "condition": {
-                "test": "datum.defined === true",
-                "field": "correlation",
-                "type": "quantitative",
-                "scale": {
-                    "domain": [-1, 1],
-                    "scheme": "redblue",
-                },
-                "legend": {"title": "Pearson r"},
-            },
-            "value": "#b8b8b8",
-        },
-        "tooltip": [
-            {
-                "field": "row_sample",
-                "type": "nominal",
-                "title": "Row sample",
-            },
-            {
-                "field": "column_sample",
-                "type": "nominal",
-                "title": "Column sample",
-            },
-            {
-                "field": "correlation_label",
-                "type": "nominal",
-                "title": "Pearson r",
-            },
-        ],
-    },
-}
-st.vega_lite_chart(
-    heatmap_data,
-    spec=heatmap_spec,
-    width="stretch",
-    height=min(max(320, result.sample_count * 48), 900),
+sort_heatmap_by_group = st.checkbox(
+    f"Sort rows/columns by '{group_column}'",
+    help=(
+        "Groups samples that share the same label together, preserving their "
+        "original relative order within each group. This does not compute "
+        "any similarity or distance between samples and is not a clustering "
+        "or dendrogram-based reordering."
+    ),
 )
+if sort_heatmap_by_group:
+    sample_order = order_samples_by_group(sample_order, group_lookup)
+
+ordered_matrix = result.correlation_matrix.reindex(
+    index=sample_order, columns=sample_order
+)
+hover_text = ordered_matrix.map(
+    lambda value: "N/A" if pd.isna(value) else f"{value:.3f}"
+)
+heatmap_figure = go.Figure(
+    data=go.Heatmap(
+        z=ordered_matrix.to_numpy(dtype=float),
+        x=sample_order,
+        y=sample_order,
+        zmin=-1,
+        zmax=1,
+        colorscale="RdBu",
+        colorbar=dict(title="Pearson r"),
+        text=hover_text.to_numpy(),
+        customdata=hover_text.to_numpy(),
+        hovertemplate=(
+            "Row: %{y}<br>Column: %{x}<br>Pearson r: %{customdata}<extra></extra>"
+        ),
+        xgap=1,
+        ygap=1,
+    )
+)
+heatmap_figure.update_layout(
+    height=min(max(320, result.sample_count * 48), 900),
+    margin=dict(l=10, r=10, t=10, b=10),
+    xaxis=dict(title="Sample", tickangle=-45),
+    yaxis=dict(title="Sample", autorange="reversed"),
+)
+st.plotly_chart(heatmap_figure, width="stretch")
 st.caption(
-    "The colour domain is fixed at -1 to 1. Neutral grey cells are undefined; "
-    "the heatmap is not clustered and does not imply statistical significance."
+    "The colour domain is fixed at -1 to 1. Blank cells are undefined; the "
+    "heatmap is not clustered and does not imply statistical significance. "
+    "Zoom, pan, and hover are Plotly's built-in interactions and do not "
+    "change the underlying values."
 )
 st.caption(
     "No dedicated application export workflow is implemented. Streamlit "
@@ -234,33 +253,6 @@ st.write(
 st.caption(
     "Constant samples have identical expression values across all genes. "
     "Undefined correlations remain N/A and are never replaced with zero or one."
-)
-
-additional_columns = list_additional_metadata_columns(current.metadata)
-group_column = "condition"
-if additional_columns:
-    ensure_valid_group_column_state(st.session_state, additional_columns)
-    group_column = st.selectbox(
-        "Group summaries by",
-        options=("condition", *additional_columns),
-        key=ACTIVE_GROUP_COLUMN_KEY,
-        help=(
-            "Any column present in the uploaded sample metadata beyond "
-            "'sample_id' and 'condition' can relabel the tables below. No "
-            "Pearson correlation is recalculated for the new grouping; only "
-            "the group label and within/between-group membership change. "
-            "This choice is shared with the PCA, Sample Quality Control, and "
-            "Gene Expression pages."
-        ),
-    )
-grouped_sample_summary = build_grouped_sample_correlation_summary(
-    result, current.metadata, group_column
-)
-grouped_pair_summary = build_grouped_pair_summary(
-    result, current.metadata, group_column
-)
-grouped_condition_summary = build_grouped_condition_correlation_summary(
-    result, current.metadata, group_column
 )
 
 st.header("Per-sample correlation summary")

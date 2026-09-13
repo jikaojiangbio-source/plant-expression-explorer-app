@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import math
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 
@@ -14,11 +15,13 @@ import pytest
 import plant_expression_explorer as package
 from plant_expression_explorer.differential_expression import (
     STATUS_COLUMN,
+    VOLCANO_PLOT_COLUMNS,
     DifferentialExpressionComputationError,
     DifferentialExpressionErrorReason,
     DifferentialExpressionResult,
     DifferentialExpressionStatus,
     build_category_summary,
+    build_volcano_plot_data,
     classify_differential_expression_results,
     select_rows_by_status,
 )
@@ -80,6 +83,8 @@ def test_package_exports_the_approved_public_api() -> None:
     assert package.classify_differential_expression_results is classify_differential_expression_results
     assert package.build_category_summary is build_category_summary
     assert package.select_rows_by_status is select_rows_by_status
+    assert package.VOLCANO_PLOT_COLUMNS == VOLCANO_PLOT_COLUMNS
+    assert package.build_volcano_plot_data is build_volcano_plot_data
 
 
 def test_all_four_statuses_and_counts_are_mutually_exclusive_and_exhaustive() -> None:
@@ -98,6 +103,50 @@ def test_all_four_statuses_and_counts_are_mutually_exclusive_and_exhaustive() ->
     assert result.does_not_meet_combined_thresholds_count == 1
     assert result.not_evaluable_count == 1
     assert sum(build_category_summary(result)["row_count"]) == result.total_row_count
+
+
+def test_build_volcano_plot_data_excludes_not_evaluable_rows() -> None:
+    result = _classify(_valid_results())
+
+    volcano = build_volcano_plot_data(result)
+
+    assert list(volcano.plot_rows.columns) == list(VOLCANO_PLOT_COLUMNS)
+    assert volcano.plot_rows["gene_id"].tolist() == ["positive", "negative", "other"]
+    assert volcano.excluded_zero_padj_count == 0
+    positive_row = volcano.plot_rows.set_index("gene_id").loc["positive"]
+    assert positive_row["log2FoldChange"] == 1.0
+    assert positive_row["padj"] == 0.05
+    assert positive_row["neg_log10_padj"] == pytest.approx(-math.log10(0.05))
+    assert (
+        positive_row[STATUS_COLUMN]
+        == DifferentialExpressionStatus.POSITIVE_THRESHOLD_MATCH.value
+    )
+
+
+def test_build_volcano_plot_data_excludes_and_counts_zero_padj_rows() -> None:
+    table = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "log2FoldChange": [2.0, -2.0],
+            "pvalue": [0.0, 0.01],
+            "padj": [0.0, 0.01],
+        }
+    )
+    result = _classify(table)
+
+    volcano = build_volcano_plot_data(result)
+
+    assert volcano.plot_rows["gene_id"].tolist() == ["g2"]
+    assert volcano.excluded_zero_padj_count == 1
+
+
+def test_build_volcano_plot_data_does_not_mutate_the_annotated_results() -> None:
+    result = _classify(_valid_results())
+    original = result.annotated_results.copy(deep=True)
+
+    build_volcano_plot_data(result)
+
+    assert_frame_equal(result.annotated_results, original, check_exact=True)
 
 
 def test_result_is_frozen_and_category_summary_has_stable_order() -> None:

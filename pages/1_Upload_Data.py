@@ -507,6 +507,7 @@ st.info(
     "table is supplied, together "
     "with exact, descriptive single-gene expression lookup. Dedicated CSV "
     "downloads of current descriptive result tables are available on the "
-    "analysis pages. Differential-expression modelling and volcano plots are "
-    "not implemented."
+    "analysis pages, including a descriptive volcano plot of supplied "
+    "differential-expression results. Differential-expression modelling and "
+    "clustering are not implemented."
 )

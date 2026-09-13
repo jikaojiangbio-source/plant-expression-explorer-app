@@ -21,6 +21,7 @@ from plant_expression_explorer.correlation import (
     build_grouped_sample_correlation_summary,
     build_heatmap_data,
     compute_sample_correlation,
+    order_samples_by_group,
 )
 from plant_expression_explorer.dataset import load_demo_candidate
 from plant_expression_explorer.qc import list_additional_metadata_columns
@@ -326,6 +327,24 @@ def test_build_grouped_summary_rejects_unknown_column(
 
     with pytest.raises(ValueError, match="does not contain column"):
         build_grouped_pair_summary(result, metadata, "tissue")
+
+
+def test_order_samples_by_group_moves_identical_labels_together() -> None:
+    sample_ids = ["s1", "s2", "s3", "s4"]
+    group_by_sample = {"s1": "treated", "s2": "control", "s3": "treated", "s4": "control"}
+
+    ordered = order_samples_by_group(sample_ids, group_by_sample)
+
+    assert ordered == ["s2", "s4", "s1", "s3"]
+
+
+def test_order_samples_by_group_preserves_relative_order_within_a_group() -> None:
+    sample_ids = ["s3", "s1", "s4", "s2"]
+    group_by_sample = {"s1": "A", "s2": "A", "s3": "B", "s4": "B"}
+
+    ordered = order_samples_by_group(sample_ids, group_by_sample)
+
+    assert ordered == ["s1", "s2", "s3", "s4"]
 
 
 def test_matching_metadata_order_is_recorded(

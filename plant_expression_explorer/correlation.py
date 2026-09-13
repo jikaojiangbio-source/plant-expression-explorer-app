@@ -466,6 +466,21 @@ def build_correlation_observations(
     return tuple(observations)
 
 
+def order_samples_by_group(
+    sample_ids: list[str],
+    group_by_sample: Mapping[str, object],
+) -> list[str]:
+    """Return ``sample_ids`` stably sorted so identical group labels are adjacent.
+
+    Ties (same label) keep their original relative order. This groups
+    already-known labels together for display only: it computes no
+    similarity or distance between samples and is not a clustering or
+    dendrogram-based reordering.
+    """
+
+    return sorted(sample_ids, key=lambda sample_id: str(group_by_sample[sample_id]))
+
+
 def build_grouped_pair_summary(
     result: SampleCorrelationResult,
     metadata: pd.DataFrame,

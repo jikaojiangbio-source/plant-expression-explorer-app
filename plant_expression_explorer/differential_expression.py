@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from enum import StrEnum
 from math import isfinite
@@ -229,6 +230,78 @@ def select_rows_by_status(
         raise TypeError("status must be a DifferentialExpressionStatus value.")
     mask = result.annotated_results[STATUS_COLUMN].eq(status.value)
     return result.annotated_results.loc[mask].copy(deep=True)
+
+
+VOLCANO_PLOT_COLUMNS = (
+    "gene_id",
+    "log2FoldChange",
+    "padj",
+    "neg_log10_padj",
+    STATUS_COLUMN,
+)
+
+
+@dataclass(frozen=True)
+class VolcanoPlotData:
+    """Plottable rows for one already-computed threshold classification.
+
+    ``plot_rows`` is a pure visualization of already-classified, already
+    user-supplied values; it introduces no new statistic. Rows whose status
+    is :attr:`DifferentialExpressionStatus.NOT_EVALUABLE` have no usable
+    coordinates and are excluded. A supplied ``padj`` of exactly 0 is a valid
+    retained value elsewhere in this application but has no finite
+    ``-log10`` representation, so such rows are excluded here and counted in
+    ``excluded_zero_padj_count`` rather than clipped or substituted.
+    """
+
+    plot_rows: pd.DataFrame
+    excluded_zero_padj_count: int
+
+
+def build_volcano_plot_data(
+    result: DifferentialExpressionResult,
+) -> VolcanoPlotData:
+    """Return a pure scatter view of already-classified supplied DE results.
+
+    Plots exactly the supplied ``log2FoldChange`` against ``-log10(padj)``
+    for evaluable rows, coloured by the already-computed exploratory
+    threshold status. No p-value, fold change, or significance call is
+    calculated, adjusted, or inferred here.
+    """
+
+    annotated = result.annotated_results
+    numeric_padj = pd.to_numeric(annotated["padj"], errors="coerce")
+    numeric_fold_change = pd.to_numeric(annotated["log2FoldChange"], errors="coerce")
+    evaluable = annotated[STATUS_COLUMN].ne(
+        DifferentialExpressionStatus.NOT_EVALUABLE.value
+    )
+    zero_padj = evaluable & numeric_padj.eq(0.0)
+    plottable = evaluable & ~zero_padj
+
+    gene_ids = annotated.loc[plottable, "gene_id"].map(str).tolist()
+    fold_changes = numeric_fold_change.loc[plottable].tolist()
+    padj_values = numeric_padj.loc[plottable].tolist()
+    neg_log10_padj = [-math.log10(value) for value in padj_values]
+    if not all(isfinite(value) for value in neg_log10_padj):
+        raise RuntimeError(
+            "Volcano-plot -log10(padj) values must be finite for retained rows."
+        )
+    statuses = annotated.loc[plottable, STATUS_COLUMN].tolist()
+
+    plot_rows = pd.DataFrame(
+        {
+            "gene_id": gene_ids,
+            "log2FoldChange": fold_changes,
+            "padj": padj_values,
+            "neg_log10_padj": neg_log10_padj,
+            STATUS_COLUMN: statuses,
+        },
+        columns=VOLCANO_PLOT_COLUMNS,
+    )
+    return VolcanoPlotData(
+        plot_rows=plot_rows,
+        excluded_zero_padj_count=int(zero_padj.sum()),
+    )
 
 
 def _validated_threshold(

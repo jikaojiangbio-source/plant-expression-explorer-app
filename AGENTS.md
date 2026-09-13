@@ -49,8 +49,16 @@ level, DE contrast description, notes) shown on every analysis page; and
 example CSV templates, an at-a-glance dataset overview card, and clearer
 error messages for common real-world upload mistakes (delimiter mismatch,
 blank spreadsheet-export columns, ad hoc missing-value placeholders); and
-GitHub release-readiness foundations comprising an exact Python 3.13.9
-version pin, pinned Python dependencies, least-privilege continuous
-integration, contributor guidance, and repository-readiness regression
-tests. Differential-expression modelling and volcano plots remain
-intentionally deferred.
+a descriptive volcano plot on the Differential Expression page, plotting
+the already-supplied, already-classified log2FoldChange/padj values with
+no model fit and no calculated statistic; a "sort by group" checkbox on
+the Sample Correlation heatmap that groups identical labels together
+without computing any similarity or distance (not a clustering or
+dendrogram-based reordering); Plotly-rendered interactive charts (zoom,
+pan, box/lasso-select, hover) for the PCA sample plot, correlation
+heatmap, gene-expression plot, and volcano plot; and GitHub
+release-readiness foundations comprising an exact Python 3.13.9 version
+pin, pinned Python dependencies, least-privilege continuous integration,
+contributor guidance, and repository-readiness regression tests.
+Differential-expression modelling and clustering remain intentionally
+deferred.
