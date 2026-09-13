@@ -13,7 +13,7 @@ The application accepts three CSV inputs:
 
 ## Current status
 
-Phases 1–10 provide:
+Phases 1–11 provide:
 
 - the Python project structure;
 - a Streamlit home page and navigation;
@@ -34,6 +34,8 @@ Phases 1–10 provide:
   values across samples with sample-condition context;
 - deterministic, non-mutating UTF-8 CSV downloads of current full-precision
   descriptive result tables from each analysis page;
+- a pinned Python 3.13.9 acceptance environment and least-privilege GitHub
+  Actions workflow for dependency and complete pytest checks;
 - placeholders for the later analysis pages;
 - automated tests.
 
@@ -42,7 +44,8 @@ implemented.
 
 ## Setup
 
-Python 3.11 or newer is recommended.
+Python 3.13.9 is the pinned acceptance version. Use that exact version when
+verifying a release or comparing results with continuous integration.
 
 ```bash
 python3 -m venv .venv
@@ -243,8 +246,9 @@ are not automatic exclusion criteria. No samples or genes are modified or
 removed, and Phase 6 performs no PCA, clustering, distance analysis, batch
 correction, hypothesis testing, or differential-expression inference.
 
-No dedicated application export workflow is implemented. Streamlit components
-may expose framework-provided table or chart actions.
+Phase 6 itself defines the correlation calculations and display contract.
+Phase 10 provides dedicated CSV downloads of the current correlation result
+tables without changing these calculations.
 
 The synthetic demo values, fictional gene IDs, and constructed p-values do not
 define real correlation thresholds or support tomato biological conclusions.
@@ -364,8 +368,9 @@ supplied fold-change value because the application does not know the contrast
 direction or reference level. Threshold matches do not establish statistical
 significance or biological importance. Phase 8 does not calculate or modify
 p-values, run DESeq2 or another differential-expression model, process FASTQ
-files, create a volcano plot, perform gene lookup, or provide a dedicated
-export workflow.
+files, create a volcano plot, or perform gene lookup. Phase 10 subsequently
+adds CSV downloads of the supplied and derived descriptive result tables; it
+does not change the Phase 8 classifications.
 
 ## Phase 9 descriptive gene-expression lookup
 
@@ -412,7 +417,8 @@ data remain descriptive and do not create a between-condition comparison.
 Phase 9 performs no FASTQ processing, normalization, transformation, filtering,
 batch correction, imputation, statistical testing, differential-expression
 inference, contrast or reference-level interpretation, biological-importance
-classification, volcano plotting, or dedicated export workflow.
+classification, or volcano plotting. Phase 10 subsequently adds CSV downloads
+of the selected gene's descriptive results without changing lookup semantics.
 
 ## Phase 10 descriptive result exports
 
@@ -460,6 +466,28 @@ transformation, filtering, imputation, ranking, hypothesis testing,
 differential-expression inference, reference-level or contrast interpretation,
 biological-importance claims, chart-image export, Excel/ZIP packaging, or a
 combined report.
+
+## Phase 11 GitHub release readiness
+
+The repository pins Python 3.13.9 in `.python-version` and pins every direct
+Python dependency in `requirements.txt`. Continuous integration also pins the
+pip installer version. The `Tests` GitHub Actions workflow
+runs on pushes and pull requests targeting `main`, uses read-only repository
+contents permission, does not persist checkout credentials, pins third-party
+actions to immutable commit SHAs, installs the declared dependencies, runs
+`pip check`, and executes the complete pytest suite. Continuous integration is
+a second clean-room verification environment; the local `.venv` remains the
+acceptance environment used before commits.
+
+Contributor expectations, architecture boundaries, scientific wording rules,
+test requirements, and synthetic-fixture policy are documented in
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+The workflow does not deploy the application, receive uploaded biological data,
+or use repository secrets. Creating a GitHub repository does not by itself make
+the Streamlit application publicly available. Any later hosted deployment must
+separately disclose its file-retention, logging, access-control, upload-size,
+and privacy policies before users submit non-demo data.
 
 ## Input validation
 

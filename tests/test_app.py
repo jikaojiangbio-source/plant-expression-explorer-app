@@ -2033,7 +2033,7 @@ def test_phase_10_download_wording_discloses_csv_boundaries() -> None:
     assert "gene id is added as an explicit context column" in gene_text
 
 
-def test_phase_10_navigation_and_documentation_keep_later_work_planned() -> None:
+def test_phase_11_navigation_and_documentation_keep_later_work_planned() -> None:
     home = AppTest.from_file("app.py").run()
     page_links = home.get("page_link")
     assert [link.proto.page for link in page_links] == [
@@ -2051,12 +2051,13 @@ def test_phase_10_navigation_and_documentation_keep_later_work_planned() -> None
     repository = Path(__file__).parents[1]
     readme = (repository / "README.md").read_text(encoding="utf-8")
     guide = (repository / "AGENTS.md").read_text(encoding="utf-8")
-    assert "Phases 1–10 provide" in readme
+    assert "Phases 1–11 provide" in readme
     assert "Phase 8 descriptive differential-expression exploration" in readme
     assert "Phase 9 descriptive gene-expression lookup" in readme
     assert "Phase 10 descriptive result exports" in readme
     assert "exact adjusted-p-value and absolute log2-fold-change thresholds" in readme
-    assert "As of Phase 10" in guide
+    assert "Phase 11 GitHub release readiness" in readme
+    assert "As of Phase 11" in guide
     for text in (readme, guide):
         normalized = " ".join(text.split())
         assert "volcano plots" in normalized
