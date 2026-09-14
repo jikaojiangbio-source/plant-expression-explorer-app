@@ -13,34 +13,37 @@ The application accepts three CSV inputs:
 
 ## Current status
 
-Phases 1–11 provide:
+This application currently provides:
 
-- the Python project structure;
-- a Streamlit home page and navigation;
-- a validated three-file CSV upload workflow;
-- a bundled reproducible synthetic tomato-style demonstration dataset;
-- a **Load synthetic demo data** route;
-- one complete validated dataset bundle in the active Streamlit session;
-- explicit validation feedback, table previews, source status, and Reset Data;
-- descriptive, non-mutating sample quality-control summaries for the active
-  dataset;
-- descriptive, non-mutating Pearson or Spearman sample-correlation summaries for the active
-  dataset;
-- descriptive, non-mutating sample PCA (mean-centred, optionally additionally
-  scaled to unit variance, SVD-based sample scores and explained variance)
-  for the active dataset;
+- a validated three-file CSV upload workflow (expression matrix, sample
+  metadata, optional differential-expression results), with a bundled
+  reproducible synthetic demonstration dataset and clearer error messages
+  for common real-world upload mistakes;
+- descriptive, non-mutating sample quality-control summaries, tolerant of
+  missing expression values (never imputed, always disclosed);
+- descriptive, non-mutating Pearson or Spearman sample-correlation summaries,
+  with pairwise-complete handling of missing values and a sortable heatmap;
+- descriptive, non-mutating sample PCA (mean-centred, with an optional
+  additional scale-to-unit-variance mode), excluding and disclosing any gene
+  with a missing value rather than imputing it;
 - descriptive, non-mutating threshold exploration of supplied, precomputed
-  differential-expression results, including a descriptive volcano plot of
-  the already-classified supplied values (no model fit, no calculated
-  statistic);
+  differential-expression results, including a descriptive volcano plot and
+  MA plot of the already-classified/already-supplied values (no model fit,
+  no calculated statistic);
 - descriptive, non-mutating lookup of one exact supplied gene's expression
-  values across samples with sample-condition context;
-- deterministic, non-mutating UTF-8 CSV downloads of current full-precision
-  descriptive result tables from each analysis page;
+  values, with an optional multi-gene comparison panel, a numeric
+  time-series chart axis, an optional small verified per-species gene
+  annotation reference, and an independent user-uploaded gene-annotation CSV
+  for any species;
+- optional, verbatim, non-scientifically-verified dataset context/provenance
+  shown on every analysis page;
+- deterministic, non-mutating UTF-8 CSV downloads of every current
+  full-precision descriptive result table, plus a single combined PDF report
+  (with SHA-256 checksums of the exact input files, for reproducibility/audit
+  only) assembled from those same already-computed tables;
 - a pinned Python 3.13.9 acceptance environment and least-privilege GitHub
   Actions workflow for dependency and complete pytest checks;
-- placeholders for the later analysis pages;
-- automated tests.
+- automated tests for every module and page above.
 
 Clustering and differential-expression modelling are not implemented.
 

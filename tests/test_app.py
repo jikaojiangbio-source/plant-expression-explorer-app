@@ -3135,7 +3135,7 @@ def test_report_page_reports_a_controlled_error_and_no_download_button_when_pdf_
     )
 
 
-def test_phase_11_navigation_and_documentation_keep_later_work_planned() -> None:
+def test_navigation_and_documentation_stay_accurate() -> None:
     home = AppTest.from_file("app.py").run()
     page_links = home.get("page_link")
     assert [link.proto.page for link in page_links] == [
@@ -3154,7 +3154,7 @@ def test_phase_11_navigation_and_documentation_keep_later_work_planned() -> None
     repository = Path(__file__).parents[1]
     readme = (repository / "README.md").read_text(encoding="utf-8")
     guide = (repository / "AGENTS.md").read_text(encoding="utf-8")
-    assert "Phases 1–11 provide" in readme
+    assert "This application currently provides" in readme
     assert "Phase 8 descriptive differential-expression exploration" in readme
     assert "Phase 9 descriptive gene-expression lookup" in readme
     assert "Phase 10 descriptive result exports" in readme
