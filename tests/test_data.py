@@ -33,3 +33,27 @@ def test_read_csv_reports_empty_file() -> None:
 def test_read_csv_reports_parser_failure() -> None:
     with pytest.raises(CsvReadError, match="Could not read"):
         read_csv(StringIO('a,b\n"unterminated,1\n'))
+
+
+@pytest.mark.parametrize(
+    ("row", "delimiter_name"),
+    [
+        ("gene_id;Sample_A;Sample_B\n1;2;3\n", "semicolon"),
+        ("gene_id\tSample_A\tSample_B\n1\t2\t3\n", "tab"),
+        ("gene_id|Sample_A|Sample_B\n1|2|3\n", "pipe"),
+    ],
+)
+def test_read_csv_detects_likely_delimiter_mismatch(
+    row: str, delimiter_name: str
+) -> None:
+    with pytest.raises(CsvReadError) as caught:
+        read_csv(StringIO(row))
+
+    assert caught.value.code is IssueCode.POSSIBLE_DELIMITER_MISMATCH
+    assert delimiter_name in str(caught.value)
+
+
+def test_read_csv_does_not_flag_a_genuine_single_column_file() -> None:
+    table = read_csv(StringIO("gene_id\ng1\ng2\n"))
+
+    assert table.columns.tolist() == ["gene_id"]

@@ -24,7 +24,7 @@ class QcErrorReason(StrEnum):
     DUPLICATE_REQUIRED_IDENTIFIER = "DUPLICATE_REQUIRED_IDENTIFIER"
     MISSING_REQUIRED_VALUE = "MISSING_REQUIRED_VALUE"
     NON_COERCIBLE_EXPRESSION_VALUE = "NON_COERCIBLE_EXPRESSION_VALUE"
-    MISSING_EXPRESSION_VALUE = "MISSING_EXPRESSION_VALUE"
+    EMPTY_EXPRESSION_SAMPLE_COLUMN = "EMPTY_EXPRESSION_SAMPLE_COLUMN"
     INFINITE_EXPRESSION_VALUE = "INFINITE_EXPRESSION_VALUE"
     SAMPLE_MISMATCH = "SAMPLE_MISMATCH"
 
@@ -118,8 +118,11 @@ def compute_sample_qc(
     """Calculate non-mutating descriptive summaries for one validated dataset.
 
     Safely coercible numeric strings are converted only in a temporary working
-    copy. Missing, non-coercible, or infinite expression values cause a
-    :class:`QcComputationError`; no invalid cells, genes, or samples are skipped.
+    copy. A missing expression cell is retained as missing (never imputed)
+    and excluded from any statistic that requires a value for that cell; a
+    sample column that is entirely missing, a non-coercible value, or an
+    infinite value each cause a :class:`QcComputationError`. No non-missing
+    cell, gene, or sample is skipped.
     """
 
     _require_dataframe(expression, "Expression matrix")
@@ -211,7 +214,7 @@ def compute_sample_qc(
         gene_count=len(expression.index),
         sample_count=len(sample_ids),
         expression_cell_count=len(expression.index) * len(sample_ids),
-        missing_value_count=0,
+        missing_value_count=int(numeric_expression.isna().sum().sum()),
         non_finite_value_count=0,
         zero_value_count=int(numeric_expression.eq(0).sum().sum()),
         negative_value_count=int(numeric_expression.lt(0).sum().sum()),
@@ -288,12 +291,101 @@ def build_condition_summary(
     )
 
 
+def list_additional_metadata_columns(metadata: pd.DataFrame) -> tuple[str, ...]:
+    """List metadata columns beyond 'sample_id'/'condition', in file order."""
+
+    if not isinstance(metadata, pd.DataFrame):
+        return ()
+    return tuple(
+        str(column)
+        for column in metadata.columns
+        if str(column) not in ("sample_id", "condition")
+    )
+
+
+def build_grouped_sample_summary(
+    result: SampleQcResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return the per-sample summary labelled by one metadata column.
+
+    ``group_column`` values are joined from ``metadata`` by exact sample ID,
+    for display only, exactly like 'condition' on ``result.sample_summary``.
+    Every per-sample numeric statistic is copied unchanged from
+    :func:`compute_sample_qc`; none is recalculated for the new grouping.
+    """
+
+    if group_column == "condition":
+        return result.sample_summary.copy(deep=True)
+    lookup = _metadata_column_lookup(metadata, group_column)
+    display = result.sample_summary.copy(deep=True)
+    display[group_column] = display["sample_id"].map(lookup)
+    columns = [
+        group_column if column == "condition" else column
+        for column in SAMPLE_SUMMARY_COLUMNS
+    ]
+    return display.loc[:, columns]
+
+
+def build_grouped_condition_summary(
+    result: SampleQcResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return group membership counts for one metadata column.
+
+    Reuses :func:`build_condition_summary` with an alternate grouping; no
+    per-sample numeric statistic is touched.
+    """
+
+    if group_column == "condition":
+        return result.condition_summary.copy(deep=True)
+    lookup = _metadata_column_lookup(metadata, group_column)
+    sample_ids = result.sample_summary["sample_id"].tolist()
+    groups = [lookup[sample_id] for sample_id in sample_ids]
+    summary = build_condition_summary(sample_ids, groups)
+    return summary.rename(columns={"condition": group_column})
+
+
+def build_grouped_condition_chart_data(
+    result: SampleQcResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return ordered group counts for charting under one metadata column."""
+
+    summary = build_grouped_condition_summary(result, metadata, group_column)
+    return summary.loc[:, [group_column, "sample_count"]].copy(deep=True)
+
+
+def _metadata_column_lookup(
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> dict[str, object]:
+    if not isinstance(metadata, pd.DataFrame) or "sample_id" not in metadata.columns:
+        raise ValueError("Sample metadata is missing required column 'sample_id'.")
+    if group_column not in metadata.columns:
+        raise ValueError(f"Sample metadata does not contain column '{group_column}'.")
+    return {
+        str(sample_id): ("(missing)" if _is_missing_or_blank(value) else value)
+        for sample_id, value in zip(
+            metadata["sample_id"], metadata[group_column], strict=True
+        )
+    }
+
+
 def find_constant_samples(
     numeric_expression: pd.DataFrame,
 ) -> tuple[str, ...]:
-    """Return sample IDs whose values are exactly identical across all genes."""
+    """Return sample IDs whose non-missing values are identical across genes.
 
-    unique_counts = numeric_expression.nunique(axis=0, dropna=False)
+    A sample with no non-missing value at all is not considered constant;
+    missing values are excluded from the comparison rather than treated as
+    a distinct value.
+    """
+
+    unique_counts = numeric_expression.nunique(axis=0, dropna=True)
     return tuple(
         str(sample_id)
         for sample_id in numeric_expression.columns
@@ -302,9 +394,14 @@ def find_constant_samples(
 
 
 def count_zero_variance_genes(numeric_expression: pd.DataFrame) -> int:
-    """Count genes whose values are exactly identical across all samples."""
+    """Count genes whose non-missing values are identical across samples.
 
-    return int(numeric_expression.nunique(axis=1, dropna=False).eq(1).sum())
+    A gene with no non-missing value at all is not counted; missing values
+    are excluded from the comparison rather than treated as a distinct
+    value.
+    """
+
+    return int(numeric_expression.nunique(axis=1, dropna=True).eq(1).sum())
 
 
 def build_qc_observations(
@@ -339,6 +436,13 @@ def build_qc_observations(
             "Metadata sample order differs from expression-column order. "
             "Conditions were mapped by exact sample ID without modifying "
             "either table."
+        )
+    if result.missing_value_count:
+        observations.append(
+            f"The matrix contains {result.missing_value_count} missing "
+            "value(s), retained as missing and excluded from statistics "
+            "that require a value for that cell; per-sample counts are "
+            "shown in the table above. No value was imputed."
         )
     if result.zero_value_count:
         observations.append(
@@ -480,18 +584,22 @@ def _numeric_expression_copy(
     missing_mask = working.apply(
         lambda column: column.map(_is_missing_or_blank)
     )
-    missing_count = int(missing_mask.sum().sum())
-    if missing_count:
+    empty_columns = [
+        sample_id
+        for column, sample_id in zip(sample_columns, sample_ids, strict=True)
+        if missing_mask[column].all()
+    ]
+    if empty_columns:
         raise QcComputationError(
-            QcErrorReason.MISSING_EXPRESSION_VALUE,
-            f"The expression matrix contains {missing_count} missing or "
-            "blank sample value(s).",
+            QcErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN,
+            "Sample column(s) contain only missing or blank values: "
+            + ", ".join(empty_columns) + ".",
         )
 
     numeric = working.apply(
         lambda column: pd.to_numeric(column, errors="coerce")
     )
-    non_coercible_count = int(numeric.isna().sum().sum())
+    non_coercible_count = int((numeric.isna() & ~missing_mask).sum().sum())
     if non_coercible_count:
         raise QcComputationError(
             QcErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,

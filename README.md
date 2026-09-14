@@ -24,12 +24,15 @@ Phases 1–11 provide:
 - explicit validation feedback, table previews, source status, and Reset Data;
 - descriptive, non-mutating sample quality-control summaries for the active
   dataset;
-- descriptive, non-mutating Pearson sample-correlation summaries for the active
+- descriptive, non-mutating Pearson or Spearman sample-correlation summaries for the active
   dataset;
-- descriptive, non-mutating sample PCA (mean-centred, unscaled, SVD-based
-  sample scores and explained variance) for the active dataset;
+- descriptive, non-mutating sample PCA (mean-centred, optionally additionally
+  scaled to unit variance, SVD-based sample scores and explained variance)
+  for the active dataset;
 - descriptive, non-mutating threshold exploration of supplied, precomputed
-  differential-expression results;
+  differential-expression results, including a descriptive volcano plot of
+  the already-classified supplied values (no model fit, no calculated
+  statistic);
 - descriptive, non-mutating lookup of one exact supplied gene's expression
   values across samples with sample-condition context;
 - deterministic, non-mutating UTF-8 CSV downloads of current full-precision
@@ -39,8 +42,7 @@ Phases 1–11 provide:
 - placeholders for the later analysis pages;
 - automated tests.
 
-Clustering, differential-expression modelling, and volcano plots are not
-implemented.
+Clustering and differential-expression modelling are not implemented.
 
 ## Setup
 
@@ -172,18 +174,20 @@ testing, or differential-expression inference.
 
 ## Phase 6 descriptive sample correlation
 
-The Sample Correlation page calculates Pearson correlation between every pair
-of sample columns across all gene rows in the active expression matrix. Phase 6
-supports Pearson only: it does not silently select another correlation method
-and does not calculate correlation p-values or confidence intervals.
+The Sample Correlation page calculates correlation between every pair of
+sample columns across the gene rows in the active expression matrix, using
+either Pearson (linear correlation; the default) or Spearman (rank
+correlation) — a user-selected, disclosed choice, never a silent default
+substitution — and never calculates correlation p-values or confidence
+intervals for either method.
 
 For `n` expression samples, the correlation matrix is `n × n`. Both axes follow
 the original expression sample-column order; the matrix is never clustered or
 reordered by similarity. Non-constant sample diagonal values are `1.0`.
 A constant sample has exactly identical expression values across every gene,
-so its Pearson correlations, including its diagonal, are undefined and remain
-`NaN` in the computational result. Undefined correlations are never replaced
-with zero or one.
+so its correlations (Pearson or Spearman alike), including its diagonal, are
+undefined and remain `NaN` in the computational result. Undefined correlations
+are never replaced with zero or one.
 
 The unique sample-pair summary excludes the diagonal and contains each unordered
 pair exactly once, for `n(n-1)/2` rows. Its deterministic order follows
@@ -209,7 +213,7 @@ a `1 × 1` matrix containing `NaN`. In either case there are no unique non-self
 pairs and the per-sample correlation statistics remain undefined. Although the
 validated application input contract normally requires more than one sample,
 these behaviours make the pure computation API explicit. A one-gene matrix
-cannot support Pearson correlation and produces a controlled
+cannot support either correlation method and produces a controlled
 `INSUFFICIENT_GENE_ROWS` error.
 
 Safely coercible numeric strings are converted only in a temporary deep copy.
@@ -264,16 +268,25 @@ colour coding; they are never used to fit the components.
 
 Each gene is mean-centred across samples in a temporary numeric copy before
 singular value decomposition (SVD); the active expression matrix is never
-rewritten. Genes are not scaled to unit variance. This preserves the relative
-variance structure of the supplied preprocessed matrix and avoids adding a
-separate standardization step. Genes with larger variance in the supplied
-matrix consequently contribute more strongly to the components; this is a
-disclosed analysis policy, not a claim that such genes are more biologically
-informative, and not a claim that this is a universally superior PCA method.
-Upstream normalization, transformation, filtering, and gene selection
-materially affect the result. No log transformation, normalisation,
-filtering, trimming, aggregation, reordering, or imputation is performed. All
-gene features are retained, including constant genes.
+rewritten. By default, genes are not scaled to unit variance. This preserves
+the relative variance structure of the supplied preprocessed matrix and
+avoids adding a separate standardization step. Genes with larger variance in
+the supplied matrix consequently contribute more strongly to the components;
+this is a disclosed analysis policy, not a claim that such genes are more
+biologically informative, and not a claim that this is a universally
+superior PCA method. Upstream normalization, transformation, filtering, and
+gene selection materially affect the result. No log transformation,
+normalisation, filtering, trimming, aggregation, reordering, or imputation is
+performed. All gene features are retained, including constant genes.
+
+A "Scale each gene to unit variance" checkbox (off by default) additionally
+divides each gene's centred values by its own sample standard deviation
+before decomposition ("correlation-matrix" PCA), so every non-constant gene
+contributes equally regardless of its magnitude on the supplied scale. A
+gene with exactly zero variance is kept at exactly zero rather than divided
+by zero. Neither mode is presented as universally superior; the choice and
+its effect on the result are both disclosed in the Method panel and the
+descriptive observations.
 
 PCA uses NumPy's singular value decomposition directly (`numpy.linalg.svd`).
 The component count is `min(sample_count - 1, gene_count)`. At least two
@@ -489,6 +502,243 @@ the Streamlit application publicly available. Any later hosted deployment must
 separately disclose its file-retention, logging, access-control, upload-size,
 and privacy policies before users submit non-demo data.
 
+## Phase 12 real-world usability
+
+Phase 12 makes precomputed differential-expression results optional. A dataset
+bundle with only a validated expression matrix and sample metadata is now
+active; Sample Quality Control, PCA, Sample Correlation, and Gene Expression do
+not require a differential-expression file, and the Differential Expression
+page explains that one was not supplied instead of blocking upload.
+
+Phase 12 also adds descriptive, optional dataset context (`DatasetProvenance`):
+a dataset title, organism/taxon, expression-scale description, upstream
+normalization method, reference genome/annotation, feature level, and a
+differential-expression contrast description, plus free-text notes. Every
+field is carried and displayed verbatim, in a fixed-width block that does not
+reinterpret whitespace, on every analysis page; it is never parsed, verified,
+or used in any calculation. The bundled synthetic demo dataset supplies its own
+fixed, disclosed context.
+
+Phase 12 improves CSV error clarity for common real-world upload mistakes
+without changing any validation rule's outcome:
+
+- A single-column CSV whose header contains `;`, a tab, or `|` is reported as a
+  likely delimiter mismatch (for example, a semicolon-separated European
+  spreadsheet export) instead of a confusing missing-column error.
+- A column pandas auto-names `Unnamed: N` (typically a spreadsheet export's
+  trailing empty column) is reported as a blank column header, naming the
+  likely cause.
+- A non-numeric expression or differential-expression value that looks like an
+  ad hoc missing-value placeholder (for example `-`, `.`, or `na`) receives an
+  added note to leave the cell blank instead, since such placeholders are not
+  treated as missing values automatically.
+
+Sample metadata may carry additional columns beyond `sample_id` and
+`condition` (for example `genotype`, `tissue`, `batch`, or
+`biological_replicate`); they are preserved and every analysis page that
+groups by condition (PCA, Sample Quality Control, Sample Correlation, Gene
+Expression) offers a "Group by" / "Colour points by" selector for any such
+column. This always relabels or rejoins already-computed results by exact
+sample ID, or recomputes only the same already-disclosed descriptive
+statistic (minimum/median/mean/maximum/standard deviation) for the new
+grouping; no PCA component or Pearson correlation is ever recalculated. The
+selected grouping column is shared across those four pages for the session
+(reset automatically to 'condition' whenever a new dataset is activated, or
+if the stored column does not exist on the active dataset's metadata).
+
+The Upload Data page shows an at-a-glance overview card (gene count, sample
+count, DE-row count or "Not supplied", and a samples-per-condition chart) as
+soon as a dataset is active; separates the demo and upload workflows into
+tabs; and offers example CSV templates (fabricated placeholder values only)
+showing the exact required column layout for each table. The maximum upload
+size is raised to 500 MB per file to accommodate genome-scale matrices, and
+uploaded-file validation runs under a progress spinner.
+
+Each analysis page's "Method" and "Scientific and statistical limitations"
+text is collapsed into an expander so descriptive results are not visually
+crowded by disclosures; the wording itself is unchanged and still applies in
+full. PCA, Sample Quality Control, and Sample Correlation show a spinner
+while their (potentially genome-scale) computation runs.
+
+The Gene Expression page's gene selector gains a case-insensitive substring
+search box once a dataset supplies more than 200 genes, keeping the
+underlying dropdown responsive; matches beyond 500 are truncated with an
+explicit count, and matching never trims, reorders, or aliases identifiers.
+
+The Sample Correlation heatmap offers a "sort by group" checkbox that groups
+samples sharing the same 'condition' (or selected metadata column) label
+together, preserving each group's original relative order. This computes no
+similarity or distance between samples; it is not a clustering or
+dendrogram-based reordering, and the page's disclosed scope is unchanged.
+
+The PCA sample plot, the Sample Correlation heatmap, the Gene Expression
+per-sample plot, and the Differential Expression volcano plot (below) are
+rendered with Plotly for built-in zoom, pan, box/lasso-select, and hover
+tooltips; QC/DE/PCA bar charts remain native Streamlit charts. No plotted
+value differs from its Vega-Lite predecessor.
+
+## Volcano plot
+
+The Differential Expression page includes a descriptive volcano plot: the
+supplied `log2FoldChange` against `-log10(padj)` for evaluable rows, coloured
+by the same exploratory threshold status already shown in the category table,
+with dashed guides at the exact applied thresholds. It introduces no new
+statistic; it plots values already computed by threshold classification. A
+supplied `padj` of exactly 0 has no finite `-log10` value, so such rows are
+excluded from the plot only (never from any table or download) and counted in
+an explicit disclosure message.
+
+## MA plot
+
+The Differential Expression page also includes a descriptive MA plot: each
+evaluable gene's `mean_expression` (the arithmetic mean of that gene's own
+supplied per-sample expression values, missing values excluded and never
+imputed) against the supplied `log2FoldChange`, coloured by the same
+exploratory threshold status. `mean_expression` is computed from the active
+expression matrix already used elsewhere in this application; it is not a
+library-size-normalized `baseMean` (DESeq2) or `AveExpr` (limma) statistic
+from any specific external tool, and no statistic is calculated, adjusted,
+or inferred here. An evaluable row whose gene_id has no exact, unambiguous
+match in the expression matrix, or whose every supplied expression value
+for that gene is missing, is excluded from the plot only (never from any
+table or download) and counted in an explicit disclosure message.
+
+## Visual design system
+
+`plant_expression_explorer/theme.py` defines a shared, presentation-only
+stylesheet (`inject_global_styles()`) called near the top of every page. It
+restyles existing Streamlit elements only — alerts as quieter cards with a
+coloured left accent instead of a solid pastel fill, `st.metric` as a small
+card with a brand-coloured top border, buttons and `st.page_link` rows as
+rounded cards with a hover lift, a sidebar-link hover state, and the Inter
+typeface — and hides the Streamlit Community Cloud "Deploy" affordance, since
+this is a finished, purpose-built app rather than a work-in-progress
+template. No rule changes any element's text, order, or presence, and no
+rule affects computation.
+
+The home page adds a two-column hero (title/scope/primary call to action
+beside a hand-authored, clearly-labelled illustrative SVG preview of the
+app's chart types — abstract shapes, not real data), a dark rounded "How it
+works" panel presenting the same seven workflow steps as numbered cards, and
+a row of capability chips. These are additive presentational elements built
+from the same underlying text already required elsewhere; no scientific
+wording changed.
+
+## Species reference (optional, display-only)
+
+The Gene Expression page offers an optional "Species reference" selector.
+When a supported species is chosen and the currently selected gene ID
+exactly matches an entry in `data/annotations/<species>.csv`, its published
+gene symbol, a short description, and its data source are shown. Matching is
+exact `str(value)` equality only, identical to every other identifier match
+in this application: no case-folding, trimming, or alias resolution, and no
+computation ever uses this lookup.
+
+This is a small, hand-curated list of well-known reference/marker genes per
+species (currently Arabidopsis thaliana, rice, maize, and soybean; not yet
+tomato — see `data/annotations/README.md` for why), not a genome annotation.
+Most real gene IDs will not have an entry; that is expected, not an error.
+Every bundled `gene_id`/`symbol` pair was individually verified against the
+Ensembl Plants REST API in the session that added it; rows whose description
+was hand-written from established literature (because the API returned
+none) are labelled as such in the `source` column rather than attributed to
+Ensembl.
+
+An unmatched gene ID is often not because the gene is unlisted, but because
+several of these species have two or more non-interchangeable identifier
+systems for the same genome (for example rice's RAP-DB vs MSU/TIGR locus
+IDs, maize's Ensembl Plants Zm00001eb-style IDs vs older GRMZM/Zm00001d
+IDs from earlier assembly versions, soybean's underscore- vs dot-notation
+Wm82.a2 IDs, or an Arabidopsis TAIR locus ID with a transcript/splice-
+variant version suffix). When the supplied gene ID's shape matches one of
+these well-documented alternate systems, an additional caption names which
+system it looks like and which system the bundled list actually uses. This
+is a descriptive note only: `plant_expression_explorer/annotations.py`
+never rewrites, strips, or looks up the identifier under any other form,
+consistent with the exact-match-only contract above.
+
+## Custom annotation upload (optional, display-only)
+
+The bundled species reference above covers only a few dozen marker genes
+across four species, so the Gene Expression page also offers an
+independent "Upload gene annotation CSV" file uploader. A user-supplied
+CSV with `gene_id`, `symbol`, and `description` columns (an optional
+`source` column is shown verbatim when present and non-blank; otherwise a
+row's source is reported as an unverified user upload) is indexed by exact
+`gene_id` and matched against the currently selected gene, using the same
+exact `str(value)` equality as every other identifier lookup in this
+application. Unlike the bundled per-species lists, an uploaded annotation
+file's accuracy is never independently verified by this application: the
+uploader is responsible for its contents, exactly as for the expression,
+metadata, and differential-expression tables. Like the bundled species
+reference, this is never a genome annotation and is never used in any
+calculation, and a malformed file (missing a required column, a blank
+`gene_id`/`symbol`, or a duplicate `gene_id`) produces a controlled error
+naming the problem rather than a partial or guessed table.
+
+## Multi-gene panel (optional)
+
+The Gene Expression page offers an optional "Compare with additional gene
+IDs" multiselect, independent of the primary "Exact gene ID" selector used
+throughout the rest of the page. Choosing one or more additional exact gene
+IDs adds a combined panel above the single-gene detail view: a Plotly line
+chart (one coloured series per gene, samples in expression-column order) and
+a wide-format table (`sample_id`, `condition`, one column per selected gene)
+with its own CSV download. Each gene's values come from an independent call
+to the same per-sample lookup used by the single-gene view; genes are never
+averaged, combined into a score, or ranked against one another, and adding
+this panel does not change the primary gene's detail view below it.
+
+## Time-series chart x-axis (optional)
+
+When the active dataset's sample metadata has at least one column beyond
+`sample_id` and `condition`, the Gene Expression page offers a "Chart
+x-axis" selector. The default, "Sample (upload order)", is the existing
+categorical per-sample plot. Choosing "Numeric time/order: `<column>`"
+instead re-renders the per-sample plot as a Plotly line chart with that
+column's exact supplied value, converted to numeric, on the x-axis; points
+are connected only to make the sample sequence easier to trace, not as a
+fitted trend or interpolation, and replicates sharing one time value are
+plotted individually rather than averaged. If the chosen column is not
+numeric for every sample, the page shows a controlled error naming every
+offending sample instead of skipping, coercing, or guessing values.
+
+## Report export (optional, PDF)
+
+The Report Export page assembles a single downloadable PDF from
+already-computed descriptive result tables: a dataset summary, dataset
+context, the Sample Quality Control condition summary, the PCA explained-
+variance table, the Sample Correlation condition-pair summary, and (when
+supplied) the Differential Expression category summary. It performs no new
+calculation; every table is produced by the same functions used on their
+respective pages, using the same shared "group by" column and, for
+Differential Expression, the same exploratory thresholds set on that page
+(or the same defaults it uses when unvisited). The page also renders every
+section on screen before offering the download, so the PDF never contains
+content the user has not already seen. A section whose underlying
+computation is not currently possible for the active dataset (for example,
+no differential-expression results supplied) is included as an explicit
+note rather than silently dropped.
+
+The report does not include the Gene Expression page's per-gene lookup or
+its multi-gene/time-series charts, since those depend on a page-local gene
+and chart choice rather than dataset-level state; it also contains no chart
+images. `plant_expression_explorer/report.py` builds the PDF with
+`reportlab`; a table cell, title, or note containing a character its
+built-in font cannot render (outside Windows-1252) produces a controlled
+error naming the offending section instead of silently dropping or
+mangling that character.
+
+The Dataset summary table also includes a SHA-256 checksum for each
+uploaded/demo input file, computed from the exact source CSV bytes before
+any parsing (`plant_expression_explorer/dataset.py`'s `DatasetChecksums`),
+so a later reader can confirm a specific report was generated from a
+specific, byte-identical input file. Two uploads of the same file always
+produce the same digest, and this is purely a disclosure: it is never
+compared, validated, or used to gate anything. A dataset built without
+supplying checksums (as some older or directly-constructed bundles are)
+shows an explicit "not available" note instead of a fabricated value.
+
 ## Input validation
 
 Phase 2 validates three preprocessed CSV tables before making a validated
@@ -500,7 +750,19 @@ dataset bundle available to downstream pages.
 - At least two sample columns are required in addition to `gene_id`.
 - Gene identifiers must be non-empty and unique.
 - Expression values must be numeric or safely coercible to numeric values,
-  finite, and non-missing.
+  and finite.
+- A missing expression value is permitted (a Warning, not an Error): it is
+  retained as missing and never imputed. Each descriptive calculation
+  documents its own handling — Sample Quality Control's per-sample
+  statistics and PCA's and Sample Correlation's constant-sample check
+  exclude missing values gene-wise; PCA excludes any gene with a missing
+  value from that calculation entirely (disclosed exact count); Sample
+  Correlation computes each sample pair from only the gene rows where both
+  samples have a value ("pairwise complete"), reporting a pair as undefined
+  when fewer than 2 such rows exist; Gene Expression excludes a missing
+  sample from that gene's condition summary statistics. A sample column
+  with no non-missing value at all is still a blocking Error, since there is
+  nothing to summarize.
 - Negative expression values are permitted because transformed or centred
   matrices may legitimately contain them. They produce a Warning, remain
   unchanged, and are not treated as an Error.
@@ -511,7 +773,9 @@ dataset bundle available to downstream pages.
 - Sample identifiers must be non-empty and unique.
 - Condition values must be non-empty.
 - Additional columns are preserved but are not scientifically interpreted by
-  Phase 2 validation.
+  Phase 2 validation. Phase 12 lets the PCA page use one such column, chosen
+  by the user, for display-only sample-plot colouring (see "Phase 12 real-world
+  usability").
 
 ### Precomputed differential-expression results
 

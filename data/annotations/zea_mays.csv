@@ -1,0 +1,8 @@
+gene_id,symbol,description,source
+Zm00001eb143690,vp1,Viviparous1 (VP1); ABA-responsive transcription factor controlling seed dormancy and maturation.,hand-curated from established literature
+Zm00001eb148990,ba1,barren stalk1,Ensembl Plants REST API (rest.ensembl.org)
+Zm00001eb159020,a1,Dihydroflavonol 4-reductase,Ensembl Plants REST API (rest.ensembl.org)
+Zm00001eb174590,su1,Sugary1 (SU1); starch-debranching enzyme; the classic sweet-corn mutant locus.,hand-curated from established literature
+Zm00001eb271860,y1,"Yellow1 / Phytoene synthase 1 (Y1/PSY1); carotenoid biosynthesis, endosperm colour.",hand-curated from established literature
+Zm00001eb355240,Rap2.7,AP2/ERF-domain transcription factor near the Vgt1 flowering-time QTL.,hand-curated from established literature
+Zm00001eb429330,r1,seed color component at R1,Ensembl Plants REST API (rest.ensembl.org)

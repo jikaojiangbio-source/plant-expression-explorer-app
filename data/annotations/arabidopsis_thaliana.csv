@@ -1,0 +1,13 @@
+gene_id,symbol,description,source
+AT1G14920,GAI,GRAS family transcription factor family protein,Ensembl Plants REST API (rest.ensembl.org)
+AT1G24260,SEP3,K-box region and MADS-box transcription factor family protein,Ensembl Plants REST API (rest.ensembl.org)
+AT1G65480,FT,PEBP (phosphatidylethanolamine-binding protein) family protein,Ensembl Plants REST API (rest.ensembl.org)
+AT1G69120,AP1,K-box region and MADS-box transcription factor family protein,Ensembl Plants REST API (rest.ensembl.org)
+AT2G43010,PIF4,phytochrome interacting factor 4,Ensembl Plants REST API (rest.ensembl.org)
+AT3G18780,ACT2,actin 2,Ensembl Plants REST API (rest.ensembl.org)
+AT4G08920,CRY1,cryptochrome 1,Ensembl Plants REST API (rest.ensembl.org)
+AT5G09810,ACT7,actin 7,Ensembl Plants REST API (rest.ensembl.org)
+AT5G10140,FLC,K-box region and MADS-box transcription factor family protein,Ensembl Plants REST API (rest.ensembl.org)
+AT5G15840,CO,B-box type zinc finger protein with CCT domain-containing protein,Ensembl Plants REST API (rest.ensembl.org)
+AT5G44340,TUB4,tubulin beta chain 4,Ensembl Plants REST API (rest.ensembl.org)
+AT5G61850,LFY,floral meristem identity control protein LEAFY (LFY),Ensembl Plants REST API (rest.ensembl.org)

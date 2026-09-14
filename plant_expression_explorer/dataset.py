@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,6 +12,7 @@ import pandas as pd
 
 from plant_expression_explorer.consistency import validate_input_tables
 from plant_expression_explorer.data import CsvReadError, read_csv
+from plant_expression_explorer.provenance import DatasetProvenance
 from plant_expression_explorer.validation import (
     IssueCode,
     Severity,
@@ -21,7 +23,7 @@ from plant_expression_explorer.validation import (
 DatasetSource: TypeAlias = Literal["demo", "uploaded"]
 CandidateStatus: TypeAlias = Literal["incomplete", "invalid", "valid"]
 CsvSource: TypeAlias = str | Path | IO[Any]
-DatasetTables: TypeAlias = tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]
+DatasetTables: TypeAlias = tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]
 
 CURRENT_DATASET_KEY = "pee_current_dataset"
 CANDIDATE_REPORT_KEY = "pee_candidate_report"
@@ -30,6 +32,15 @@ CANDIDATE_LABEL_KEY = "pee_candidate_label"
 EXPRESSION_UPLOAD_KEY = "pee_upload_expression"
 METADATA_UPLOAD_KEY = "pee_upload_metadata"
 DE_RESULTS_UPLOAD_KEY = "pee_upload_de_results"
+DATASET_TITLE_KEY = "pee_context_dataset_title"
+ORGANISM_KEY = "pee_context_organism"
+EXPRESSION_SCALE_KEY = "pee_context_expression_scale"
+UPSTREAM_NORMALIZATION_KEY = "pee_context_upstream_normalization"
+REFERENCE_ANNOTATION_KEY = "pee_context_reference_annotation"
+FEATURE_LEVEL_KEY = "pee_context_feature_level"
+DE_CONTRAST_KEY = "pee_context_de_contrast"
+CONTEXT_NOTES_KEY = "pee_context_notes"
+ACTIVE_GROUP_COLUMN_KEY = "pee_active_group_column"
 
 CANDIDATE_FEEDBACK_KEYS = (
     CANDIDATE_REPORT_KEY,
@@ -41,11 +52,23 @@ UPLOADER_KEYS = (
     METADATA_UPLOAD_KEY,
     DE_RESULTS_UPLOAD_KEY,
 )
+DATASET_CONTEXT_KEYS = (
+    DATASET_TITLE_KEY,
+    ORGANISM_KEY,
+    EXPRESSION_SCALE_KEY,
+    UPSTREAM_NORMALIZATION_KEY,
+    REFERENCE_ANNOTATION_KEY,
+    FEATURE_LEVEL_KEY,
+    DE_CONTRAST_KEY,
+    CONTEXT_NOTES_KEY,
+)
 LEGACY_DATA_KEYS = ("expression", "metadata", "de_results")
 APPLICATION_DATA_KEYS = (
     CURRENT_DATASET_KEY,
     *CANDIDATE_FEEDBACK_KEYS,
     *UPLOADER_KEYS,
+    *DATASET_CONTEXT_KEYS,
+    ACTIVE_GROUP_COLUMN_KEY,
     *LEGACY_DATA_KEYS,
 )
 
@@ -64,6 +87,22 @@ _TABLE_SPECS = (
 
 
 @dataclass(frozen=True)
+class DatasetChecksums:
+    """SHA-256 hex digests of the exact source CSV bytes for one dataset.
+
+    Computed from the raw uploaded/demo file bytes before any parsing, so
+    two uploads of byte-identical files always produce identical digests
+    regardless of how pandas subsequently reads them. Intended for
+    reproducibility/audit disclosure (for example in the PDF report), not
+    for any computation or integrity enforcement.
+    """
+
+    expression_sha256: str
+    metadata_sha256: str
+    de_results_sha256: str | None
+
+
+@dataclass(frozen=True)
 class DatasetBundle:
     """One complete validated dataset available to later pages.
 
@@ -73,10 +112,12 @@ class DatasetBundle:
 
     expression: pd.DataFrame
     metadata: pd.DataFrame
-    de_results: pd.DataFrame
+    de_results: pd.DataFrame | None
     source: DatasetSource
     source_label: str
     validation_report: ValidationReport
+    provenance: DatasetProvenance | None = None
+    checksums: DatasetChecksums | None = None
 
     @property
     def gene_count(self) -> int:
@@ -88,7 +129,11 @@ class DatasetBundle:
 
     @property
     def de_row_count(self) -> int:
-        return len(self.de_results)
+        return 0 if self.de_results is None else len(self.de_results)
+
+    @property
+    def has_de_results(self) -> bool:
+        return self.de_results is not None
 
 
 @dataclass(frozen=True)
@@ -98,19 +143,30 @@ class CandidateResult:
     status: CandidateStatus
     tables: DatasetTables | None
     report: ValidationReport
+    checksums: DatasetChecksums | None = None
 
     def __post_init__(self) -> None:
         if self.status == "incomplete":
-            if self.tables is not None or self.report.has_errors:
+            if (
+                self.tables is not None
+                or self.report.has_errors
+                or self.checksums is not None
+            ):
                 raise ValueError(
-                    "An incomplete candidate must have no tables and no Errors."
+                    "An incomplete candidate must have no tables, checksums, "
+                    "or Errors."
                 )
             return
 
         if self.status == "invalid":
-            if self.tables is not None or not self.report.has_errors:
+            if (
+                self.tables is not None
+                or not self.report.has_errors
+                or self.checksums is not None
+            ):
                 raise ValueError(
-                    "An invalid candidate must hide its tables and contain Errors."
+                    "An invalid candidate must hide its tables and checksums "
+                    "and contain Errors."
                 )
             return
 
@@ -119,11 +175,25 @@ class CandidateResult:
                 raise ValueError(
                     "A valid candidate must contain tables and have no Errors."
                 )
-            if len(self.tables) != 3 or not all(
-                isinstance(table, pd.DataFrame) for table in self.tables
+            if (
+                len(self.tables) != 3
+                or not isinstance(self.tables[0], pd.DataFrame)
+                or not isinstance(self.tables[1], pd.DataFrame)
+                or (
+                    self.tables[2] is not None
+                    and not isinstance(self.tables[2], pd.DataFrame)
+                )
             ):
                 raise ValueError(
-                    "A valid candidate must contain three pandas DataFrames."
+                    "A valid candidate must contain expression and metadata "
+                    "DataFrames plus an optional differential-expression DataFrame."
+                )
+            if self.checksums is not None and not isinstance(
+                self.checksums, DatasetChecksums
+            ):
+                raise ValueError(
+                    "A valid candidate's checksums must be a DatasetChecksums "
+                    "instance or None."
                 )
             return
 
@@ -173,26 +243,21 @@ def load_uploaded_candidate(
 ) -> CandidateResult:
     """Load and validate uploaded sources, or report an incomplete selection."""
 
-    supplied_sources = (
-        expression_source,
-        metadata_source,
-        de_results_source,
-    )
-    if any(source is None for source in supplied_sources):
+    if expression_source is None or metadata_source is None:
         return CandidateResult(
             status="incomplete",
             tables=None,
             report=ValidationReport(),
         )
 
-    sources = tuple(
-        (key, table_name, source)
-        for (key, table_name, _), source in zip(
-            _TABLE_SPECS,
-            supplied_sources,
-            strict=True,
-        )
+    sources: tuple[tuple[str, str, CsvSource], ...] = (
+        (_TABLE_SPECS[0][0], _TABLE_SPECS[0][1], expression_source),
+        (_TABLE_SPECS[1][0], _TABLE_SPECS[1][1], metadata_source),
     )
+    if de_results_source is not None:
+        sources += (
+            (_TABLE_SPECS[2][0], _TABLE_SPECS[2][1], de_results_source),
+        )
     return _load_and_validate_sources(
         sources,
         missing_code=IssueCode.CSV_READ_ERROR,
@@ -205,6 +270,8 @@ def build_dataset_bundle(
     source: DatasetSource,
     source_label: str,
     report: ValidationReport,
+    provenance: DatasetProvenance | None = None,
+    checksums: DatasetChecksums | None = None,
 ) -> DatasetBundle:
     """Build a complete bundle only from a non-blocking validation report."""
 
@@ -212,12 +279,22 @@ def build_dataset_bundle(
         raise ValueError("Cannot build a dataset bundle from a report with Errors.")
     if source not in ("demo", "uploaded"):
         raise ValueError(f"Unsupported dataset source: {source!r}.")
-    if len(tables) != 3 or not all(
-        isinstance(table, pd.DataFrame) for table in tables
+    if (
+        len(tables) != 3
+        or not isinstance(tables[0], pd.DataFrame)
+        or not isinstance(tables[1], pd.DataFrame)
+        or (tables[2] is not None and not isinstance(tables[2], pd.DataFrame))
     ):
-        raise ValueError("A dataset bundle requires three pandas DataFrames.")
+        raise ValueError(
+            "A dataset bundle requires expression and metadata DataFrames plus "
+            "an optional differential-expression DataFrame."
+        )
     if not source_label.strip():
         raise ValueError("A dataset bundle requires a source label.")
+    if provenance is not None and not isinstance(provenance, DatasetProvenance):
+        raise TypeError("provenance must be a DatasetProvenance instance or None.")
+    if checksums is not None and not isinstance(checksums, DatasetChecksums):
+        raise TypeError("checksums must be a DatasetChecksums instance or None.")
 
     expression, metadata, de_results = tables
     return DatasetBundle(
@@ -227,13 +304,15 @@ def build_dataset_bundle(
         source=source,
         source_label=source_label,
         validation_report=report,
+        provenance=provenance,
+        checksums=checksums,
     )
 
 
 def uploaded_source_label(
     expression_source: CsvSource,
     metadata_source: CsvSource,
-    de_results_source: CsvSource,
+    de_results_source: CsvSource | None,
 ) -> str:
     """Return a human-readable label without exposing local directory paths."""
 
@@ -268,6 +347,7 @@ def set_current_dataset(
         raise ValueError("Cannot activate a dataset bundle with Errors.")
     state[CURRENT_DATASET_KEY] = bundle
     clear_candidate_feedback(state)
+    state.pop(ACTIVE_GROUP_COLUMN_KEY, None)
 
 
 def record_candidate_failure(
@@ -305,6 +385,30 @@ def clear_uploader_state(state: MutableMapping[str, Any]) -> None:
         state.pop(key, None)
 
 
+def ensure_valid_group_column_state(
+    state: MutableMapping[str, Any],
+    additional_columns: tuple[str, ...],
+) -> None:
+    """Reset the shared 'group by' choice if it no longer applies.
+
+    Must run before a ``st.selectbox`` keyed by :data:`ACTIVE_GROUP_COLUMN_KEY`
+    is instantiated, since Streamlit raises if a widget's pre-set session
+    value is not one of its current options (for example, after switching to
+    a dataset whose metadata lacks the previously selected column).
+    """
+
+    valid_options = ("condition", *additional_columns)
+    if state.get(ACTIVE_GROUP_COLUMN_KEY) not in valid_options:
+        state[ACTIVE_GROUP_COLUMN_KEY] = "condition"
+
+
+def clear_dataset_context_state(state: MutableMapping[str, Any]) -> None:
+    """Remove only optional dataset-context widget values."""
+
+    for key in DATASET_CONTEXT_KEYS:
+        state.pop(key, None)
+
+
 def clear_legacy_data_state(state: MutableMapping[str, Any]) -> None:
     """Remove the three independent session keys used before Phase 4."""
 
@@ -333,12 +437,14 @@ def _load_and_validate_sources(
     missing_code: IssueCode,
 ) -> CandidateResult:
     tables: dict[str, pd.DataFrame] = {}
+    checksums: dict[str, str] = {}
     issues: list[ValidationIssue] = []
 
     for key, table_name, source in sources:
         cursor_position = _cursor_position(source)
         try:
             tables[key] = read_csv(source)
+            checksums[key] = _compute_checksum(source)
         except CsvReadError as exc:
             issues.append(
                 _read_issue(
@@ -379,12 +485,22 @@ def _load_and_validate_sources(
     dataset_tables = (
         tables["expression"],
         tables["metadata"],
-        tables["de_results"],
+        tables.get("de_results"),
     )
     report = validate_input_tables(*dataset_tables)
     if report.has_errors:
         return CandidateResult(status="invalid", tables=None, report=report)
-    return CandidateResult(status="valid", tables=dataset_tables, report=report)
+    dataset_checksums = DatasetChecksums(
+        expression_sha256=checksums["expression"],
+        metadata_sha256=checksums["metadata"],
+        de_results_sha256=checksums.get("de_results"),
+    )
+    return CandidateResult(
+        status="valid",
+        tables=dataset_tables,
+        report=report,
+        checksums=dataset_checksums,
+    )
 
 
 def _read_issue(
@@ -429,3 +545,23 @@ def _restore_cursor_position(source: CsvSource, position: int | None) -> None:
         source.seek(position)
     except (OSError, ValueError):
         pass
+
+
+def _compute_checksum(source: CsvSource) -> str:
+    """Return the SHA-256 hex digest of the exact source bytes.
+
+    For a path, reads the file directly. For a file-like object, reads
+    from the beginning without disturbing its position for the caller,
+    which is responsible for restoring it after this returns.
+    """
+
+    if isinstance(source, (str, Path)):
+        with open(source, "rb") as handle:
+            data = handle.read()
+    else:
+        if hasattr(source, "seek"):
+            source.seek(0)
+        data = source.read()
+        if isinstance(data, str):
+            data = data.encode("utf-8")
+    return hashlib.sha256(data).hexdigest()

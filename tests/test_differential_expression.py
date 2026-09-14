@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import math
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 
@@ -13,12 +14,16 @@ import pytest
 
 import plant_expression_explorer as package
 from plant_expression_explorer.differential_expression import (
+    MA_PLOT_COLUMNS,
     STATUS_COLUMN,
+    VOLCANO_PLOT_COLUMNS,
     DifferentialExpressionComputationError,
     DifferentialExpressionErrorReason,
     DifferentialExpressionResult,
     DifferentialExpressionStatus,
     build_category_summary,
+    build_ma_plot_data,
+    build_volcano_plot_data,
     classify_differential_expression_results,
     select_rows_by_status,
 )
@@ -80,6 +85,10 @@ def test_package_exports_the_approved_public_api() -> None:
     assert package.classify_differential_expression_results is classify_differential_expression_results
     assert package.build_category_summary is build_category_summary
     assert package.select_rows_by_status is select_rows_by_status
+    assert package.VOLCANO_PLOT_COLUMNS == VOLCANO_PLOT_COLUMNS
+    assert package.build_volcano_plot_data is build_volcano_plot_data
+    assert package.MA_PLOT_COLUMNS == MA_PLOT_COLUMNS
+    assert package.build_ma_plot_data is build_ma_plot_data
 
 
 def test_all_four_statuses_and_counts_are_mutually_exclusive_and_exhaustive() -> None:
@@ -98,6 +107,155 @@ def test_all_four_statuses_and_counts_are_mutually_exclusive_and_exhaustive() ->
     assert result.does_not_meet_combined_thresholds_count == 1
     assert result.not_evaluable_count == 1
     assert sum(build_category_summary(result)["row_count"]) == result.total_row_count
+
+
+def test_build_volcano_plot_data_excludes_not_evaluable_rows() -> None:
+    result = _classify(_valid_results())
+
+    volcano = build_volcano_plot_data(result)
+
+    assert list(volcano.plot_rows.columns) == list(VOLCANO_PLOT_COLUMNS)
+    assert volcano.plot_rows["gene_id"].tolist() == ["positive", "negative", "other"]
+    assert volcano.excluded_zero_padj_count == 0
+    positive_row = volcano.plot_rows.set_index("gene_id").loc["positive"]
+    assert positive_row["log2FoldChange"] == 1.0
+    assert positive_row["padj"] == 0.05
+    assert positive_row["neg_log10_padj"] == pytest.approx(-math.log10(0.05))
+    assert (
+        positive_row[STATUS_COLUMN]
+        == DifferentialExpressionStatus.POSITIVE_THRESHOLD_MATCH.value
+    )
+
+
+def test_build_volcano_plot_data_excludes_and_counts_zero_padj_rows() -> None:
+    table = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "log2FoldChange": [2.0, -2.0],
+            "pvalue": [0.0, 0.01],
+            "padj": [0.0, 0.01],
+        }
+    )
+    result = _classify(table)
+
+    volcano = build_volcano_plot_data(result)
+
+    assert volcano.plot_rows["gene_id"].tolist() == ["g2"]
+    assert volcano.excluded_zero_padj_count == 1
+
+
+def test_build_volcano_plot_data_does_not_mutate_the_annotated_results() -> None:
+    result = _classify(_valid_results())
+    original = result.annotated_results.copy(deep=True)
+
+    build_volcano_plot_data(result)
+
+    assert_frame_equal(result.annotated_results, original, check_exact=True)
+
+
+def _matching_expression() -> pd.DataFrame:
+    # Matches _valid_results()'s evaluable gene_ids: "positive", "negative",
+    # "other". "missing" is intentionally absent (its row is NOT_EVALUABLE
+    # anyway, per _valid_results()).
+    return pd.DataFrame(
+        {
+            "gene_id": ["positive", "negative", "other"],
+            "s1": [10.0, 20.0, 30.0],
+            "s2": [12.0, 22.0, 34.0],
+        }
+    )
+
+
+def test_build_ma_plot_data_excludes_not_evaluable_rows() -> None:
+    result = _classify(_valid_results())
+
+    ma_plot = build_ma_plot_data(result, _matching_expression())
+
+    assert list(ma_plot.plot_rows.columns) == list(MA_PLOT_COLUMNS)
+    assert ma_plot.plot_rows["gene_id"].tolist() == ["positive", "negative", "other"]
+    assert ma_plot.excluded_no_expression_match_count == 0
+    assert ma_plot.excluded_all_missing_expression_count == 0
+    positive_row = ma_plot.plot_rows.set_index("gene_id").loc["positive"]
+    assert positive_row["mean_expression"] == pytest.approx(11.0)
+    assert positive_row["log2FoldChange"] == 1.0
+    assert (
+        positive_row[STATUS_COLUMN]
+        == DifferentialExpressionStatus.POSITIVE_THRESHOLD_MATCH.value
+    )
+
+
+def test_build_ma_plot_data_excludes_and_counts_genes_absent_from_expression() -> None:
+    result = _classify(_valid_results())
+    expression = pd.DataFrame(
+        {"gene_id": ["positive", "negative"], "s1": [10.0, 20.0], "s2": [12.0, 22.0]}
+    )
+
+    ma_plot = build_ma_plot_data(result, expression)
+
+    assert ma_plot.plot_rows["gene_id"].tolist() == ["positive", "negative"]
+    assert ma_plot.excluded_no_expression_match_count == 1
+    assert ma_plot.excluded_all_missing_expression_count == 0
+
+
+def test_build_ma_plot_data_excludes_a_duplicated_ambiguous_gene_id() -> None:
+    result = _classify(_valid_results())
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["positive", "positive", "negative", "other"],
+            "s1": [10.0, 999.0, 20.0, 30.0],
+            "s2": [12.0, 999.0, 22.0, 34.0],
+        }
+    )
+
+    ma_plot = build_ma_plot_data(result, expression)
+
+    assert ma_plot.plot_rows["gene_id"].tolist() == ["negative", "other"]
+    assert ma_plot.excluded_no_expression_match_count == 1
+
+
+def test_build_ma_plot_data_excludes_and_counts_all_missing_expression() -> None:
+    result = _classify(_valid_results())
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["positive", "negative", "other"],
+            "s1": [None, 20.0, 30.0],
+            "s2": [None, 22.0, 34.0],
+        }
+    )
+
+    ma_plot = build_ma_plot_data(result, expression)
+
+    assert ma_plot.plot_rows["gene_id"].tolist() == ["negative", "other"]
+    assert ma_plot.excluded_no_expression_match_count == 0
+    assert ma_plot.excluded_all_missing_expression_count == 1
+
+
+def test_build_ma_plot_data_skips_a_partially_missing_gene_value_only() -> None:
+    result = _classify(_valid_results())
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["positive", "negative", "other"],
+            "s1": [None, 20.0, 30.0],
+            "s2": [12.0, 22.0, 34.0],
+        }
+    )
+
+    ma_plot = build_ma_plot_data(result, expression)
+
+    positive_row = ma_plot.plot_rows.set_index("gene_id").loc["positive"]
+    assert positive_row["mean_expression"] == pytest.approx(12.0)
+
+
+def test_build_ma_plot_data_does_not_mutate_inputs() -> None:
+    result = _classify(_valid_results())
+    original_annotated = result.annotated_results.copy(deep=True)
+    expression = _matching_expression()
+    original_expression = expression.copy(deep=True)
+
+    build_ma_plot_data(result, expression)
+
+    assert_frame_equal(result.annotated_results, original_annotated, check_exact=True)
+    assert_frame_equal(expression, original_expression, check_exact=True)
 
 
 def test_result_is_frozen_and_category_summary_has_stable_order() -> None:

@@ -13,10 +13,12 @@ from pandas.testing import assert_frame_equal
 import plant_expression_explorer.dataset as dataset_module
 from plant_expression_explorer.consistency import validate_input_tables
 from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
     APPLICATION_DATA_KEYS,
     CANDIDATE_LABEL_KEY,
     CANDIDATE_REPORT_KEY,
     CANDIDATE_SOURCE_KEY,
+    DATASET_CONTEXT_KEYS,
     CURRENT_DATASET_KEY,
     DE_RESULTS_UPLOAD_KEY,
     DEMO_DIRECTORY,
@@ -26,9 +28,12 @@ from plant_expression_explorer.dataset import (
     METADATA_UPLOAD_KEY,
     CandidateResult,
     DatasetBundle,
+    DatasetChecksums,
     build_dataset_bundle,
+    clear_dataset_context_state,
     clear_legacy_data_state,
     clear_uploader_state,
+    ensure_valid_group_column_state,
     get_current_dataset,
     load_demo_candidate,
     load_uploaded_candidate,
@@ -38,6 +43,7 @@ from plant_expression_explorer.dataset import (
     table_preview,
     uploaded_source_label,
 )
+from plant_expression_explorer.provenance import DatasetProvenance
 from plant_expression_explorer.validation import (
     IssueCode,
     Severity,
@@ -153,6 +159,166 @@ def test_default_demo_loading_returns_clean_valid_candidate() -> None:
     assert candidate.report.issues == ()
 
 
+def test_demo_candidate_reports_deterministic_sha256_checksums() -> None:
+    import hashlib
+
+    candidate = load_demo_candidate()
+
+    assert candidate.checksums is not None
+    expected_expression = hashlib.sha256(
+        (DEMO_DIRECTORY / "expression_matrix.csv").read_bytes()
+    ).hexdigest()
+    expected_metadata = hashlib.sha256(
+        (DEMO_DIRECTORY / "metadata.csv").read_bytes()
+    ).hexdigest()
+    expected_de_results = hashlib.sha256(
+        (DEMO_DIRECTORY / "deg_results.csv").read_bytes()
+    ).hexdigest()
+    assert candidate.checksums.expression_sha256 == expected_expression
+    assert candidate.checksums.metadata_sha256 == expected_metadata
+    assert candidate.checksums.de_results_sha256 == expected_de_results
+
+    # Loading again from the same committed files reproduces the same digests.
+    again = load_demo_candidate()
+    assert again.checksums == candidate.checksums
+
+
+def test_uploaded_candidate_reports_sha256_checksums_of_exact_source_bytes() -> None:
+    import hashlib
+
+    expression, metadata, de_results = _valid_uploaded_sources()
+    expression_bytes = expression.getvalue().encode("utf-8")
+    metadata_bytes = metadata.getvalue().encode("utf-8")
+    de_results_bytes = de_results.getvalue().encode("utf-8")
+
+    candidate = load_uploaded_candidate(expression, metadata, de_results)
+
+    assert candidate.status == "valid"
+    assert candidate.checksums is not None
+    assert candidate.checksums.expression_sha256 == hashlib.sha256(
+        expression_bytes
+    ).hexdigest()
+    assert candidate.checksums.metadata_sha256 == hashlib.sha256(
+        metadata_bytes
+    ).hexdigest()
+    assert candidate.checksums.de_results_sha256 == hashlib.sha256(
+        de_results_bytes
+    ).hexdigest()
+
+
+def test_uploaded_candidate_without_de_results_has_none_de_results_checksum() -> None:
+    expression, metadata, _de_results = _valid_uploaded_sources()
+
+    candidate = load_uploaded_candidate(expression, metadata, None)
+
+    assert candidate.status == "valid"
+    assert candidate.checksums is not None
+    assert candidate.checksums.de_results_sha256 is None
+
+
+def test_checksum_computation_preserves_the_source_cursor_position() -> None:
+    expression, metadata, de_results = _valid_uploaded_sources()
+    expression.seek(3)
+
+    load_uploaded_candidate(expression, metadata, de_results)
+
+    assert expression.tell() == 3
+
+
+def test_byte_identical_uploads_produce_identical_checksums() -> None:
+    first_expression, first_metadata, first_de_results = _valid_uploaded_sources()
+    second_expression, second_metadata, second_de_results = _valid_uploaded_sources()
+
+    first = load_uploaded_candidate(first_expression, first_metadata, first_de_results)
+    second = load_uploaded_candidate(
+        second_expression, second_metadata, second_de_results
+    )
+
+    assert first.checksums == second.checksums
+
+
+def test_an_invalid_candidate_has_no_checksums() -> None:
+    expression, metadata, de_results = _invalid_uploaded_sources()
+
+    candidate = load_uploaded_candidate(expression, metadata, de_results)
+
+    assert candidate.status == "invalid"
+    assert candidate.checksums is None
+
+
+def test_dataset_bundle_carries_checksums_through() -> None:
+    expression, metadata, de_results = _valid_uploaded_sources()
+    candidate = load_uploaded_candidate(expression, metadata, de_results)
+    assert candidate.tables is not None
+
+    bundle = build_dataset_bundle(
+        candidate.tables,
+        source="uploaded",
+        source_label="test",
+        report=candidate.report,
+        checksums=candidate.checksums,
+    )
+
+    assert bundle.checksums == candidate.checksums
+
+
+def test_dataset_bundle_defaults_to_no_checksums() -> None:
+    expression, metadata, de_results = _valid_uploaded_sources()
+    candidate = load_uploaded_candidate(expression, metadata, de_results)
+    assert candidate.tables is not None
+
+    bundle = build_dataset_bundle(
+        candidate.tables,
+        source="uploaded",
+        source_label="test",
+        report=candidate.report,
+    )
+
+    assert bundle.checksums is None
+
+
+def test_build_dataset_bundle_rejects_a_non_checksums_value() -> None:
+    expression, metadata, de_results = _valid_uploaded_sources()
+    candidate = load_uploaded_candidate(expression, metadata, de_results)
+    assert candidate.tables is not None
+
+    with pytest.raises(TypeError, match="checksums"):
+        build_dataset_bundle(
+            candidate.tables,
+            source="uploaded",
+            source_label="test",
+            report=candidate.report,
+            checksums="not-a-checksums-object",  # type: ignore[arg-type]
+        )
+
+
+def test_candidate_result_rejects_checksums_on_incomplete_or_invalid() -> None:
+    with pytest.raises(ValueError, match="incomplete"):
+        CandidateResult(
+            "incomplete",
+            None,
+            ValidationReport(),
+            checksums=DatasetChecksums("a", "b", None),
+        )
+    error_report = ValidationReport(
+        (
+            ValidationIssue(
+                code=IssueCode.CSV_READ_ERROR,
+                severity=Severity.ERROR,
+                table="Expression matrix",
+                message="boom",
+            ),
+        )
+    )
+    with pytest.raises(ValueError, match="invalid"):
+        CandidateResult(
+            "invalid",
+            None,
+            error_report,
+            checksums=DatasetChecksums("a", "b", None),
+        )
+
+
 def test_demo_and_upload_routes_use_shared_reader_and_aggregate_validator(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -251,7 +417,7 @@ def test_valid_uploaded_sources_return_a_valid_candidate() -> None:
     assert candidate.report.issues == ()
 
 
-@pytest.mark.parametrize("missing_index", [0, 1, 2])
+@pytest.mark.parametrize("missing_index", [0, 1])
 def test_partial_uploaded_sources_return_incomplete(
     missing_index: int,
 ) -> None:
@@ -263,6 +429,40 @@ def test_partial_uploaded_sources_return_incomplete(
     assert candidate.status == "incomplete"
     assert candidate.tables is None
     assert candidate.report.issues == ()
+
+
+def test_expression_and_metadata_without_de_results_are_a_valid_candidate() -> None:
+    expression, metadata, _ = _valid_uploaded_sources()
+
+    candidate = load_uploaded_candidate(expression, metadata, None)
+
+    assert candidate.status == "valid"
+    assert candidate.tables is not None
+    assert candidate.tables[2] is None
+    assert not candidate.report.has_errors
+    assert [issue.code for issue in candidate.report.information] == [
+        IssueCode.DE_RESULTS_NOT_SUPPLIED
+    ]
+
+
+def test_optional_de_candidate_reads_only_supplied_sources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expression, metadata, _ = _valid_uploaded_sources()
+    reader_calls = 0
+    original_reader = dataset_module.read_csv
+
+    def read_spy(source):
+        nonlocal reader_calls
+        reader_calls += 1
+        return original_reader(source)
+
+    monkeypatch.setattr(dataset_module, "read_csv", read_spy)
+
+    candidate = load_uploaded_candidate(expression, metadata, None)
+
+    assert candidate.status == "valid"
+    assert reader_calls == 2
 
 
 def test_partial_upload_does_not_call_reader_or_validator(
@@ -422,6 +622,16 @@ def test_demo_and_uploaded_source_labels_are_explicit() -> None:
     assert "deg.csv" in uploaded_bundle.source_label
 
 
+def test_uploaded_source_label_omits_optional_de_when_not_supplied() -> None:
+    expression, metadata, _ = _valid_uploaded_sources()
+
+    label = uploaded_source_label(expression, metadata, None)
+
+    assert "expression.csv" in label
+    assert "metadata.csv" in label
+    assert "deg.csv" not in label
+
+
 def test_demo_to_uploaded_replacement_is_a_single_bundle_assignment() -> None:
     demo_bundle = _bundle_from_candidate(
         load_demo_candidate(),
@@ -575,6 +785,53 @@ def test_successful_activation_clears_candidate_feedback() -> None:
     )
 
 
+def test_set_current_dataset_clears_the_shared_group_by_choice() -> None:
+    demo_bundle = _bundle_from_candidate(
+        load_demo_candidate(),
+        source="demo",
+        source_label=DEMO_SOURCE_LABEL,
+    )
+    state: dict[str, object] = {ACTIVE_GROUP_COLUMN_KEY: "genotype"}
+
+    set_current_dataset(state, demo_bundle)
+
+    assert ACTIVE_GROUP_COLUMN_KEY not in state
+
+
+def test_ensure_valid_group_column_state_keeps_a_still_applicable_choice() -> None:
+    state: dict[str, object] = {ACTIVE_GROUP_COLUMN_KEY: "genotype"}
+
+    ensure_valid_group_column_state(state, ("genotype", "batch"))
+
+    assert state[ACTIVE_GROUP_COLUMN_KEY] == "genotype"
+
+
+def test_ensure_valid_group_column_state_defaults_an_unset_choice_to_condition() -> (
+    None
+):
+    state: dict[str, object] = {}
+
+    ensure_valid_group_column_state(state, ("genotype",))
+
+    assert state[ACTIVE_GROUP_COLUMN_KEY] == "condition"
+
+
+def test_ensure_valid_group_column_state_resets_a_stale_choice() -> None:
+    state: dict[str, object] = {ACTIVE_GROUP_COLUMN_KEY: "genotype"}
+
+    ensure_valid_group_column_state(state, ("batch",))
+
+    assert state[ACTIVE_GROUP_COLUMN_KEY] == "condition"
+
+
+def test_ensure_valid_group_column_state_resets_when_no_additional_columns() -> None:
+    state: dict[str, object] = {ACTIVE_GROUP_COLUMN_KEY: "genotype"}
+
+    ensure_valid_group_column_state(state, ())
+
+    assert state[ACTIVE_GROUP_COLUMN_KEY] == "condition"
+
+
 def test_reset_deletes_only_explicit_application_keys_and_preserves_unrelated() -> None:
     state = {key: object() for key in APPLICATION_DATA_KEYS}
     state["unrelated_state"] = "keep"
@@ -586,6 +843,22 @@ def test_reset_deletes_only_explicit_application_keys_and_preserves_unrelated() 
     assert state == {
         "unrelated_state": "keep",
         "pee_unrelated_state": "also keep",
+    }
+
+
+def test_dataset_context_clear_removes_only_documented_context_keys() -> None:
+    state = {key: object() for key in DATASET_CONTEXT_KEYS}
+    state[CURRENT_DATASET_KEY] = "keep current"
+    state[EXPRESSION_UPLOAD_KEY] = "keep upload"
+    state["other"] = "keep"
+
+    clear_dataset_context_state(state)
+
+    assert all(key not in state for key in DATASET_CONTEXT_KEYS)
+    assert state == {
+        CURRENT_DATASET_KEY: "keep current",
+        EXPRESSION_UPLOAD_KEY: "keep upload",
+        "other": "keep",
     }
 
 
@@ -659,6 +932,45 @@ def test_bundle_state_and_preview_helpers_do_not_mutate_dataframes() -> None:
 
     for actual, expected in zip(candidate.tables, originals, strict=True):
         assert_frame_equal(actual, expected)
+
+
+def test_bundle_accepts_optional_de_and_preserves_provenance_identity() -> None:
+    expression, metadata, _ = _valid_uploaded_sources()
+    candidate = load_uploaded_candidate(expression, metadata, None)
+    assert candidate.tables is not None
+    provenance = DatasetProvenance(
+        dataset_title="  exact title  ",
+        expression_scale_description="VST",
+        notes="备注",
+    )
+
+    bundle = build_dataset_bundle(
+        candidate.tables,
+        source="uploaded",
+        source_label="Expression and metadata only",
+        report=candidate.report,
+        provenance=provenance,
+    )
+
+    assert bundle.de_results is None
+    assert bundle.has_de_results is False
+    assert bundle.de_row_count == 0
+    assert bundle.provenance is provenance
+    assert bundle.provenance.dataset_title == "  exact title  "
+
+
+def test_bundle_rejects_invalid_provenance_without_coercion() -> None:
+    candidate = load_demo_candidate()
+    assert candidate.tables is not None
+
+    with pytest.raises(TypeError, match="DatasetProvenance"):
+        build_dataset_bundle(
+            candidate.tables,
+            source="demo",
+            source_label=DEMO_SOURCE_LABEL,
+            report=candidate.report,
+            provenance={"organism": "tomato"},  # type: ignore[arg-type]
+        )
 
 
 def test_preview_preserves_row_and_column_order_and_returns_a_copy() -> None:
@@ -782,11 +1094,17 @@ def test_existing_phase_2_issue_code_and_severity_values_are_unchanged() -> None
         "EXPRESSION_GENE_NOT_IN_DE",
         "NO_GENE_OVERLAP",
     )
-    loading_codes = {IssueCode.CSV_READ_ERROR, IssueCode.DEMO_FILE_MISSING}
+    non_phase_2_codes = {
+        IssueCode.CSV_READ_ERROR,
+        IssueCode.POSSIBLE_DELIMITER_MISMATCH,
+        IssueCode.DEMO_FILE_MISSING,
+        IssueCode.DE_RESULTS_NOT_SUPPLIED,
+    }
 
     assert tuple(
-        code.value for code in IssueCode if code not in loading_codes
+        code.value for code in IssueCode if code not in non_phase_2_codes
     ) == expected_phase_2_codes
+    assert IssueCode.DE_RESULTS_NOT_SUPPLIED.value == "DE_RESULTS_NOT_SUPPLIED"
     assert tuple(severity.value for severity in Severity) == (
         "error",
         "warning",

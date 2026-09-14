@@ -1,18 +1,45 @@
 """Descriptive expression lookup for one exact supplied gene identifier."""
 
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
-from plant_expression_explorer.dataset import get_current_dataset
+from plant_expression_explorer.annotations import (
+    CustomAnnotationError,
+    identifier_format_hint,
+    list_supported_species,
+    lookup_gene_annotation,
+    parse_custom_annotation_table,
+)
+from plant_expression_explorer.data import CsvReadError, read_csv
+from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
+    ensure_valid_group_column_state,
+    get_current_dataset,
+)
 from plant_expression_explorer.exports import CsvExportError, build_csv_export
 from plant_expression_explorer.gene_expression import (
     GeneExpressionComputationError,
     build_gene_expression_chart_data,
     build_gene_expression_observations,
+    build_grouped_gene_expression_chart_data,
+    build_grouped_gene_expression_condition_summary,
+    build_multi_gene_panel_data,
+    build_time_series_chart_data,
+    filter_gene_ids,
     list_gene_ids,
     lookup_gene_expression,
 )
+from plant_expression_explorer.provenance import (
+    DatasetProvenance,
+    provenance_display_rows,
+)
+from plant_expression_explorer.qc import list_additional_metadata_columns
+from plant_expression_explorer.theme import inject_global_styles
 from plant_expression_explorer.validation import Severity, ValidationIssue
+
+_SEARCH_BOX_GENE_COUNT_THRESHOLD = 200
+_SEARCH_RESULT_DISPLAY_LIMIT = 500
 
 
 def _render_issue(issue: ValidationIssue) -> None:
@@ -26,6 +53,17 @@ def _render_issue(issue: ValidationIssue) -> None:
         st.warning(details)
     else:
         st.info(details)
+
+
+def _render_dataset_context(provenance: DatasetProvenance | None) -> None:
+    with st.expander("Dataset context (descriptive only)"):
+        st.caption(
+            "Context is displayed verbatim and is not scientifically verified, "
+            "parsed, or used in this calculation."
+        )
+        for label, value in provenance_display_rows(provenance):
+            st.caption(label)
+            st.code(value, language=None)
 
 
 def _is_expression_metadata_issue(issue: ValidationIssue) -> bool:
@@ -78,6 +116,7 @@ def _render_csv_downloads(
         )
 
 
+inject_global_styles()
 st.title("🌿 Gene Expression")
 st.write(
     "This page displays the supplied preprocessed expression values for one "
@@ -108,6 +147,7 @@ st.write(
     f"**Expression contents:** {current.gene_count:,} genes and "
     f"{current.sample_count:,} samples."
 )
+_render_dataset_context(current.provenance)
 
 report = current.validation_report
 validation_columns = st.columns(3)
@@ -164,9 +204,32 @@ st.write(
     "identifier is trimmed, case-folded, normalized, or searched by alias, and "
     "the source values remain unchanged."
 )
+
+selectable_gene_ids = gene_ids
+if len(gene_ids) > _SEARCH_BOX_GENE_COUNT_THRESHOLD:
+    search_query = st.text_input(
+        "Search gene IDs",
+        placeholder="Type part of a gene ID to narrow the list below",
+        help=(
+            "Case-insensitive substring match against the exact supplied gene "
+            "IDs. This dataset has "
+            f"{len(gene_ids):,} genes; searching keeps the selector responsive."
+        ),
+    )
+    selectable_gene_ids = filter_gene_ids(gene_ids, search_query)
+    if len(selectable_gene_ids) > _SEARCH_RESULT_DISPLAY_LIMIT:
+        st.info(
+            f"{len(selectable_gene_ids):,} gene IDs match; showing the first "
+            f"{_SEARCH_RESULT_DISPLAY_LIMIT:,} in matrix row order. Narrow your "
+            "search to see others."
+        )
+        selectable_gene_ids = selectable_gene_ids[:_SEARCH_RESULT_DISPLAY_LIMIT]
+    elif not selectable_gene_ids:
+        st.info("No supplied gene ID contains that text.")
+
 selected_gene_id = st.selectbox(
     "Exact gene ID",
-    gene_ids,
+    selectable_gene_ids,
     index=None,
     placeholder="Select a supplied gene ID",
     help="Typing filters the supplied options; it does not create a new identifier.",
@@ -188,7 +251,174 @@ except GeneExpressionComputationError as error:
     )
     st.stop()
 
+st.header("Multi-gene panel (optional)")
+st.write(
+    "Optionally compare the gene selected above with additional exact gene "
+    "IDs on one combined chart and table. Each gene is looked up "
+    "independently and shown on its own supplied scale; no normalization or "
+    "cross-gene scaling is applied, so different genes' absolute magnitudes "
+    "are not directly comparable."
+)
+additional_gene_ids = st.multiselect(
+    "Compare with additional gene IDs",
+    [gene_id for gene_id in selectable_gene_ids if gene_id != result.gene_id],
+    default=[],
+    help=(
+        "Selecting one or more genes here adds a combined panel below; it "
+        "does not replace the detailed single-gene view further down."
+    ),
+)
+if additional_gene_ids:
+    panel_gene_ids = [result.gene_id, *additional_gene_ids]
+    try:
+        panel_data = build_multi_gene_panel_data(
+            current.expression, current.metadata, panel_gene_ids
+        )
+    except GeneExpressionComputationError as error:
+        st.error(
+            "The multi-gene panel could not be displayed "
+            f"({error.reason.value}): {error}"
+        )
+    else:
+        panel_sample_order = result.sample_expression["sample_id"].tolist()
+        panel_gene_order = list(dict.fromkeys(panel_data["gene_id"]))
+        panel_figure = px.line(
+            panel_data,
+            x="sample_id",
+            y="expression_value",
+            color="gene_id",
+            markers=True,
+            category_orders={
+                "sample_id": panel_sample_order,
+                "gene_id": panel_gene_order,
+            },
+            labels={
+                "sample_id": "Sample",
+                "expression_value": "Supplied preprocessed expression value",
+                "gene_id": "Gene ID",
+            },
+        )
+        panel_figure.update_traces(marker=dict(size=9), line=dict(width=1.5))
+        panel_figure.update_layout(
+            height=440,
+            margin=dict(l=10, r=10, t=10, b=10),
+            legend_title_text="Gene ID",
+            xaxis=dict(tickangle=-45),
+        )
+        st.plotly_chart(panel_figure, width="stretch")
+        st.caption(
+            "Lines connect one gene's own points across samples in "
+            "expression-column order only, to make each gene's series "
+            "easier to trace; they are not a fitted trend or a claim about "
+            "intermediate values. Colour identifies the gene, not a "
+            "condition or group."
+        )
+
+        panel_wide = panel_data.pivot(
+            index=["sample_id", "condition"],
+            columns="gene_id",
+            values="expression_value",
+        ).reset_index()
+        panel_wide.columns.name = None
+        st.dataframe(panel_wide, hide_index=True, width="stretch")
+        st.caption(
+            "One row per sample; one column per selected gene, each holding "
+            "that gene's exact supplied value for that sample."
+        )
+
+        panel_export = panel_data.copy(deep=True)
+        _render_csv_downloads(
+            (
+                (
+                    "Download multi-gene panel values (CSV)",
+                    panel_export,
+                    "gene-expression-multi-gene-panel.csv",
+                    (),
+                ),
+            )
+        )
+
 st.header(f"Expression values for {result.gene_id}")
+
+species_label = st.selectbox(
+    "Species reference (optional)",
+    options=("Not selected", *list_supported_species()),
+    help=(
+        "Matches the exact selected gene ID against a small, hand-curated "
+        "list of well-known reference genes for one species (see "
+        "data/annotations/README.md). This is not a genome annotation, is "
+        "not used in any calculation, and most real gene IDs will not "
+        "have an entry."
+    ),
+)
+if species_label != "Not selected":
+    annotation = lookup_gene_annotation(species_label, result.gene_id)
+    if annotation is None:
+        st.caption(
+            f"No entry for '{result.gene_id}' in the small curated reference "
+            f"list for {species_label}. This is expected for most gene IDs; "
+            "it does not indicate a problem with the gene ID."
+        )
+        format_hint = identifier_format_hint(species_label, result.gene_id)
+        if format_hint is not None:
+            st.caption(
+                f"⚠️ {format_hint} This is a descriptive note about "
+                "identifier shape, not a lookup: the gene ID is never "
+                "rewritten or searched under any other form."
+            )
+    else:
+        st.info(
+            f"**{annotation.symbol}** — {annotation.description}  \n"
+            f"Source: {annotation.source}."
+        )
+
+st.subheader("Custom annotation upload (optional)")
+st.write(
+    "The bundled species reference above covers only a few dozen "
+    "well-known marker genes across four species. Upload your own "
+    "gene-annotation CSV to look up any gene ID, for any species, against "
+    "your own reference instead."
+)
+custom_annotation_file = st.file_uploader(
+    "Upload gene annotation CSV",
+    type=["csv"],
+    key="pee_custom_annotation_file",
+    help=(
+        "Required columns: gene_id, symbol, description. An optional "
+        "'source' column is shown verbatim; a blank or absent source is "
+        "labelled as an unverified user upload. Matching is exact "
+        "str(value) equality, identical to every other identifier match "
+        "in this application. This application does not verify the "
+        "accuracy of an uploaded annotation file: you are responsible "
+        "for its contents, exactly as for the expression, metadata, and "
+        "differential-expression tables. It is never used in any "
+        "calculation."
+    ),
+)
+if custom_annotation_file is not None:
+    try:
+        custom_annotation_table = read_csv(custom_annotation_file)
+        custom_annotations = parse_custom_annotation_table(custom_annotation_table)
+    except (CsvReadError, CustomAnnotationError) as error:
+        reason = getattr(error, "reason", None)
+        reason_text = f" ({reason.value})" if reason is not None else ""
+        st.error(
+            f"The uploaded annotation file could not be used{reason_text}: "
+            f"{error}"
+        )
+    else:
+        custom_annotation = custom_annotations.get(result.gene_id)
+        if custom_annotation is None:
+            st.caption(
+                f"No entry for '{result.gene_id}' in the uploaded annotation "
+                f"file ({len(custom_annotations):,} gene ID(s) loaded)."
+            )
+        else:
+            st.info(
+                f"**{custom_annotation.symbol}** — {custom_annotation.description}  \n"
+                f"Source: {custom_annotation.source}."
+            )
+
 summary_columns = st.columns(3)
 summary_columns[0].metric("Samples displayed", result.sample_count)
 summary_columns[1].metric("Condition labels", result.condition_count)
@@ -217,73 +447,130 @@ st.caption(
     "rounding or replacement; neither source table is reordered or rewritten."
 )
 
+additional_columns = list_additional_metadata_columns(current.metadata)
+group_column = "condition"
+if additional_columns:
+    ensure_valid_group_column_state(st.session_state, additional_columns)
+    group_column = st.selectbox(
+        "Group plot and summary by",
+        options=("condition", *additional_columns),
+        key=ACTIVE_GROUP_COLUMN_KEY,
+        help=(
+            "Any column present in the uploaded sample metadata beyond "
+            "'sample_id' and 'condition' can relabel the plot and summary "
+            "below. The same descriptive statistics are recomputed for the "
+            "new grouping; the underlying per-sample values are unchanged. "
+            "This choice is shared with the PCA, Sample Quality Control, and "
+            "Sample Correlation pages."
+        ),
+    )
+group_title = group_column.replace("_", " ").capitalize()
+
+time_column = None
+if additional_columns:
+    axis_options = (
+        "Sample (upload order)",
+        *[f"Numeric time/order: {col}" for col in additional_columns],
+    )
+    axis_choice = st.selectbox(
+        "Chart x-axis",
+        options=axis_options,
+        help=(
+            "'Sample (upload order)' plots samples as categories in "
+            "expression-column order, coloured by the grouping above. A "
+            "numeric option instead connects points in ascending order of "
+            "that metadata column's exact supplied value; every sample "
+            "must have a numeric value in that column, or the chart shows "
+            "a controlled error instead of skipping samples."
+        ),
+    )
+    if axis_choice != "Sample (upload order)":
+        time_column = axis_choice.removeprefix("Numeric time/order: ")
+
 st.subheader("Per-sample expression plot")
-if result.sample_count >= 2:
-    chart_data = build_gene_expression_chart_data(result)
-    sample_order = result.sample_expression["sample_id"].tolist()
-    condition_order = list(dict.fromkeys(result.sample_expression["condition"]))
-    point_spec = {
-        "mark": {"type": "point", "filled": True, "size": 110},
-        "encoding": {
-            "x": {
-                "field": "sample_id",
-                "type": "nominal",
-                "sort": sample_order,
-                "title": "Sample",
-                "axis": {"labelAngle": -45},
-            },
-            "y": {
-                "field": "expression_value",
-                "type": "quantitative",
-                "title": "Supplied preprocessed expression value",
-                "scale": {"zero": True},
-            },
-            "color": {
-                "field": "condition",
-                "type": "nominal",
-                "sort": condition_order,
-                "legend": {"title": "Condition"},
-            },
-            "order": {
-                "field": "sample_position",
-                "type": "quantitative",
-            },
-            "tooltip": [
-                {"field": "sample_id", "type": "nominal", "title": "Sample"},
-                {
-                    "field": "condition",
-                    "type": "nominal",
-                    "title": "Condition",
-                },
-                {
-                    "field": "expression_value",
-                    "type": "quantitative",
-                    "title": "Expression value",
-                },
-            ],
-        },
-    }
-    st.vega_lite_chart(
-        chart_data,
-        spec=point_spec,
-        width="stretch",
-        height=420,
-    )
-    st.caption(
-        "Each point represents one supplied sample. Colour shows the exact "
-        "metadata condition label for context only. Points are not connected, "
-        "the y-axis includes zero on the supplied scale, and no group estimate "
-        "or statistical comparison is shown."
-    )
-else:
+if result.sample_count < 2:
     st.info(
         "Only one sample is available, so an across-sample expression plot is "
         "not shown. The supplied value remains visible in the table."
     )
+elif time_column is not None:
+    try:
+        time_series = build_time_series_chart_data(
+            result, current.metadata, time_column
+        )
+    except ValueError as error:
+        st.error(
+            f"'{time_column}' cannot be used as a numeric time axis: {error}"
+        )
+    else:
+        time_figure = px.line(
+            time_series,
+            x="time_value",
+            y="expression_value",
+            markers=True,
+            labels={
+                "time_value": time_column,
+                "expression_value": "Supplied preprocessed expression value",
+            },
+            hover_data={"sample_id": True, "condition": True},
+        )
+        time_figure.update_traces(marker=dict(size=10), line=dict(width=1.5))
+        time_figure.update_layout(
+            height=420,
+            margin=dict(l=10, r=10, t=10, b=10),
+        )
+        st.plotly_chart(time_figure, width="stretch")
+        st.caption(
+            f"Points are ordered by the exact supplied '{time_column}' "
+            "value and connected by a line only to make the sequence "
+            "easier to trace; this is not a fitted trend, interpolation, "
+            "or a claim about values between samples. Samples sharing the "
+            "same time value (for example replicates at one timepoint) "
+            "are shown individually, not averaged."
+        )
+if result.sample_count >= 2 and time_column is None:
+    chart_data = build_grouped_gene_expression_chart_data(
+        result, current.metadata, group_column
+    )
+    sample_order = result.sample_expression["sample_id"].tolist()
+    group_order = list(dict.fromkeys(chart_data[group_column]))
+    point_figure = px.scatter(
+        chart_data,
+        x="sample_id",
+        y="expression_value",
+        color=group_column,
+        category_orders={"sample_id": sample_order, group_column: group_order},
+        labels={
+            "sample_id": "Sample",
+            "expression_value": "Supplied preprocessed expression value",
+            group_column: group_title,
+        },
+    )
+    point_figure.update_traces(marker=dict(size=12, symbol="circle", line=dict(width=0)))
+    point_figure.update_layout(
+        height=420,
+        margin=dict(l=10, r=10, t=10, b=10),
+        legend_title_text=group_title,
+        xaxis=dict(tickangle=-45),
+        yaxis=dict(rangemode="tozero"),
+    )
+    st.plotly_chart(point_figure, width="stretch")
+    st.caption(
+        "Each point represents one supplied sample. Colour shows the selected "
+        "metadata column for context only. Points are not connected, the "
+        "y-axis includes zero on the supplied scale, and no group estimate or "
+        "statistical comparison is shown. Zoom, pan, and hover are Plotly's "
+        "built-in interactions and do not change the underlying values."
+    )
 
 st.header("Condition-grouped descriptive summary")
+if group_column != "condition":
+    st.caption(f"Grouped by metadata column '{group_column}', not 'condition'.")
+grouped_condition_summary = build_grouped_gene_expression_condition_summary(
+    result, current.metadata, group_column
+)
 st.dataframe(
-    _display_condition_summary(result.condition_summary),
+    _display_condition_summary(grouped_condition_summary),
     hide_index=True,
     width="stretch",
 )
@@ -306,21 +593,21 @@ else:
         "selected gene."
     )
 
-st.header("Scientific and statistical limitations")
-st.info(
-    "Condition labels provide display context only. This page does not infer "
-    "a reference level, contrast direction, regulation, a condition effect, "
-    "statistical significance, or biological importance."
-)
-st.info(
-    "No genes, samples, identifiers, conditions, or expression values are "
-    "trimmed, normalized, transformed, deduplicated, aggregated into the source "
-    "data, imputed, intersected, reordered, or discarded."
-)
-st.info(
-    "This page performs no FASTQ processing, batch correction, hypothesis "
-    "testing, differential-expression inference, or volcano plotting."
-)
+with st.expander("Scientific and statistical limitations"):
+    st.info(
+        "Condition labels provide display context only. This page does not infer "
+        "a reference level, contrast direction, regulation, a condition effect, "
+        "statistical significance, or biological importance."
+    )
+    st.info(
+        "No genes, samples, identifiers, conditions, or expression values are "
+        "trimmed, normalized, transformed, deduplicated, aggregated into the source "
+        "data, imputed, intersected, reordered, or discarded."
+    )
+    st.info(
+        "This page performs no FASTQ processing, batch correction, hypothesis "
+        "testing, differential-expression inference, or volcano plotting."
+    )
 
 st.header("Download descriptive results")
 st.write(
@@ -334,9 +621,10 @@ st.warning(
     "formula-like leading characters in untrusted text; review such data and "
     "import it as plain text when needed."
 )
+_group_file_suffix = "" if group_column == "condition" else f"-by-{group_column}"
 sample_export = result.sample_expression.copy(deep=True)
 sample_export.insert(0, "gene_id", result.gene_id)
-condition_export = result.condition_summary.copy(deep=True)
+condition_export = grouped_condition_summary.copy(deep=True)
 condition_export.insert(0, "gene_id", result.gene_id)
 _render_csv_downloads(
     (
@@ -349,7 +637,7 @@ _render_csv_downloads(
         (
             "Download condition-grouped summary (CSV)",
             condition_export,
-            "gene-expression-condition-summary.csv",
+            f"gene-expression-condition-summary{_group_file_suffix}.csv",
             ("sample_ids",),
         ),
     )

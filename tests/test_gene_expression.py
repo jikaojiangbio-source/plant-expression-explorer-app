@@ -16,12 +16,19 @@ from plant_expression_explorer.dataset import load_demo_candidate
 from plant_expression_explorer.gene_expression import (
     CONDITION_EXPRESSION_SUMMARY_COLUMNS,
     GENE_EXPRESSION_CHART_COLUMNS,
+    MULTI_GENE_PANEL_COLUMNS,
+    TIME_SERIES_CHART_COLUMNS,
     SAMPLE_EXPRESSION_COLUMNS,
     GeneExpressionComputationError,
     GeneExpressionErrorReason,
     GeneExpressionResult,
     build_gene_expression_chart_data,
     build_gene_expression_observations,
+    build_grouped_gene_expression_chart_data,
+    build_grouped_gene_expression_condition_summary,
+    build_multi_gene_panel_data,
+    build_time_series_chart_data,
+    filter_gene_ids,
     list_gene_ids,
     lookup_gene_expression,
 )
@@ -212,6 +219,208 @@ def test_condition_summary_uses_disclosed_arithmetic_conventions() -> None:
     assert pd.isna(treated["standard_deviation"])
 
 
+def test_build_grouped_condition_summary_matches_default_for_condition() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    pd.testing.assert_frame_equal(
+        build_grouped_gene_expression_condition_summary(result, metadata, "condition"),
+        result.condition_summary,
+    )
+
+
+def test_build_grouped_condition_summary_recomputes_for_an_alternate_column() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    grouped = build_grouped_gene_expression_condition_summary(
+        result, metadata, "unused"
+    )
+
+    assert list(grouped.columns) == [
+        "unused",
+        "sample_count",
+        "missing_value_count",
+        "sample_ids",
+        "minimum_expression",
+        "median_expression",
+        "mean_expression",
+        "maximum_expression",
+        "standard_deviation",
+    ]
+    by_group = grouped.set_index("unused")
+    # sample_a=1 -> 4.0, sample_c=2 -> 6.0, sample_b=3 -> 8.0; each its own group.
+    assert by_group.loc[1, "mean_expression"] == 4.0
+    assert by_group.loc[2, "mean_expression"] == 6.0
+    assert by_group.loc[3, "mean_expression"] == 8.0
+
+
+def test_build_grouped_condition_summary_rejects_unknown_column() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    with pytest.raises(ValueError, match="does not contain column"):
+        build_grouped_gene_expression_condition_summary(result, metadata, "tissue")
+
+
+def test_build_grouped_chart_data_matches_default_for_condition() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    pd.testing.assert_frame_equal(
+        build_grouped_gene_expression_chart_data(result, metadata, "condition"),
+        build_gene_expression_chart_data(result),
+    )
+
+
+def test_build_grouped_chart_data_labels_by_an_alternate_column() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    chart_data = build_grouped_gene_expression_chart_data(result, metadata, "unused")
+
+    assert "unused" in chart_data.columns
+    assert "condition" not in chart_data.columns
+    by_sample = dict(zip(chart_data["sample_id"], chart_data["unused"]))
+    assert by_sample == {"sample_b": 3, "sample_a": 1, "sample_c": 2}
+
+
+def test_build_multi_gene_panel_data_concatenates_genes_in_supplied_order() -> None:
+    expression, metadata = _known_tables()
+
+    panel = build_multi_gene_panel_data(expression, metadata, ["101", "202"])
+
+    assert list(panel.columns) == list(MULTI_GENE_PANEL_COLUMNS)
+    assert panel["gene_id"].tolist() == ["101"] * 3 + ["202"] * 3
+    assert panel.loc[panel["gene_id"] == "101", "sample_id"].tolist() == [
+        "sample_b",
+        "sample_a",
+        "sample_c",
+    ]
+    assert panel.loc[panel["gene_id"] == "101", "expression_value"].tolist() == [
+        "2.0",
+        "1.0",
+        "3.0",
+    ]
+    assert panel.loc[panel["gene_id"] == "202", "expression_value"].tolist() == [
+        "8.0",
+        "4.0",
+        "6.0",
+    ]
+    assert panel["condition"].tolist() == [
+        "Control",
+        "Control",
+        "Treated",
+        "Control",
+        "Control",
+        "Treated",
+    ]
+
+
+def test_build_multi_gene_panel_data_handles_a_single_gene() -> None:
+    expression, metadata = _known_tables()
+
+    panel = build_multi_gene_panel_data(expression, metadata, ["101"])
+
+    assert panel["gene_id"].unique().tolist() == ["101"]
+    assert len(panel.index) == 3
+
+
+def test_build_multi_gene_panel_data_returns_empty_frame_for_no_genes() -> None:
+    expression, metadata = _known_tables()
+
+    panel = build_multi_gene_panel_data(expression, metadata, [])
+
+    assert panel.empty
+    assert list(panel.columns) == list(MULTI_GENE_PANEL_COLUMNS)
+
+
+def test_build_multi_gene_panel_data_propagates_an_unknown_gene_error() -> None:
+    expression, metadata = _known_tables()
+
+    with pytest.raises(GeneExpressionComputationError) as captured:
+        build_multi_gene_panel_data(expression, metadata, ["101", "not-a-gene"])
+
+    assert captured.value.reason is GeneExpressionErrorReason.UNKNOWN_GENE_ID
+
+
+def test_build_multi_gene_panel_data_does_not_mutate_inputs() -> None:
+    expression, metadata = _known_tables()
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    build_multi_gene_panel_data(expression, metadata, ["101", "202"])
+
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
+
+
+def test_build_time_series_chart_data_sorts_by_numeric_time_value() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    time_series = build_time_series_chart_data(result, metadata, "unused")
+
+    assert list(time_series.columns) == list(TIME_SERIES_CHART_COLUMNS)
+    assert time_series["sample_id"].tolist() == ["sample_a", "sample_c", "sample_b"]
+    assert time_series["time_value"].tolist() == [1.0, 2.0, 3.0]
+    assert time_series["expression_value"].tolist() == [4.0, 6.0, 8.0]
+
+
+def test_build_time_series_chart_data_keeps_relative_order_for_tied_times() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1"],
+            "s1": [1.0],
+            "s2": [2.0],
+            "s3": [3.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["s1", "s2", "s3"],
+            "condition": ["control", "control", "control"],
+            "day": [1, 1, 0],
+        }
+    )
+    result = lookup_gene_expression(expression, metadata, "g1")
+
+    time_series = build_time_series_chart_data(result, metadata, "day")
+
+    # s3 (day 0) sorts first; s1 and s2 (tied at day 1) keep their original
+    # expression-column relative order.
+    assert time_series["sample_id"].tolist() == ["s3", "s1", "s2"]
+    assert time_series["time_value"].tolist() == [0.0, 1.0, 1.0]
+
+
+def test_build_time_series_chart_data_rejects_a_non_numeric_column() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    with pytest.raises(ValueError, match="is not numeric for sample"):
+        build_time_series_chart_data(result, metadata, "condition")
+
+
+def test_build_time_series_chart_data_rejects_an_unknown_column() -> None:
+    expression, metadata = _known_tables()
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    with pytest.raises(ValueError, match="does not contain column"):
+        build_time_series_chart_data(result, metadata, "not_a_column")
+
+
+def test_build_time_series_chart_data_does_not_mutate_inputs() -> None:
+    expression, metadata = _known_tables()
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+    result = lookup_gene_expression(expression, metadata, "202")
+
+    build_time_series_chart_data(result, metadata, "unused")
+
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
+
+
 @pytest.mark.parametrize(
     ("values", "expected_median", "expected_mean", "expected_sd"),
     [
@@ -324,6 +533,105 @@ def test_multiple_equal_values_are_retained_and_reported() -> None:
     assert result.condition_summary.loc[0, "standard_deviation"] == 0.0
 
 
+def test_a_missing_value_is_shown_as_missing_and_excluded_from_its_condition() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "s1": [1.0, 10.0],
+            "s2": [None, 20.0],
+            "s3": [5.0, 30.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["s1", "s2", "s3"],
+            "condition": ["A", "A", "B"],
+        }
+    )
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    result = lookup_gene_expression(expression, metadata, "g1")
+    observations = build_gene_expression_observations(result, ValidationReport())
+
+    assert result.missing_value_count == 1
+    values = result.sample_expression.set_index("sample_id")["expression_value"]
+    assert pd.isna(values["s2"])
+    condition_a = result.condition_summary.set_index("condition").loc["A"]
+    assert condition_a["sample_count"] == 2
+    assert condition_a["missing_value_count"] == 1
+    assert condition_a["minimum_expression"] == pytest.approx(1.0)
+    assert condition_a["maximum_expression"] == pytest.approx(1.0)
+    assert pd.isna(condition_a["standard_deviation"])
+    condition_b = result.condition_summary.set_index("condition").loc["B"]
+    assert condition_b["missing_value_count"] == 0
+    assert any(
+        "1 missing" in item and "excluded from condition summary" in item
+        for item in observations
+    )
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
+
+
+def test_a_condition_with_every_value_missing_reports_undefined_statistics() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "s1": [None, 10.0],
+            "s2": [None, 20.0],
+            "s3": [5.0, 30.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["s1", "s2", "s3"],
+            "condition": ["A", "A", "B"],
+        }
+    )
+
+    result = lookup_gene_expression(expression, metadata, "g1")
+
+    condition_a = result.condition_summary.set_index("condition").loc["A"]
+    assert condition_a["missing_value_count"] == 2
+    assert pd.isna(condition_a["minimum_expression"])
+    assert pd.isna(condition_a["median_expression"])
+    assert pd.isna(condition_a["mean_expression"])
+    assert pd.isna(condition_a["maximum_expression"])
+    assert pd.isna(condition_a["standard_deviation"])
+
+
+def test_a_sample_column_that_is_entirely_missing_is_a_controlled_failure() -> None:
+    expression = pd.DataFrame(
+        {"gene_id": ["g1", "g2"], "s1": [None, None], "s2": [1.0, 2.0]}
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1", "s2"], "condition": ["A", "B"]}
+    )
+
+    error = _capture_error(expression, metadata, "g1")
+
+    assert error.reason is GeneExpressionErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN
+    assert "s1" in str(error)
+
+
+def test_missing_values_do_not_count_toward_all_values_equal() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "s1": [5.0, 10.0],
+            "s2": [None, 20.0],
+            "s3": [5.0, 30.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1", "s2", "s3"], "condition": ["A", "A", "A"]}
+    )
+
+    result = lookup_gene_expression(expression, metadata, "g1")
+
+    assert result.all_values_equal is True
+
+
 @pytest.mark.parametrize("query", [None, pd.NA, "", "   ", " g1 "])
 def test_invalid_selected_gene_id_is_controlled_without_trimming(query: object) -> None:
     expression = pd.DataFrame({"gene_id": ["g1"], "s1": [1.0]})
@@ -370,6 +678,26 @@ def test_list_gene_ids_defensively_validates_structure(
     assert error.reason is expected_reason
 
 
+def test_filter_gene_ids_returns_all_ids_for_empty_query() -> None:
+    gene_ids = ("Solyc01g001", "Solyc02g002", "GENE_EXAMPLE_3")
+
+    assert filter_gene_ids(gene_ids, "") == gene_ids
+    assert filter_gene_ids(gene_ids, "   ") == gene_ids
+
+
+def test_filter_gene_ids_matches_case_insensitive_substring_in_order() -> None:
+    gene_ids = ("Solyc01g001", "GENE_EXAMPLE_3", "Solyc02g002")
+
+    assert filter_gene_ids(gene_ids, "solyc") == ("Solyc01g001", "Solyc02g002")
+    assert filter_gene_ids(gene_ids, "EXAMPLE") == ("GENE_EXAMPLE_3",)
+
+
+def test_filter_gene_ids_returns_empty_tuple_for_no_matches() -> None:
+    gene_ids = ("Solyc01g001", "Solyc02g002")
+
+    assert filter_gene_ids(gene_ids, "nonexistent") == ()
+
+
 def test_duplicate_gene_id_column_is_controlled_by_both_public_lookups() -> None:
     expression = pd.DataFrame(
         [["g1", "g1", 1.0]],
@@ -409,8 +737,6 @@ def test_invalid_gene_identifiers_block_option_building_and_lookup(
 @pytest.mark.parametrize(
     ("value", "reason"),
     [
-        (None, GeneExpressionErrorReason.MISSING_EXPRESSION_VALUE),
-        ("", GeneExpressionErrorReason.MISSING_EXPRESSION_VALUE),
         ("not-numeric", GeneExpressionErrorReason.NON_COERCIBLE_EXPRESSION_VALUE),
         (True, GeneExpressionErrorReason.NON_COERCIBLE_EXPRESSION_VALUE),
         (False, GeneExpressionErrorReason.NON_COERCIBLE_EXPRESSION_VALUE),

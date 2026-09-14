@@ -119,6 +119,51 @@ def test_expression_distinguishes_numeric_text_invalid_text_and_missing_values()
     assert IssueCode.MISSING_EXPRESSION_VALUE in _codes(report)
 
 
+def test_expression_flags_pandas_auto_named_blank_header_as_empty_column_name() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1"],
+            "sample1": [1.0],
+            "Unnamed: 2": [np.nan],
+        }
+    )
+
+    report = validate_expression_matrix(expression)
+
+    empty_name_issues = [
+        issue for issue in report.issues if issue.code is IssueCode.EMPTY_COLUMN_NAME
+    ]
+    assert len(empty_name_issues) == 1
+    assert "Unnamed: 2" in empty_name_issues[0].message
+    assert "trailing empty column" in empty_name_issues[0].message
+
+
+def test_expression_hints_at_missing_value_placeholders() -> None:
+    expression = pd.DataFrame(
+        {"gene_id": ["g1", "g2"], "sample1": [1.0, 2.0], "sample2": ["-", "3.0"]}
+    )
+
+    report = validate_expression_matrix(expression)
+
+    non_numeric = next(
+        issue for issue in report.issues if issue.code is IssueCode.NON_NUMERIC_VALUE
+    )
+    assert "leave the cell blank" in non_numeric.message
+
+
+def test_expression_does_not_hint_at_missing_value_placeholders_for_ordinary_text() -> None:
+    expression = pd.DataFrame(
+        {"gene_id": ["g1"], "sample1": [1.0], "sample2": ["not_a_number"]}
+    )
+
+    report = validate_expression_matrix(expression)
+
+    non_numeric = next(
+        issue for issue in report.issues if issue.code is IssueCode.NON_NUMERIC_VALUE
+    )
+    assert "leave the cell blank" not in non_numeric.message
+
+
 def test_expression_accepts_negative_values_as_warning() -> None:
     expression = pd.DataFrame(
         {"gene_id": ["g1"], "sample1": [-1.5], "sample2": [0.0]}
@@ -315,6 +360,24 @@ def test_de_partial_missing_padj_warns_and_remains_missing() -> None:
     ]
     assert pd.isna(de_results.loc[1, "padj"])
     assert_frame_equal(de_results, original)
+
+
+def test_de_hints_at_missing_value_placeholders() -> None:
+    de_results = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "log2FoldChange": [1.0, "nd"],
+            "pvalue": [0.01, 0.2],
+            "padj": [0.02, 0.3],
+        }
+    )
+
+    report = validate_de_results(de_results)
+
+    non_numeric = next(
+        issue for issue in report.issues if issue.code is IssueCode.NON_NUMERIC_VALUE
+    )
+    assert "leave the cell blank" in non_numeric.message
 
 
 def test_de_rejects_completely_empty_table_without_mutating_it() -> None:

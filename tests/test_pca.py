@@ -14,10 +14,12 @@ from plant_expression_explorer.pca import (
     PcaComputationError,
     PcaErrorReason,
     SamplePcaResult,
+    build_grouped_score_plot_data,
     build_pca_observations,
     build_score_plot_data,
     compute_sample_pca,
 )
+from plant_expression_explorer.qc import list_additional_metadata_columns
 from plant_expression_explorer.validation import (
     IssueCode,
     Severity,
@@ -539,7 +541,87 @@ def test_one_gene_proceeds_with_observation() -> None:
 
     assert result.component_count == 1
     assert result.total_variance > 0
-    assert any("only one gene" in item.lower() for item in observations)
+    assert any("only one complete gene" in item.lower() for item in observations)
+
+
+def test_a_gene_with_a_missing_value_is_excluded_and_disclosed() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3"],
+            "sample_a": [1.0, 2.0, None],
+            "sample_b": [4.0, 6.0, 9.0],
+            "sample_c": [7.0, 10.0, 13.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b", "sample_c"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    result = compute_sample_pca(expression, metadata)
+
+    assert result.gene_count == 3
+    assert result.genes_excluded_for_missing_values == 1
+    assert result.complete_gene_count == 2
+    assert result.component_count == min(2, 2)
+    observations = build_pca_observations(result, ValidationReport())
+    assert any(
+        "1 gene(s) had at least one missing value" in item for item in observations
+    )
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
+
+
+def test_no_genes_excluded_reports_zero_and_no_observation() -> None:
+    expression, metadata = _some_constant_gene_tables()
+
+    result = compute_sample_pca(expression, metadata)
+    observations = build_pca_observations(result, ValidationReport())
+
+    assert result.genes_excluded_for_missing_values == 0
+    assert result.complete_gene_count == result.gene_count
+    assert not any("missing value" in item for item in observations)
+
+
+def test_a_sample_column_that_is_entirely_missing_is_a_controlled_failure() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "sample_a": [None, None],
+            "sample_b": [3.0, 4.0],
+            "sample_c": [5.0, 6.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b", "sample_c"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+
+    error = _assert_reason(
+        expression, metadata, PcaErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN
+    )
+    assert "sample_a" in str(error)
+
+
+def test_every_gene_excluded_for_missing_values_is_a_controlled_failure() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "sample_a": [None, 2.0],
+            "sample_b": [3.0, None],
+        }
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["sample_a", "sample_b"], "condition": ["control", "treated"]}
+    )
+
+    _assert_reason(expression, metadata, PcaErrorReason.NO_COMPLETE_GENE_ROWS)
 
 
 def test_constant_genes_retained_with_positive_total_variance_proceeds() -> None:
@@ -554,6 +636,87 @@ def test_constant_genes_retained_with_positive_total_variance_proceeds() -> None
     assert result.total_variance > 0
     assert any("1 gene(s)" in item for item in observations)
     pd.testing.assert_frame_equal(expression, original_expression)
+
+
+def test_scale_to_unit_variance_defaults_to_false_and_is_disclosed() -> None:
+    expression, metadata = _some_constant_gene_tables()
+
+    result = compute_sample_pca(expression, metadata)
+
+    assert result.scale_to_unit_variance is False
+
+
+def test_scale_to_unit_variance_gives_every_non_constant_gene_equal_weight() -> None:
+    # g1 and g2 are constructed to be orthogonal after centering (their
+    # centred dot product is exactly 0) but on very different magnitudes.
+    # After scaling both to unit variance, two orthogonal unit-variance
+    # features split the total variance exactly 50/50 between components.
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "sample_a": [1.0, 1000.0],
+            "sample_b": [2.0, -2000.0],
+            "sample_c": [3.0, 1000.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b", "sample_c"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    scaled = compute_sample_pca(expression, metadata, scale_to_unit_variance=True)
+
+    assert scaled.scale_to_unit_variance is True
+    assert scaled.total_variance == pytest.approx(2.0, rel=1e-9)
+    ratios = scaled.variance_table["explained_variance_ratio"].tolist()
+    assert ratios[0] == pytest.approx(0.5, abs=1e-6)
+    pd.testing.assert_frame_equal(expression, original_expression)
+    pd.testing.assert_frame_equal(metadata, original_metadata)
+
+
+def test_scale_to_unit_variance_keeps_a_constant_gene_at_exactly_zero() -> None:
+    expression, metadata = _some_constant_gene_tables()
+
+    result = compute_sample_pca(expression, metadata, scale_to_unit_variance=True)
+    observations = build_pca_observations(result, ValidationReport())
+
+    assert result.zero_variance_gene_count == 1
+    assert np.isfinite(result.total_variance)
+    assert any(
+        "exactly zero after scaling" in item for item in observations
+    )
+    assert any(
+        "additionally scaled to unit variance" in item for item in observations
+    )
+
+
+def test_scale_to_unit_variance_true_and_false_can_disagree_on_pc1_sample_order() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "sample_a": [1.0, 1000.0],
+            "sample_b": [2.0, 1.0],
+            "sample_c": [3.0, 500.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b", "sample_c"],
+            "condition": ["control", "control", "treated"],
+        }
+    )
+
+    unscaled = compute_sample_pca(expression, metadata)
+    scaled = compute_sample_pca(expression, metadata, scale_to_unit_variance=True)
+
+    # Different scaling modes are independent, non-mutating calculations on
+    # the same source tables; this only demonstrates that the mode has a
+    # real, expected effect on which sample dominates PC1's structure.
+    assert not unscaled.score_table["pc1"].equals(scaled.score_table["pc1"])
 
 
 def test_all_genes_constant_is_controlled_zero_total_variance() -> None:
@@ -871,16 +1034,6 @@ def test_metadata_expression_mismatch_has_both_directions(
             "1 non-coercible",
         ),
         (
-            None,
-            PcaErrorReason.MISSING_EXPRESSION_VALUE,
-            "1 missing or blank",
-        ),
-        (
-            "   ",
-            PcaErrorReason.MISSING_EXPRESSION_VALUE,
-            "1 missing or blank",
-        ),
-        (
             True,
             PcaErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
             "1 boolean and 0 complex",
@@ -1034,15 +1187,25 @@ def test_multiple_invalid_inputs_follow_fixed_error_priority() -> None:
     )
     _assert_reason(expr_missing_value, mismatch_metadata, PcaErrorReason.SAMPLE_MISMATCH)
 
+    expr_empty_column_and_boolean = pd.DataFrame(
+        {"gene_id": ["g1", "g2"], "sample_1": [None, None], "sample_2": [3, True]}
+    )
+    empty_column_error = _assert_reason(
+        expr_empty_column_and_boolean,
+        valid_metadata,
+        PcaErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN,
+    )
+    assert "sample_1" in str(empty_column_error)
+
     expr_missing_and_boolean = pd.DataFrame(
         {"gene_id": ["g1", "g2"], "sample_1": [None, True], "sample_2": [3, 4]}
     )
-    missing_error = _assert_reason(
+    boolean_over_missing_error = _assert_reason(
         expr_missing_and_boolean,
         valid_metadata,
-        PcaErrorReason.MISSING_EXPRESSION_VALUE,
+        PcaErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
     )
-    assert "1 missing or blank" in str(missing_error)
+    assert "1 boolean and 0 complex" in str(boolean_over_missing_error)
 
     expr_boolean_and_text = pd.DataFrame(
         {"gene_id": ["g1", "g2"], "sample_1": [True, "not-numeric"], "sample_2": [3, 4]}
@@ -1072,6 +1235,15 @@ def test_multiple_invalid_inputs_follow_fixed_error_priority() -> None:
         {"gene_id": ["g1", "g2"], "sample_1": [float("inf"), 2], "sample_2": [3, 4]}
     )
     _assert_reason(expr_inf, valid_metadata, PcaErrorReason.INFINITE_EXPRESSION_VALUE)
+
+    expr_no_complete_genes = pd.DataFrame(
+        {"gene_id": ["g1", "g2"], "sample_1": [None, 2], "sample_2": [3, None]}
+    )
+    _assert_reason(
+        expr_no_complete_genes,
+        valid_metadata,
+        PcaErrorReason.NO_COMPLETE_GENE_ROWS,
+    )
 
     all_constant_expression, all_constant_metadata = _all_constant_tables()
     _assert_reason(
@@ -1338,3 +1510,94 @@ def test_build_score_plot_data_raises_value_error_below_two_components() -> None
 
     with pytest.raises(ValueError, match="requires at least two"):
         build_score_plot_data(result)
+
+
+def test_list_additional_metadata_columns_excludes_required_columns() -> None:
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a"],
+            "condition": ["control"],
+            "genotype": ["WT"],
+            "batch": ["1"],
+        }
+    )
+
+    assert list_additional_metadata_columns(metadata) == ("genotype", "batch")
+
+
+def test_list_additional_metadata_columns_empty_for_two_column_metadata() -> None:
+    metadata = pd.DataFrame({"sample_id": ["sample_a"], "condition": ["control"]})
+
+    assert list_additional_metadata_columns(metadata) == ()
+
+
+def test_list_additional_metadata_columns_returns_empty_for_non_dataframe() -> None:
+    assert list_additional_metadata_columns(None) == ()
+
+
+def test_build_grouped_score_plot_data_matches_condition_plot_by_default(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+    result = compute_sample_pca(expression, metadata)
+
+    pd.testing.assert_frame_equal(
+        build_grouped_score_plot_data(result, metadata, "condition"),
+        build_score_plot_data(result),
+    )
+
+
+def test_build_grouped_score_plot_data_joins_arbitrary_metadata_column_by_sample_id(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+    expected_genotype_by_sample = {
+        "sample_d": "mutant",
+        "sample_a": "WT",
+        "sample_c": "mutant",
+        "sample_b": "WT",
+    }
+    metadata = metadata.assign(
+        genotype=[
+            expected_genotype_by_sample[sample_id]
+            for sample_id in metadata["sample_id"]
+        ]
+    )
+    result = compute_sample_pca(expression, metadata)
+
+    plot_data = build_grouped_score_plot_data(result, metadata, "genotype")
+
+    assert list(plot_data.columns) == ["sample_id", "genotype", "pc1", "pc2"]
+    for sample_id, genotype in zip(
+        plot_data["sample_id"], plot_data["genotype"], strict=True
+    ):
+        assert genotype == expected_genotype_by_sample[sample_id]
+
+
+def test_build_grouped_score_plot_data_rejects_unknown_column(
+    asymmetric_tables: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    expression, metadata = asymmetric_tables
+    result = compute_sample_pca(expression, metadata)
+
+    with pytest.raises(ValueError, match="does not contain column"):
+        build_grouped_score_plot_data(result, metadata, "tissue")
+
+
+def test_build_grouped_score_plot_data_raises_value_error_below_two_components() -> (
+    None
+):
+    expression = pd.DataFrame(
+        {"gene_id": ["g1", "g2", "g3"], "sample_a": [1, 2, 3], "sample_b": [4, 6, 9]}
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b"],
+            "condition": ["control", "treated"],
+            "genotype": ["WT", "WT"],
+        }
+    )
+    result = compute_sample_pca(expression, metadata)
+
+    with pytest.raises(ValueError, match="requires at least two"):
+        build_grouped_score_plot_data(result, metadata, "genotype")

@@ -28,7 +28,7 @@ class GeneExpressionErrorReason(StrEnum):
     SAMPLE_MISMATCH = "SAMPLE_MISMATCH"
     INVALID_GENE_ID = "INVALID_GENE_ID"
     UNKNOWN_GENE_ID = "UNKNOWN_GENE_ID"
-    MISSING_EXPRESSION_VALUE = "MISSING_EXPRESSION_VALUE"
+    EMPTY_EXPRESSION_SAMPLE_COLUMN = "EMPTY_EXPRESSION_SAMPLE_COLUMN"
     NON_COERCIBLE_EXPRESSION_VALUE = "NON_COERCIBLE_EXPRESSION_VALUE"
     INFINITE_EXPRESSION_VALUE = "INFINITE_EXPRESSION_VALUE"
     NUMERICAL_RANGE_ERROR = "NUMERICAL_RANGE_ERROR"
@@ -65,6 +65,7 @@ class GeneExpressionResult:
     gene_id: str
     sample_count: int
     condition_count: int
+    missing_value_count: int
     metadata_order_matches_expression: bool
     all_values_equal: bool
     sample_expression: pd.DataFrame
@@ -79,6 +80,7 @@ SAMPLE_EXPRESSION_COLUMNS = (
 CONDITION_EXPRESSION_SUMMARY_COLUMNS = (
     "condition",
     "sample_count",
+    "missing_value_count",
     "sample_ids",
     "minimum_expression",
     "median_expression",
@@ -86,6 +88,8 @@ CONDITION_EXPRESSION_SUMMARY_COLUMNS = (
     "maximum_expression",
     "standard_deviation",
 )
+MULTI_GENE_PANEL_COLUMNS = ("gene_id", "sample_id", "condition", "expression_value")
+TIME_SERIES_CHART_COLUMNS = ("sample_id", "condition", "time_value", "expression_value")
 GENE_EXPRESSION_CHART_COLUMNS = (
     "sample_position",
     "sample_id",
@@ -124,6 +128,23 @@ def list_gene_ids(expression: pd.DataFrame) -> tuple[str, ...]:
     return tuple(gene_ids)
 
 
+def filter_gene_ids(gene_ids: tuple[str, ...], query: str) -> tuple[str, ...]:
+    """Return gene IDs containing ``query`` as a case-insensitive substring.
+
+    An empty or whitespace-only query returns every supplied ID unchanged.
+    Matching does not trim, normalize, or reorder identifiers; source row
+    order is preserved.
+    """
+
+    stripped_query = query.strip()
+    if not stripped_query:
+        return gene_ids
+    lowered_query = stripped_query.casefold()
+    return tuple(
+        gene_id for gene_id in gene_ids if lowered_query in gene_id.casefold()
+    )
+
+
 def lookup_gene_expression(
     expression: pd.DataFrame,
     metadata: pd.DataFrame,
@@ -132,8 +153,12 @@ def lookup_gene_expression(
     """Return a non-mutating descriptive lookup for one exact supplied gene ID.
 
     The expression and metadata tables are both defensively validated. No
-    identifiers are trimmed or case-folded, no samples are intersected, and no
-    missing or invalid expression cells are skipped or imputed.
+    identifiers are trimmed or case-folded, no samples are intersected, and
+    no invalid expression cell is skipped or imputed. A missing expression
+    cell is retained as missing (never imputed): it is shown as missing in
+    the per-sample table, excluded from that condition's summary statistics
+    (disclosed via ``missing_value_count``), and a condition with no defined
+    value at all reports every summary statistic as undefined (``NaN``).
     """
 
     gene_ids, sample_columns, sample_ids, numeric_expression = (
@@ -178,13 +203,43 @@ def lookup_gene_expression(
         gene_id=selected_gene_id,
         sample_count=len(sample_ids),
         condition_count=len(condition_summary.index),
+        missing_value_count=int(numeric_values.isna().sum()),
         metadata_order_matches_expression=(metadata_sample_ids == sample_ids),
-        all_values_equal=bool(numeric_values.nunique(dropna=False) == 1),
+        all_values_equal=bool(numeric_values.nunique(dropna=True) == 1),
         sample_expression=sample_expression,
         condition_summary=condition_summary,
     )
     _assert_result_invariants(result, sample_ids, sample_conditions, source_values)
     return result
+
+
+def build_multi_gene_panel_data(
+    expression: pd.DataFrame,
+    metadata: pd.DataFrame,
+    gene_ids: list[object],
+) -> pd.DataFrame:
+    """Return long-format supplied per-sample values for several exact genes.
+
+    Each gene is looked up independently through :func:`lookup_gene_expression`,
+    reusing its full validation and numeric-coercion contract; no additional
+    computation, normalization, or cross-gene scaling is introduced. Rows are
+    concatenated in the supplied gene order, then each gene's own sample
+    order. Different genes may have very different absolute scales; plotting
+    them together does not make their magnitudes comparable.
+    """
+
+    frames: list[pd.DataFrame] = []
+    for gene_id in gene_ids:
+        result = lookup_gene_expression(expression, metadata, gene_id)
+        gene_frame = result.sample_expression.loc[
+            :, ["sample_id", "condition", "expression_value"]
+        ].copy(deep=True)
+        gene_frame.insert(0, "gene_id", result.gene_id)
+        frames.append(gene_frame)
+    if not frames:
+        return pd.DataFrame(columns=MULTI_GENE_PANEL_COLUMNS)
+    combined = pd.concat(frames, ignore_index=True)
+    return combined.loc[:, list(MULTI_GENE_PANEL_COLUMNS)]
 
 
 def build_gene_expression_chart_data(
@@ -207,6 +262,127 @@ def build_gene_expression_chart_data(
     )
 
 
+def build_grouped_gene_expression_chart_data(
+    result: GeneExpressionResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return independent numeric point-chart data labelled by one metadata column.
+
+    ``group_column`` values are joined from ``metadata`` by exact sample ID,
+    for display only, exactly like 'condition'. Reuses
+    :func:`build_gene_expression_chart_data`'s numeric coercion; the plotted
+    values are unchanged.
+    """
+
+    if group_column == "condition":
+        return build_gene_expression_chart_data(result)
+    lookup = _metadata_column_lookup(metadata, group_column)
+    numeric_values = pd.to_numeric(
+        result.sample_expression["expression_value"],
+        errors="raise",
+    )
+    sample_ids = result.sample_expression["sample_id"].tolist()
+    return pd.DataFrame(
+        {
+            "sample_position": range(result.sample_count),
+            "sample_id": sample_ids,
+            group_column: [lookup[sample_id] for sample_id in sample_ids],
+            "expression_value": numeric_values.tolist(),
+        },
+        columns=("sample_position", "sample_id", group_column, "expression_value"),
+    )
+
+
+def build_time_series_chart_data(
+    result: GeneExpressionResult,
+    metadata: pd.DataFrame,
+    time_column: str,
+) -> pd.DataFrame:
+    """Return per-sample values stably sorted by one numeric metadata column.
+
+    ``time_column`` values are joined from ``metadata`` by exact sample ID
+    and must be fully numeric (safely coercible via ``pandas.to_numeric``);
+    this raises ``ValueError`` naming every sample with a non-numeric or
+    missing value rather than silently dropping, imputing, or excluding it.
+    Samples are stably sorted by the numeric time value: identical-time
+    samples (for example biological replicates at one timepoint) keep their
+    original relative order and are never averaged or otherwise combined.
+    """
+
+    lookup = _metadata_column_lookup(metadata, time_column)
+    sample_ids = result.sample_expression["sample_id"].tolist()
+    raw_time_values = [lookup[sample_id] for sample_id in sample_ids]
+    numeric_time = pd.to_numeric(pd.Series(raw_time_values), errors="coerce")
+    invalid_samples = [
+        sample_id
+        for sample_id, value in zip(sample_ids, numeric_time, strict=True)
+        if pd.isna(value)
+    ]
+    if invalid_samples:
+        raise ValueError(
+            f"Metadata column '{time_column}' is not numeric for sample(s): "
+            + ", ".join(invalid_samples)
+            + "."
+        )
+    numeric_values = pd.to_numeric(
+        result.sample_expression["expression_value"], errors="raise"
+    )
+    frame = pd.DataFrame(
+        {
+            "sample_id": sample_ids,
+            "condition": result.sample_expression["condition"].tolist(),
+            "time_value": numeric_time.tolist(),
+            "expression_value": numeric_values.tolist(),
+        },
+        columns=TIME_SERIES_CHART_COLUMNS,
+    )
+    return frame.sort_values("time_value", kind="stable", ignore_index=True)
+
+
+def build_grouped_gene_expression_condition_summary(
+    result: GeneExpressionResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return the descriptive expression summary for one metadata column.
+
+    Reuses the same descriptive statistics (minimum/median/mean/maximum/
+    standard deviation) already used for condition grouping, computed for an
+    alternate metadata column chosen by the caller, from the already-copied
+    values in ``result.sample_expression``; nothing is re-looked-up or
+    re-validated.
+    """
+
+    if group_column == "condition":
+        return result.condition_summary.copy(deep=True)
+    lookup = _metadata_column_lookup(metadata, group_column)
+    sample_ids = result.sample_expression["sample_id"].tolist()
+    groups = [lookup[sample_id] for sample_id in sample_ids]
+    numeric_values = pd.to_numeric(
+        result.sample_expression["expression_value"],
+        errors="raise",
+    )
+    summary = _build_condition_summary(sample_ids, groups, numeric_values)
+    return summary.rename(columns={"condition": group_column})
+
+
+def _metadata_column_lookup(
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> dict[str, object]:
+    if not isinstance(metadata, pd.DataFrame) or "sample_id" not in metadata.columns:
+        raise ValueError("Sample metadata is missing required column 'sample_id'.")
+    if group_column not in metadata.columns:
+        raise ValueError(f"Sample metadata does not contain column '{group_column}'.")
+    return {
+        str(sample_id): ("(missing)" if _is_missing_or_blank(value) else value)
+        for sample_id, value in zip(
+            metadata["sample_id"], metadata[group_column], strict=True
+        )
+    }
+
+
 def build_gene_expression_observations(
     result: GeneExpressionResult,
     validation_report: ValidationReport,
@@ -214,6 +390,12 @@ def build_gene_expression_observations(
     """Build deterministic structural observations without interpretation."""
 
     observations: list[str] = []
+    if result.missing_value_count:
+        observations.append(
+            f"The selected gene has {result.missing_value_count} missing "
+            "value(s) among its samples, retained as missing and excluded "
+            "from condition summary statistics; no value was imputed."
+        )
     if not result.metadata_order_matches_expression:
         observations.append(
             "Metadata sample order differs from expression-column order. "
@@ -330,14 +512,32 @@ def _build_condition_summary(
     records: list[dict[str, object]] = []
     for condition, positions in positions_by_condition.items():
         values = numeric_values.iloc[positions]
+        defined_mask = values.notna()
+        missing_value_count = int((~defined_mask).sum())
+        condition_sample_ids = tuple(sample_ids[position] for position in positions)
+        if not defined_mask.any():
+            minimum = median = mean = maximum = standard_deviation = float("nan")
+            records.append(
+                {
+                    "condition": condition,
+                    "sample_count": len(positions),
+                    "missing_value_count": missing_value_count,
+                    "sample_ids": condition_sample_ids,
+                    "minimum_expression": minimum,
+                    "median_expression": median,
+                    "mean_expression": mean,
+                    "maximum_expression": maximum,
+                    "standard_deviation": standard_deviation,
+                }
+            )
+            continue
         try:
-            finite_values = [float(value) for value in values.tolist()]
+            finite_values = [float(value) for value in values[defined_mask].tolist()]
         except (OverflowError, TypeError, ValueError) as error:
             raise GeneExpressionComputationError(
                 GeneExpressionErrorReason.NUMERICAL_RANGE_ERROR,
                 _NUMERICAL_RANGE_MESSAGE,
             ) from error
-        condition_sample_ids = tuple(sample_ids[position] for position in positions)
         minimum = min(finite_values)
         median = _stable_median(finite_values)
         mean = _stable_mean(finite_values)
@@ -358,6 +558,7 @@ def _build_condition_summary(
             {
                 "condition": condition,
                 "sample_count": len(positions),
+                "missing_value_count": missing_value_count,
                 "sample_ids": condition_sample_ids,
                 "minimum_expression": minimum,
                 "median_expression": median,
@@ -594,18 +795,22 @@ def _numeric_expression_copy(
 ) -> pd.DataFrame:
     working = expression.loc[:, sample_columns].copy(deep=True)
     missing_mask = working.apply(lambda column: column.map(_is_missing_or_blank))
-    missing_count = int(missing_mask.sum().sum())
-    if missing_count:
+    empty_columns = [
+        sample_id
+        for column, sample_id in zip(sample_columns, sample_ids, strict=True)
+        if missing_mask[column].all()
+    ]
+    if empty_columns:
         raise GeneExpressionComputationError(
-            GeneExpressionErrorReason.MISSING_EXPRESSION_VALUE,
-            f"The expression matrix contains {missing_count} missing or blank "
-            "sample value(s). No values were imputed or omitted.",
+            GeneExpressionErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN,
+            "Sample column(s) contain only missing or blank values: "
+            + ", ".join(empty_columns) + ".",
         )
 
     boolean_mask = working.apply(lambda column: column.map(is_bool))
     complex_mask = working.apply(lambda column: column.map(is_complex))
-    boolean_count = int(boolean_mask.sum().sum())
-    complex_count = int(complex_mask.sum().sum())
+    boolean_count = int((boolean_mask & ~missing_mask).sum().sum())
+    complex_count = int((complex_mask & ~missing_mask).sum().sum())
     if boolean_count or complex_count:
         raise GeneExpressionComputationError(
             GeneExpressionErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
@@ -616,7 +821,7 @@ def _numeric_expression_copy(
         )
 
     numeric = working.apply(lambda column: pd.to_numeric(column, errors="coerce"))
-    non_coercible_count = int(numeric.isna().sum().sum())
+    non_coercible_count = int((numeric.isna() & ~missing_mask).sum().sum())
     if non_coercible_count:
         raise GeneExpressionComputationError(
             GeneExpressionErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,

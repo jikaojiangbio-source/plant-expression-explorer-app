@@ -1,18 +1,29 @@
 """Descriptive exploration of supplied differential-expression results."""
 
+import math
+
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 from plant_expression_explorer.dataset import get_current_dataset
 from plant_expression_explorer.differential_expression import (
+    STATUS_COLUMN,
     DifferentialExpressionComputationError,
     DifferentialExpressionErrorReason,
     DifferentialExpressionStatus,
     build_category_summary,
+    build_ma_plot_data,
+    build_volcano_plot_data,
     classify_differential_expression_results,
     select_rows_by_status,
 )
 from plant_expression_explorer.exports import CsvExportError, build_csv_export
+from plant_expression_explorer.provenance import (
+    DatasetProvenance,
+    provenance_display_rows,
+)
+from plant_expression_explorer.theme import inject_global_styles
 from plant_expression_explorer.validation import Severity, ValidationIssue
 
 
@@ -35,6 +46,18 @@ _CATEGORY_LABELS = {
         "Evaluable rows that do not meet both thresholds"
     ),
 }
+
+
+def _render_dataset_context(provenance: DatasetProvenance | None) -> None:
+    with st.expander("Dataset context (descriptive only)"):
+        st.caption(
+            "Context is displayed verbatim and is not scientifically verified, "
+            "parsed, or used in this calculation. A supplied contrast description "
+            "is not used to infer direction or a reference level."
+        )
+        for label, value in provenance_display_rows(provenance):
+            st.caption(label)
+            st.code(value, language=None)
 
 
 def _is_relevant_issue(issue: ValidationIssue) -> bool:
@@ -123,6 +146,7 @@ def _render_csv_downloads(
         )
 
 
+inject_global_styles()
 st.title("🧬 Differential Expression")
 st.write(
     "This page applies user-selected exploratory thresholds to supplied, "
@@ -150,6 +174,18 @@ st.header("Current active dataset")
 st.write(f"**Source label:** {current.source_label}")
 st.write(f"**Source type:** {current.source}")
 st.write(f"**Differential-expression rows supplied:** {current.de_row_count:,}")
+_render_dataset_context(current.provenance)
+
+if current.de_results is None:
+    st.info(
+        "No differential-expression results were supplied for this dataset. "
+        "Return to Upload Data to add a precomputed results file, or continue "
+        "using Sample Quality Control, PCA, Sample Correlation, and Gene "
+        "Expression, which do not require one."
+    )
+    st.stop()
+
+de_results = current.de_results
 
 report = current.validation_report
 validation_columns = st.columns(3)
@@ -213,7 +249,7 @@ absolute_log2_fold_change_threshold = threshold_columns[1].number_input(
 
 try:
     result = classify_differential_expression_results(
-        current.de_results,
+        de_results,
         adjusted_p_value_threshold=adjusted_p_value_threshold,
         absolute_log2_fold_change_threshold=absolute_log2_fold_change_threshold,
     )
@@ -275,6 +311,152 @@ st.caption(
     "inclusive and use the supplied values without tolerance or imputation."
 )
 
+st.header("Volcano plot")
+st.write(
+    "A pure scatter view of the supplied `log2FoldChange` against "
+    "`-log10(padj)` for evaluable rows, coloured by the same exploratory "
+    "threshold status shown above. No p-value, fold change, or "
+    "significance call is calculated here; the dashed guides mark the "
+    "exact thresholds already applied."
+)
+category_order = [
+    _CATEGORY_LABELS[status.value]
+    for status in DifferentialExpressionStatus
+    if status is not DifferentialExpressionStatus.NOT_EVALUABLE
+]
+
+volcano = build_volcano_plot_data(result)
+if volcano.excluded_zero_padj_count:
+    st.info(
+        f"{volcano.excluded_zero_padj_count:,} row(s) with padj exactly 0 are "
+        "excluded from this plot because -log10(0) has no finite value; they "
+        "remain classified and visible in every table above and in the "
+        "downloads below."
+    )
+if volcano.plot_rows.empty:
+    st.info("No evaluable rows are available to plot.")
+else:
+    volcano_data = volcano.plot_rows.assign(
+        category=volcano.plot_rows[STATUS_COLUMN].map(_CATEGORY_LABELS)
+    )
+    volcano_figure = px.scatter(
+        volcano_data,
+        x="log2FoldChange",
+        y="neg_log10_padj",
+        color="category",
+        category_orders={"category": category_order},
+        hover_name="gene_id",
+        hover_data={
+            "log2FoldChange": ":.4f",
+            "padj": ":.4g",
+            "neg_log10_padj": False,
+            "category": True,
+        },
+        labels={
+            "log2FoldChange": "Supplied log2FoldChange",
+            "neg_log10_padj": "-log10(supplied padj)",
+            "category": "Exploratory status",
+        },
+    )
+    volcano_figure.update_traces(marker=dict(size=8, opacity=0.75, line=dict(width=0)))
+    volcano_figure.add_vline(
+        x=result.absolute_log2_fold_change_threshold,
+        line_dash="dash",
+        line_color="#888888",
+    )
+    volcano_figure.add_vline(
+        x=-result.absolute_log2_fold_change_threshold,
+        line_dash="dash",
+        line_color="#888888",
+    )
+    if result.adjusted_p_value_threshold > 0:
+        volcano_figure.add_hline(
+            y=-math.log10(result.adjusted_p_value_threshold),
+            line_dash="dash",
+            line_color="#888888",
+        )
+    volcano_figure.update_layout(
+        height=440,
+        margin=dict(l=10, r=10, t=10, b=10),
+        legend_title_text="Exploratory status",
+    )
+    st.plotly_chart(volcano_figure, width="stretch")
+    st.caption(
+        "Dashed lines mark the exact applied thresholds (fold-change guides "
+        "always shown; the padj guide is omitted when the threshold is "
+        "exactly 0, since -log10(0) has no finite position). Point position "
+        "and colour are descriptive only and are not a claim of biological "
+        "importance. Zoom, pan, and hover are Plotly's built-in interactions "
+        "and do not change the underlying values."
+    )
+
+st.header("MA plot")
+st.write(
+    "A pure scatter view of each evaluable gene's mean supplied expression "
+    "value against the supplied `log2FoldChange`, coloured by the same "
+    "exploratory threshold status shown above. `mean_expression` is the "
+    "arithmetic mean of that gene's own supplied per-sample expression "
+    "values on the Gene Expression / Sample Quality Control pages' scale; "
+    "it is not a library-size-normalized 'baseMean' or 'AveExpr' statistic "
+    "from any specific external differential-expression tool, and no "
+    "statistic is calculated, adjusted, or inferred here."
+)
+ma_plot = build_ma_plot_data(result, current.expression)
+if ma_plot.excluded_no_expression_match_count:
+    st.info(
+        f"{ma_plot.excluded_no_expression_match_count:,} evaluable row(s) are "
+        "excluded from this plot because their exact gene_id has no "
+        "unambiguous match in the active expression matrix; they remain "
+        "classified and visible in every table above and in the downloads "
+        "below."
+    )
+if ma_plot.excluded_all_missing_expression_count:
+    st.info(
+        f"{ma_plot.excluded_all_missing_expression_count:,} evaluable row(s) "
+        "are excluded from this plot because every supplied expression "
+        "value for that gene is missing; they remain classified and "
+        "visible in every table above and in the downloads below."
+    )
+if ma_plot.plot_rows.empty:
+    st.info("No evaluable rows are available to plot.")
+else:
+    ma_data = ma_plot.plot_rows.assign(
+        category=ma_plot.plot_rows[STATUS_COLUMN].map(_CATEGORY_LABELS)
+    )
+    ma_figure = px.scatter(
+        ma_data,
+        x="mean_expression",
+        y="log2FoldChange",
+        color="category",
+        category_orders={"category": category_order},
+        hover_name="gene_id",
+        hover_data={
+            "mean_expression": ":.4f",
+            "log2FoldChange": ":.4f",
+            "category": True,
+        },
+        labels={
+            "mean_expression": "Mean supplied expression value",
+            "log2FoldChange": "Supplied log2FoldChange",
+            "category": "Exploratory status",
+        },
+    )
+    ma_figure.update_traces(marker=dict(size=8, opacity=0.75, line=dict(width=0)))
+    ma_figure.add_hline(y=0.0, line_dash="dot", line_color="#bbbbbb")
+    ma_figure.update_layout(
+        height=440,
+        margin=dict(l=10, r=10, t=10, b=10),
+        legend_title_text="Exploratory status",
+    )
+    st.plotly_chart(ma_figure, width="stretch")
+    st.caption(
+        "The dotted line marks log2FoldChange = 0 (no change), for visual "
+        "reference only. Point position and colour are descriptive only "
+        "and are not a claim of biological importance. Zoom, pan, and "
+        "hover are Plotly's built-in interactions and do not change the "
+        "underlying values."
+    )
+
 st.header("Complete annotated supplied results")
 st.dataframe(result.annotated_results, width="stretch")
 st.caption(
@@ -323,22 +505,28 @@ _show_derived_table(
     "These rows have a missing or blank padj or log2FoldChange value; missing pvalue alone does not determine this category.",
 )
 
-st.header("Scientific and statistical limitations")
-st.info(
-    "The application uses the supplied padj and log2FoldChange values as-is. It "
-    "does not calculate, adjust, replace, or modify p-values, and it does not "
-    "run DESeq2 or another differential-expression model."
-)
-st.info(
-    "No contrast direction or reference level is inferred. A positive or "
-    "negative supplied fold change cannot be given a condition-specific "
-    "interpretation here."
-)
-st.info(
-    "No rows are trimmed, normalised, deduplicated, sorted, ranked, intersected, "
-    "aggregated, transformed, imputed, or removed. This phase provides no "
-    "volcano plot or gene lookup."
-)
+with st.expander("Scientific and statistical limitations"):
+    st.info(
+        "The application uses the supplied padj and log2FoldChange values as-is. It "
+        "does not calculate, adjust, replace, or modify p-values, and it does not "
+        "run DESeq2 or another differential-expression model."
+    )
+    st.info(
+        "No contrast direction or reference level is inferred. A positive or "
+        "negative supplied fold change cannot be given a condition-specific "
+        "interpretation here."
+    )
+    st.info(
+        "No rows are trimmed, normalised, deduplicated, sorted, ranked, intersected, "
+        "aggregated, transformed, imputed, or removed. This phase provides no "
+        "single-gene lookup; see the Gene Expression page instead."
+    )
+    st.info(
+        "The volcano plot is a scatter of the supplied log2FoldChange and padj "
+        "values already shown above; it does not fit a model, calculate a "
+        "p-value, or determine significance. Point position alone is not "
+        "evidence of biological importance."
+    )
 
 st.header("Download descriptive results")
 st.write(

@@ -1,16 +1,31 @@
-"""Descriptive Pearson sample-to-sample correlation summaries."""
+"""Descriptive Pearson or Spearman sample-to-sample correlation summaries."""
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 from plant_expression_explorer.correlation import (
     CorrelationComputationError,
     build_correlation_observations,
+    build_grouped_condition_correlation_summary,
+    build_grouped_pair_summary,
+    build_grouped_sample_correlation_summary,
     build_heatmap_data,
     compute_sample_correlation,
+    order_samples_by_group,
 )
-from plant_expression_explorer.dataset import get_current_dataset
+from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
+    ensure_valid_group_column_state,
+    get_current_dataset,
+)
 from plant_expression_explorer.exports import CsvExportError, build_csv_export
+from plant_expression_explorer.provenance import (
+    DatasetProvenance,
+    provenance_display_rows,
+)
+from plant_expression_explorer.qc import list_additional_metadata_columns
+from plant_expression_explorer.theme import inject_global_styles
 
 
 def _display_matrix(correlation_matrix: pd.DataFrame) -> pd.DataFrame:
@@ -31,6 +46,17 @@ def _display_summary(
         values = display[column].round(3).astype("object")
         display[column] = values.where(values.notna(), "N/A")
     return display
+
+
+def _render_dataset_context(provenance: DatasetProvenance | None) -> None:
+    with st.expander("Dataset context (descriptive only)"):
+        st.caption(
+            "Context is displayed verbatim and is not scientifically verified, "
+            "parsed, or used in this calculation."
+        )
+        for label, value in provenance_display_rows(provenance):
+            st.caption(label)
+            st.code(value, language=None)
 
 
 def _render_csv_downloads(
@@ -57,9 +83,10 @@ def _render_csv_downloads(
         )
 
 
+inject_global_styles()
 st.title("🔥 Sample Correlation")
 st.write(
-    "Pearson sample-to-sample correlations are descriptive summaries of the "
+    "Sample-to-sample correlations are descriptive summaries of the "
     "active expression matrix. Correlation does not establish biological "
     "validity and does not imply causation."
 )
@@ -84,6 +111,7 @@ st.write(
     f"**Expression contents:** {current.gene_count:,} genes and "
     f"{current.sample_count:,} samples."
 )
+_render_dataset_context(current.provenance)
 
 report = current.validation_report
 validation_columns = st.columns(3)
@@ -94,21 +122,70 @@ validation_columns[2].metric(
     len(report.information),
 )
 
-st.header("Method")
-st.write(
-    "Pearson correlation is calculated between every sample pair across all "
-    "gene rows using complete observations. Sample order follows the "
-    "expression-matrix columns; no similarity-based reordering is performed."
+method_choice = st.selectbox(
+    "Correlation method",
+    options=("Pearson (linear)", "Spearman (rank)"),
+    help=(
+        "Pearson measures linear correlation of the supplied values. "
+        "Spearman measures rank correlation instead: it is more robust to "
+        "outliers and to monotonic-but-nonlinear relationships, at the "
+        "cost of discarding the exact magnitude of differences. Neither "
+        "is presented as universally superior; this is a disclosed "
+        "analysis choice."
+    ),
 )
+method = "spearman" if method_choice.startswith("Spearman") else "pearson"
+method_label = method.capitalize()
+
+with st.expander("Method"):
+    st.write(
+        f"{method_label} correlation is calculated between every sample pair "
+        "across the gene rows where both samples have a value ('pairwise "
+        "complete observations'). Sample order follows the expression-matrix "
+        "columns; no similarity-based reordering is performed."
+    )
 
 try:
-    result = compute_sample_correlation(current.expression, current.metadata)
+    with st.spinner(f"Computing {method_label} correlations…"):
+        result = compute_sample_correlation(
+            current.expression, current.metadata, method=method
+        )
 except CorrelationComputationError as error:
     st.error(
-        "Descriptive Pearson correlations could not be calculated "
+        f"Descriptive {method_label} correlations could not be calculated "
         f"({error.reason.value}): {error}"
     )
     st.stop()
+
+additional_columns = list_additional_metadata_columns(current.metadata)
+group_column = "condition"
+if additional_columns:
+    ensure_valid_group_column_state(st.session_state, additional_columns)
+    group_column = st.selectbox(
+        "Group summaries by",
+        options=("condition", *additional_columns),
+        key=ACTIVE_GROUP_COLUMN_KEY,
+        help=(
+            "Any column present in the uploaded sample metadata beyond "
+            f"'sample_id' and 'condition' can relabel the tables below and "
+            f"sort the heatmap. No {method_label} correlation is recalculated "
+            "for the new grouping; only the group label and within/between-"
+            "group membership change. This choice is shared with the PCA, "
+            "Sample Quality Control, and Gene Expression pages."
+        ),
+    )
+grouped_sample_summary = build_grouped_sample_correlation_summary(
+    result, current.metadata, group_column
+)
+grouped_pair_summary = build_grouped_pair_summary(
+    result, current.metadata, group_column
+)
+grouped_condition_summary = build_grouped_condition_correlation_summary(
+    result, current.metadata, group_column
+)
+group_lookup = dict(
+    zip(grouped_sample_summary["sample_id"], grouped_sample_summary[group_column])
+)
 
 st.header("Correlation matrix")
 st.dataframe(
@@ -118,74 +195,62 @@ st.dataframe(
 )
 st.caption(
     "Rows and columns preserve expression sample order. Values are rounded to "
-    "three decimals for display only; N/A denotes undefined Pearson "
+    f"three decimals for display only; N/A denotes undefined {method_label} "
     "correlation."
 )
 
 st.subheader("Correlation heatmap")
 heatmap_data = build_heatmap_data(result)
 sample_order = list(result.correlation_matrix.columns)
-heatmap_spec = {
-    "mark": {
-        "type": "rect",
-        "stroke": "white",
-        "strokeWidth": 0.5,
-    },
-    "encoding": {
-        "x": {
-            "field": "column_sample",
-            "type": "nominal",
-            "sort": sample_order,
-            "title": "Sample",
-            "axis": {"labelAngle": -45},
-        },
-        "y": {
-            "field": "row_sample",
-            "type": "nominal",
-            "sort": sample_order,
-            "title": "Sample",
-        },
-        "color": {
-            "condition": {
-                "test": "datum.defined === true",
-                "field": "correlation",
-                "type": "quantitative",
-                "scale": {
-                    "domain": [-1, 1],
-                    "scheme": "redblue",
-                },
-                "legend": {"title": "Pearson r"},
-            },
-            "value": "#b8b8b8",
-        },
-        "tooltip": [
-            {
-                "field": "row_sample",
-                "type": "nominal",
-                "title": "Row sample",
-            },
-            {
-                "field": "column_sample",
-                "type": "nominal",
-                "title": "Column sample",
-            },
-            {
-                "field": "correlation_label",
-                "type": "nominal",
-                "title": "Pearson r",
-            },
-        ],
-    },
-}
-st.vega_lite_chart(
-    heatmap_data,
-    spec=heatmap_spec,
-    width="stretch",
-    height=min(max(320, result.sample_count * 48), 900),
+sort_heatmap_by_group = st.checkbox(
+    f"Sort rows/columns by '{group_column}'",
+    help=(
+        "Groups samples that share the same label together, preserving their "
+        "original relative order within each group. This does not compute "
+        "any similarity or distance between samples and is not a clustering "
+        "or dendrogram-based reordering."
+    ),
 )
+if sort_heatmap_by_group:
+    sample_order = order_samples_by_group(sample_order, group_lookup)
+
+ordered_matrix = result.correlation_matrix.reindex(
+    index=sample_order, columns=sample_order
+)
+hover_text = ordered_matrix.map(
+    lambda value: "N/A" if pd.isna(value) else f"{value:.3f}"
+)
+heatmap_figure = go.Figure(
+    data=go.Heatmap(
+        z=ordered_matrix.to_numpy(dtype=float),
+        x=sample_order,
+        y=sample_order,
+        zmin=-1,
+        zmax=1,
+        colorscale="RdBu",
+        colorbar=dict(title=f"{method_label} correlation"),
+        text=hover_text.to_numpy(),
+        customdata=hover_text.to_numpy(),
+        hovertemplate=(
+            "Row: %{y}<br>Column: %{x}<br>"
+            f"{method_label} correlation: " + "%{customdata}<extra></extra>"
+        ),
+        xgap=1,
+        ygap=1,
+    )
+)
+heatmap_figure.update_layout(
+    height=min(max(320, result.sample_count * 48), 900),
+    margin=dict(l=10, r=10, t=10, b=10),
+    xaxis=dict(title="Sample", tickangle=-45),
+    yaxis=dict(title="Sample", autorange="reversed"),
+)
+st.plotly_chart(heatmap_figure, width="stretch")
 st.caption(
-    "The colour domain is fixed at -1 to 1. Neutral grey cells are undefined; "
-    "the heatmap is not clustered and does not imply statistical significance."
+    "The colour domain is fixed at -1 to 1. Blank cells are undefined; the "
+    "heatmap is not clustered and does not imply statistical significance. "
+    "Zoom, pan, and hover are Plotly's built-in interactions and do not "
+    "change the underlying values."
 )
 st.caption(
     "No dedicated application export workflow is implemented. Streamlit "
@@ -196,7 +261,7 @@ st.header("Constant samples and undefined correlations")
 if result.constant_samples:
     st.info(
         f"{len(result.constant_samples)} constant sample column(s) produce "
-        "undefined Pearson correlations: "
+        f"undefined {method_label} correlations: "
         + ", ".join(result.constant_samples)
         + ". They remain in every summary."
     )
@@ -212,9 +277,11 @@ st.caption(
 )
 
 st.header("Per-sample correlation summary")
+if group_column != "condition":
+    st.caption(f"Grouped by metadata column '{group_column}', not 'condition'.")
 st.dataframe(
     _display_summary(
-        result.sample_summary,
+        grouped_sample_summary,
         (
             "minimum_correlation",
             "median_correlation",
@@ -232,7 +299,7 @@ st.caption(
 
 st.header("Unique sample-pair summary")
 st.dataframe(
-    _display_summary(result.pair_summary, ("correlation",)),
+    _display_summary(grouped_pair_summary, ("correlation",)),
     hide_index=True,
     width="stretch",
 )
@@ -244,7 +311,7 @@ st.caption(
 st.header("Condition-pair descriptive summary")
 st.dataframe(
     _display_summary(
-        result.condition_summary,
+        grouped_condition_summary,
         ("median_correlation",),
     ),
     hide_index=True,
@@ -274,22 +341,22 @@ if current.source == "demo":
         "thresholds or support tomato biological conclusions."
     )
 
-st.header("Scientific and statistical limitations")
-st.info(
-    "Input scale and transformation affect Pearson correlation, and gene "
-    "filtering or selection can change every displayed value. Broad expression "
-    "distributions may dominate these summaries."
-)
-st.info(
-    "High correlation does not prove replicate validity. A low or negative "
-    "correlation alone does not prove that a sample is unsuitable. Constant "
-    "samples produce undefined Pearson correlations."
-)
-st.info(
-    "No samples or genes are modified or removed. This page performs no PCA, "
-    "clustering, distance analysis, batch correction, hypothesis testing, "
-    "correlation p-value calculation, or differential-expression inference."
-)
+with st.expander("Scientific and statistical limitations"):
+    st.info(
+        f"Input scale and transformation affect {method_label} correlation, "
+        "and gene filtering or selection can change every displayed value. "
+        "Broad expression distributions may dominate these summaries."
+    )
+    st.info(
+        "High correlation does not prove replicate validity. A low or negative "
+        "correlation alone does not prove that a sample is unsuitable. Constant "
+        f"samples produce undefined {method_label} correlations."
+    )
+    st.info(
+        "No samples or genes are modified or removed. This page performs no PCA, "
+        "clustering, distance analysis, batch correction, hypothesis testing, "
+        "correlation p-value calculation, or differential-expression inference."
+    )
 
 st.header("Download descriptive results")
 st.write(
@@ -305,27 +372,29 @@ st.warning(
 matrix_long = heatmap_data.loc[
     :, ["row_sample", "column_sample", "correlation", "defined"]
 ].copy(deep=True)
+_group_file_suffix = "" if group_column == "condition" else f"-by-{group_column}"
+_method_file_suffix = "" if method == "pearson" else f"-{method}"
 _render_csv_downloads(
     (
         (
             "Download correlation matrix in long form (CSV)",
             matrix_long,
-            "sample-correlation-matrix-long.csv",
+            f"sample-correlation-matrix-long{_method_file_suffix}.csv",
         ),
         (
             "Download per-sample correlation summary (CSV)",
-            result.sample_summary,
-            "sample-correlation-sample-summary.csv",
+            grouped_sample_summary,
+            f"sample-correlation-sample-summary{_method_file_suffix}{_group_file_suffix}.csv",
         ),
         (
             "Download unique sample pairs (CSV)",
-            result.pair_summary,
-            "sample-correlation-unique-pairs.csv",
+            grouped_pair_summary,
+            f"sample-correlation-unique-pairs{_method_file_suffix}{_group_file_suffix}.csv",
         ),
         (
             "Download condition-pair summary (CSV)",
-            result.condition_summary,
-            "sample-correlation-condition-pairs.csv",
+            grouped_condition_summary,
+            f"sample-correlation-condition-pairs{_method_file_suffix}{_group_file_suffix}.csv",
         ),
     )
 )

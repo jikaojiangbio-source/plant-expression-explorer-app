@@ -2,78 +2,124 @@
 
 import streamlit as st
 
+from plant_expression_explorer.theme import (
+    inject_global_styles,
+    render_chip_row,
+    render_hero_illustration,
+)
 
 st.set_page_config(
     page_title="Plant Expression Explorer",
     page_icon="🌱",
     layout="wide",
 )
+inject_global_styles()
 
-st.title("🌱 Plant Expression Explorer")
-st.subheader("Explore preprocessed plant transcriptomics data")
+hero_column, illustration_column = st.columns([1.15, 1], gap="large")
 
-st.write(
-    "Plant Expression Explorer analyses normalized expression matrices, "
-    "sample metadata, and precomputed differential-expression results."
-)
+with hero_column:
+    st.html('<span class="pee-eyebrow">Descriptive · Non-inferential</span>')
+    st.title("🌱 Plant Expression Explorer")
+    st.subheader("Explore preprocessed plant transcriptomics data")
+
+    st.write(
+        "Plant Expression Explorer analyses preprocessed expression matrices and "
+        "sample metadata, with optional precomputed differential-expression results."
+    )
+
+    st.page_link(
+        "pages/1_Upload_Data.py", label="Start with Upload Data", icon="📤"
+    )
+
+with illustration_column:
+    render_hero_illustration()
+    st.caption(
+        "A stylised preview of this app's descriptive chart types; not real data."
+    )
 
 st.info(
     "This application does not process FASTQ files, normalize raw counts, "
     "or independently perform differential-expression inference."
 )
 
-st.header("Planned workflow")
 st.markdown(
     """
-1. **Upload data** and check that the three input tables are compatible.
-2. Review **sample quality-control summaries**.
-3. Explore descriptive **PCA** sample scores and explained variance.
-4. Inspect descriptive **sample correlation** summaries.
-5. Explore supplied **differential-expression results** with descriptive thresholds.
-6. Look up one exact supplied gene in descriptive **gene expression** views.
-7. Download the current descriptive result tables as dedicated UTF-8 CSV files.
-"""
+<div class="pee-dark-panel">
+<h2>How it works</h2>
+<ol>
+<li><strong>Upload data</strong> and check that the required expression and metadata tables are compatible.</li>
+<li>Review <strong>sample quality-control summaries</strong>.</li>
+<li>Explore descriptive <strong>PCA</strong> sample scores and explained variance.</li>
+<li>Inspect descriptive <strong>sample correlation</strong> summaries.</li>
+<li>Explore supplied <strong>differential-expression results</strong> with descriptive thresholds.</li>
+<li>Look up one exact supplied gene in descriptive <strong>gene expression</strong> views.</li>
+<li>Download the current descriptive result tables as dedicated UTF-8 CSV files, or assemble them into one PDF report.</li>
+</ol>
+</div>
+""",
+    unsafe_allow_html=True,
 )
 
-st.header("Phase 10")
+st.header("Phase 12")
 st.write(
-    "Validated synthetic-demo loading, three-file CSV upload, and session Reset "
-    "are available. Descriptive Sample Quality Control summaries are also "
-    "available, together with descriptive Pearson Sample Correlation summaries "
-    "and descriptive PCA sample scores and explained variance, for the active "
-    "dataset. Descriptive threshold exploration of supplied, precomputed "
-    "differential-expression results is also available. Exact, descriptive "
-    "single-gene expression lookup is available for the active dataset. "
-    "Dedicated in-memory CSV downloads of the current unrounded descriptive "
-    "result tables are available on each analysis page."
+    "Validated synthetic-demo loading, expression-plus-metadata CSV upload, and "
+    "session Reset are available, together with descriptive Sample Quality "
+    "Control, Pearson Sample Correlation, and PCA summaries for the active "
+    "dataset. Precomputed differential-expression results are now optional, and "
+    "descriptive dataset context can record the supplied scale, organism, "
+    "reference annotation, feature level, and analysis provenance without "
+    "changing calculations."
+)
+render_chip_row(
+    [
+        "Sample QC",
+        "PCA",
+        "Sample correlation",
+        "DE threshold exploration",
+        "Volcano plot",
+        "Gene lookup",
+        "Dataset provenance",
+        "CSV exports",
+        "PDF report export",
+    ]
 )
 st.info(
-    "Clustering, differential-expression modelling, and volcano plots remain "
-    "unimplemented."
+    "Clustering and differential-expression modelling remain unimplemented. "
+    "A descriptive volcano plot of already-supplied, already-classified "
+    "differential-expression results is available on the Differential "
+    "Expression page; it fits no model and calculates no statistic."
 )
-st.page_link("pages/1_Upload_Data.py", label="Start with Upload Data", icon="📤")
-st.page_link(
+
+st.header("Browse pages")
+link_columns = st.columns(3)
+link_columns[0].page_link(
     "pages/2_Sample_Quality_Control.py",
     label="Review Sample Quality Control",
     icon="🧪",
 )
-st.page_link(
+link_columns[1].page_link(
     "pages/3_PCA.py",
     label="Review PCA",
     icon="📊",
 )
-st.page_link(
+link_columns[2].page_link(
     "pages/4_Sample_Correlation.py",
     label="Review Sample Correlation",
     icon="🔥",
 )
-st.page_link(
+link_columns2 = st.columns(3)
+link_columns2[0].page_link(
     "pages/5_Differential_Expression.py",
     label="Explore Differential Expression",
     icon="🧬",
 )
-st.page_link(
+link_columns2[1].page_link(
     "pages/6_Gene_Expression.py",
     label="Explore Gene Expression",
     icon="🌿",
+)
+link_columns2[2].page_link(
+    "pages/8_Report_Export.py",
+    label="Export a Report",
+    icon="📄",
 )

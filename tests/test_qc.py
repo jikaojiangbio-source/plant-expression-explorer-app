@@ -15,11 +15,15 @@ from plant_expression_explorer.qc import (
     QcComputationError,
     QcErrorReason,
     build_condition_chart_data,
+    build_grouped_condition_chart_data,
+    build_grouped_condition_summary,
+    build_grouped_sample_summary,
     build_qc_observations,
     build_sample_chart_data,
     compute_sample_qc,
     count_zero_variance_genes,
     find_constant_samples,
+    list_additional_metadata_columns,
     should_display_count_chart,
 )
 from plant_expression_explorer.validation import (
@@ -278,6 +282,96 @@ def test_condition_summary_uses_first_appearance_and_metadata_row_order() -> Non
     ]
 
 
+def test_list_additional_metadata_columns_excludes_required_columns() -> None:
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["s1"],
+            "condition": ["control"],
+            "genotype": ["WT"],
+            "batch": ["1"],
+        }
+    )
+
+    assert list_additional_metadata_columns(metadata) == ("genotype", "batch")
+
+
+def test_list_additional_metadata_columns_returns_empty_for_non_dataframe() -> None:
+    assert list_additional_metadata_columns(None) == ()
+
+
+def test_build_grouped_sample_summary_matches_default_for_condition() -> None:
+    expression, metadata = _known_tables()
+    result = compute_sample_qc(expression, metadata)
+
+    assert_frame_equal(
+        build_grouped_sample_summary(result, metadata, "condition"),
+        result.sample_summary,
+    )
+
+
+def test_build_grouped_sample_summary_relabels_without_recomputing_statistics() -> None:
+    expression, metadata = _known_tables()
+    metadata = metadata.assign(genotype=["mutant", "WT", "WT"])
+    result = compute_sample_qc(expression, metadata)
+
+    grouped = build_grouped_sample_summary(result, metadata, "genotype")
+
+    assert "genotype" in grouped.columns
+    assert "condition" not in grouped.columns
+    expected_genotype = {"s1": "mutant", "s2": "WT", "s3": "WT"}
+    for sample_id, genotype in zip(
+        grouped["sample_id"], grouped["genotype"], strict=True
+    ):
+        assert genotype == expected_genotype[sample_id]
+    # Numeric statistics are untouched by the relabelling.
+    for column in ("minimum", "median", "mean", "maximum"):
+        pd.testing.assert_series_equal(
+            grouped[column], result.sample_summary[column], check_names=False
+        )
+
+
+def test_build_grouped_condition_summary_matches_default_for_condition() -> None:
+    expression, metadata = _known_tables()
+    result = compute_sample_qc(expression, metadata)
+
+    assert_frame_equal(
+        build_grouped_condition_summary(result, metadata, "condition"),
+        result.condition_summary,
+    )
+
+
+def test_build_grouped_condition_summary_reuses_build_condition_summary() -> None:
+    expression, metadata = _known_tables()
+    metadata = metadata.assign(genotype=["mutant", "WT", "WT"])
+    result = compute_sample_qc(expression, metadata)
+
+    grouped = build_grouped_condition_summary(result, metadata, "genotype")
+
+    assert list(grouped.columns) == ["genotype", "sample_count", "sample_ids"]
+    by_genotype = grouped.set_index("genotype")
+    assert by_genotype.loc["WT", "sample_count"] == 2
+    assert sorted(by_genotype.loc["WT", "sample_ids"]) == ["s2", "s3"]
+    assert by_genotype.loc["mutant", "sample_count"] == 1
+
+
+def test_build_grouped_condition_chart_data_uses_the_group_column_name() -> None:
+    expression, metadata = _known_tables()
+    metadata = metadata.assign(genotype=["mutant", "WT", "WT"])
+    result = compute_sample_qc(expression, metadata)
+
+    chart_data = build_grouped_condition_chart_data(result, metadata, "genotype")
+
+    assert list(chart_data.columns) == ["genotype", "sample_count"]
+
+
+def test_build_grouped_summary_rejects_unknown_column() -> None:
+    expression, metadata = _known_tables()
+    result = compute_sample_qc(expression, metadata)
+
+    with pytest.raises(ValueError, match="does not contain column"):
+        build_grouped_sample_summary(result, metadata, "tissue")
+
+
 def test_single_condition_and_one_replicate_observations_reuse_report() -> None:
     expression, metadata = _simple_tables()
     metadata["condition"] = ["one", "one"]
@@ -348,18 +442,100 @@ def test_non_coercible_expression_value_is_a_controlled_failure() -> None:
 
 
 @pytest.mark.parametrize("missing_value", [None, pd.NA, "", "   "])
-def test_missing_expression_value_is_a_controlled_failure(
+def test_missing_expression_value_is_tolerated_and_disclosed(
     missing_value: object,
 ) -> None:
     expression, metadata = _simple_tables()
     expression["s1"] = expression["s1"].astype("object")
     expression.loc[0, "s1"] = missing_value
+    original_expression = expression.copy(deep=True)
+    original_metadata = metadata.copy(deep=True)
+
+    result = compute_sample_qc(expression, metadata)
+
+    assert result.missing_value_count == 1
+    s1_row = result.sample_summary.loc[
+        result.sample_summary["sample_id"] == "s1"
+    ].iloc[0]
+    assert s1_row["missing_value_count"] == 1
+    assert s1_row["gene_count"] == 2
+    # g2's value (2.0) is the only non-missing value left for s1.
+    assert s1_row["mean"] == pytest.approx(2.0)
+    assert s1_row["minimum"] == pytest.approx(2.0)
+    assert s1_row["maximum"] == pytest.approx(2.0)
+    _assert_inputs_unchanged(
+        expression, metadata, original_expression, original_metadata
+    )
+
+
+def test_a_sample_column_that_is_entirely_missing_is_a_controlled_failure() -> None:
+    expression, metadata = _simple_tables()
+    expression["s1"] = [None, None]
 
     with pytest.raises(QcComputationError) as raised:
         compute_sample_qc(expression, metadata)
 
-    assert raised.value.reason is QcErrorReason.MISSING_EXPRESSION_VALUE
-    assert "1 missing or blank" in str(raised.value)
+    assert raised.value.reason is QcErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN
+    assert "s1" in str(raised.value)
+
+
+def test_missing_values_do_not_count_as_zero_or_negative() -> None:
+    expression, metadata = _simple_tables()
+    expression["s1"] = [None, 2.0]
+
+    result = compute_sample_qc(expression, metadata)
+
+    assert result.zero_value_count == 0
+    assert result.negative_value_count == 0
+
+
+def test_a_sample_with_missing_and_differing_remaining_values_is_not_constant() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3"],
+            "s1": [None, 2.0, 5.0],
+            "s2": [1.0, 2.0, 3.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {"sample_id": ["s1", "s2"], "condition": ["control", "treated"]}
+    )
+
+    result = compute_sample_qc(expression, metadata)
+
+    assert "s1" not in result.constant_samples
+
+
+def test_a_sample_with_exactly_one_remaining_value_is_trivially_constant() -> None:
+    expression, metadata = _simple_tables()
+    expression["s1"] = [None, 2.0]
+
+    result = compute_sample_qc(expression, metadata)
+
+    assert "s1" in result.constant_samples
+
+
+def test_missing_values_are_excluded_not_treated_as_a_distinct_constant_value() -> None:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2", "g3"],
+            "s1": [5.0, 5.0, None],
+            "s2": [1.0, 2.0, 3.0],
+            "s3": [7.0, 8.0, 9.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["s1", "s2", "s3"],
+            "condition": ["control", "treated", "treated"],
+        }
+    )
+
+    result = compute_sample_qc(expression, metadata)
+
+    assert "s1" in result.constant_samples
+    # g3's remaining (non-missing) values across s2/s3 are 3.0 and 9.0: not constant.
+    assert result.zero_variance_gene_count == 0
 
 
 @pytest.mark.parametrize(

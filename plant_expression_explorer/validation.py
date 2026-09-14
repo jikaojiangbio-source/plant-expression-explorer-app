@@ -1,7 +1,8 @@
-"""Pure, non-mutating validation for the three biological input tables."""
+"""Pure, non-mutating validation for the biological input tables."""
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 from math import isfinite
@@ -23,7 +24,9 @@ class IssueCode(StrEnum):
     """Stable machine-readable identifiers for loading and validation issues."""
 
     CSV_READ_ERROR = "CSV_READ_ERROR"
+    POSSIBLE_DELIMITER_MISMATCH = "POSSIBLE_DELIMITER_MISMATCH"
     DEMO_FILE_MISSING = "DEMO_FILE_MISSING"
+    DE_RESULTS_NOT_SUPPLIED = "DE_RESULTS_NOT_SUPPLIED"
     NOT_A_TABLE = "NOT_A_TABLE"
     EMPTY_TABLE = "EMPTY_TABLE"
     MISSING_REQUIRED_COLUMN = "MISSING_REQUIRED_COLUMN"
@@ -55,6 +58,13 @@ class IssueCode(StrEnum):
     DE_GENE_NOT_IN_EXPRESSION = "DE_GENE_NOT_IN_EXPRESSION"
     EXPRESSION_GENE_NOT_IN_DE = "EXPRESSION_GENE_NOT_IN_DE"
     NO_GENE_OVERLAP = "NO_GENE_OVERLAP"
+
+
+_UNNAMED_COLUMN_PATTERN = re.compile(r"Unnamed: \d+")
+
+_LIKELY_MISSING_VALUE_MARKERS = frozenset(
+    {"-", "--", ".", "na", "n.a.", "?", "nd", "n.d.", "nr", "n.r.", "tbd"}
+)
 
 
 @dataclass(frozen=True)
@@ -309,15 +319,26 @@ def _table_issues(table: object, table_name: str) -> list[ValidationIssue]:
             )
         )
 
-    empty_columns = [str(column) for column in table.columns if not str(column).strip()]
+    empty_columns = [
+        str(column)
+        for column in table.columns
+        if not str(column).strip() or _UNNAMED_COLUMN_PATTERN.fullmatch(str(column))
+    ]
     if empty_columns:
         issues.append(
             _issue(
                 IssueCode.EMPTY_COLUMN_NAME,
                 Severity.ERROR,
                 table_name,
-                f"{table_name} contains {len(empty_columns)} empty column name(s).",
+                f"{table_name} contains {len(empty_columns)} column(s) with a blank "
+                "header: "
+                + _format_examples(empty_columns)
+                + ". A name shown as 'Unnamed: N' means the original header cell "
+                "was blank, which commonly happens when a spreadsheet export "
+                "leaves a trailing empty column; remove that column and "
+                "re-upload.",
                 count=len(empty_columns),
+                examples=empty_columns,
             )
         )
 
@@ -388,6 +409,21 @@ def _identifier_issues(
     return issues
 
 
+def _missing_value_marker_hint(series: pd.Series, invalid: pd.Series) -> str:
+    invalid_values = series[invalid]
+    if invalid_values.map(_looks_like_missing_marker).any():
+        return (
+            " If any of these represent a missing measurement, leave the cell "
+            "blank rather than using a placeholder such as '-' or '.'; this "
+            "application does not treat such placeholders as missing values."
+        )
+    return ""
+
+
+def _looks_like_missing_marker(value: object) -> bool:
+    return isinstance(value, str) and value.strip().casefold() in _LIKELY_MISSING_VALUE_MARKERS
+
+
 def _expression_value_issues(series: pd.Series, column: str) -> list[ValidationIssue]:
     table_name = "Expression matrix"
     numeric, missing, invalid, coercible, non_finite = _numeric_masks(series)
@@ -399,7 +435,8 @@ def _expression_value_issues(series: pd.Series, column: str) -> list[ValidationI
                 IssueCode.NON_NUMERIC_VALUE,
                 Severity.ERROR,
                 table_name,
-                f"Expression column '{column}' contains {{count}} non-numeric value(s): {{examples}}.",
+                f"Expression column '{column}' contains {{count}} non-numeric value(s): {{examples}}."
+                + _missing_value_marker_hint(series, invalid),
                 series,
                 invalid,
                 column=column,
@@ -417,13 +454,24 @@ def _expression_value_issues(series: pd.Series, column: str) -> list[ValidationI
                 column=column,
             )
         )
-    if missing.any():
+    if len(series) and missing.all():
+        issues.append(
+            _issue(
+                IssueCode.NO_USABLE_VALUES,
+                Severity.ERROR,
+                table_name,
+                f"Expression column '{column}' contains no usable values.",
+                column=column,
+                count=int(missing.sum()),
+            )
+        )
+    elif missing.any():
         issues.append(
             _issue_from_mask(
                 IssueCode.MISSING_EXPRESSION_VALUE,
-                Severity.ERROR,
+                Severity.WARNING,
                 table_name,
-                f"Expression column '{column}' contains {{count}} missing value(s). Provide complete values; validation did not impute or remove data.",
+                f"Expression column '{column}' contains {{count}} missing value(s). They are retained as missing (never imputed) and are excluded, gene-wise or pairwise, from any calculation that requires a value for that cell.",
                 series,
                 missing,
                 column=column,
@@ -470,7 +518,8 @@ def _de_value_issues(series: pd.Series, column: str) -> list[ValidationIssue]:
                 IssueCode.NON_NUMERIC_VALUE,
                 Severity.ERROR,
                 table_name,
-                f"Differential-expression column '{column}' contains {{count}} non-numeric value(s): {{examples}}.",
+                f"Differential-expression column '{column}' contains {{count}} non-numeric value(s): {{examples}}."
+                + _missing_value_marker_hint(series, invalid),
                 series,
                 invalid,
                 column=column,

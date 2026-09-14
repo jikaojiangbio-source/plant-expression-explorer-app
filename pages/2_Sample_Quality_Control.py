@@ -3,18 +3,30 @@
 import pandas as pd
 import streamlit as st
 
-from plant_expression_explorer.dataset import get_current_dataset
+from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
+    ensure_valid_group_column_state,
+    get_current_dataset,
+)
 from plant_expression_explorer.exports import CsvExportError, build_csv_export
+from plant_expression_explorer.provenance import (
+    DatasetProvenance,
+    provenance_display_rows,
+)
 from plant_expression_explorer.qc import (
     QcComputationError,
-    build_condition_chart_data,
+    build_grouped_condition_chart_data,
+    build_grouped_condition_summary,
+    build_grouped_sample_summary,
     build_qc_observations,
     build_sample_chart_data,
     compute_sample_qc,
+    list_additional_metadata_columns,
     should_display_count_chart,
 )
+from plant_expression_explorer.theme import inject_global_styles
 
-
+inject_global_styles()
 st.html(
     """
     <style>
@@ -38,6 +50,17 @@ def _display_sample_summary(sample_summary: pd.DataFrame) -> pd.DataFrame:
         "N/A",
     )
     return display
+
+
+def _render_dataset_context(provenance: DatasetProvenance | None) -> None:
+    with st.expander("Dataset context (descriptive only)"):
+        st.caption(
+            "Context is displayed verbatim and is not scientifically verified, "
+            "parsed, or used in this calculation."
+        )
+        for label, value in provenance_display_rows(provenance):
+            st.caption(label)
+            st.code(value, language=None)
 
 
 def _render_csv_downloads(
@@ -93,11 +116,16 @@ if current is None:
 st.header("Current active dataset")
 st.write(f"**Source label:** {current.source_label}")
 st.write(f"**Source type:** {current.source}")
+de_description = (
+    f"{current.de_row_count:,} differential-expression rows"
+    if current.has_de_results
+    else "no differential-expression results supplied"
+)
 st.write(
     f"**Bundle contents:** {current.gene_count:,} genes, "
-    f"{current.sample_count:,} samples, and "
-    f"{current.de_row_count:,} differential-expression rows."
+    f"{current.sample_count:,} samples, and {de_description}."
 )
+_render_dataset_context(current.provenance)
 
 report = current.validation_report
 validation_columns = st.columns(3)
@@ -109,7 +137,8 @@ validation_columns[2].metric(
 )
 
 try:
-    result = compute_sample_qc(current.expression, current.metadata)
+    with st.spinner("Computing quality-control summaries…"):
+        result = compute_sample_qc(current.expression, current.metadata)
 except QcComputationError as error:
     st.error(
         "Descriptive QC summaries could not be calculated "
@@ -148,9 +177,35 @@ st.write(
     )
 )
 
+additional_columns = list_additional_metadata_columns(current.metadata)
+group_column = "condition"
+if additional_columns:
+    ensure_valid_group_column_state(st.session_state, additional_columns)
+    group_column = st.selectbox(
+        "Group summaries by",
+        options=("condition", *additional_columns),
+        key=ACTIVE_GROUP_COLUMN_KEY,
+        help=(
+            "Any column present in the uploaded sample metadata beyond "
+            "'sample_id' and 'condition' can relabel the tables and chart "
+            "below. No per-sample statistic is recalculated for the new "
+            "grouping; only the group label and membership counts change. "
+            "This choice is shared with the PCA, Sample Correlation, and "
+            "Gene Expression pages."
+        ),
+    )
+grouped_condition_summary = build_grouped_condition_summary(
+    result, current.metadata, group_column
+)
+grouped_sample_summary = build_grouped_sample_summary(
+    result, current.metadata, group_column
+)
+
 st.header("Condition and replicate summary")
+if group_column != "condition":
+    st.caption(f"Grouped by metadata column '{group_column}', not 'condition'.")
 st.dataframe(
-    result.condition_summary,
+    grouped_condition_summary,
     hide_index=True,
     width="stretch",
 )
@@ -161,7 +216,7 @@ st.caption(
 
 st.header("Per-sample statistics")
 st.dataframe(
-    _display_sample_summary(result.sample_summary),
+    _display_sample_summary(grouped_sample_summary),
     hide_index=True,
     width="stretch",
 )
@@ -220,11 +275,12 @@ else:
     )
 
 st.subheader("Sample count by condition")
+group_title = group_column.replace("_", " ").capitalize()
 st.bar_chart(
-    build_condition_chart_data(result),
-    x="condition",
+    build_grouped_condition_chart_data(result, current.metadata, group_column),
+    x=group_column,
     y="sample_count",
-    x_label="Condition",
+    x_label=group_title,
     y_label="Sample count",
     sort=False,
 )
@@ -271,19 +327,19 @@ if current.source == "demo":
         "or support tomato nitrate-response conclusions."
     )
 
-st.header("Scientific and statistical limitations")
-st.info(
-    "Different raw, normalised, transformed, and centred expression scales "
-    "require different interpretations. Zero and negative values therefore "
-    "have scale-dependent meanings. Sample medians, spreads, and unusual "
-    "descriptive metrics do not establish biological validity and are not "
-    "automatic exclusion criteria."
-)
-st.info(
-    "No samples or genes are modified or removed. This page performs no "
-    "normalisation, PCA, correlation, clustering, hypothesis testing, or "
-    "differential-expression inference."
-)
+with st.expander("Scientific and statistical limitations"):
+    st.info(
+        "Different raw, normalised, transformed, and centred expression scales "
+        "require different interpretations. Zero and negative values therefore "
+        "have scale-dependent meanings. Sample medians, spreads, and unusual "
+        "descriptive metrics do not establish biological validity and are not "
+        "automatic exclusion criteria."
+    )
+    st.info(
+        "No samples or genes are modified or removed. This page performs no "
+        "normalisation, PCA, correlation, clustering, hypothesis testing, or "
+        "differential-expression inference."
+    )
 
 st.header("Download descriptive results")
 st.write(
@@ -296,18 +352,19 @@ st.warning(
     "formula-like leading characters in untrusted text; review such data and "
     "import it as plain text when needed."
 )
+_group_file_suffix = "" if group_column == "condition" else f"-by-{group_column}"
 _render_csv_downloads(
     (
         (
             "Download condition and sample membership (CSV)",
-            result.condition_summary,
-            "sample-qc-condition-membership.csv",
+            grouped_condition_summary,
+            f"sample-qc-condition-membership{_group_file_suffix}.csv",
             ("sample_ids",),
         ),
         (
             "Download per-sample statistics (CSV)",
-            result.sample_summary,
-            "sample-qc-sample-statistics.csv",
+            grouped_sample_summary,
+            f"sample-qc-sample-statistics{_group_file_suffix}.csv",
             (),
         ),
     )

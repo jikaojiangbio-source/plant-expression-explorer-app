@@ -35,9 +35,10 @@ class PcaErrorReason(StrEnum):
     DUPLICATE_REQUIRED_IDENTIFIER = "DUPLICATE_REQUIRED_IDENTIFIER"
     MISSING_REQUIRED_VALUE = "MISSING_REQUIRED_VALUE"
     NON_COERCIBLE_EXPRESSION_VALUE = "NON_COERCIBLE_EXPRESSION_VALUE"
-    MISSING_EXPRESSION_VALUE = "MISSING_EXPRESSION_VALUE"
+    EMPTY_EXPRESSION_SAMPLE_COLUMN = "EMPTY_EXPRESSION_SAMPLE_COLUMN"
     INFINITE_EXPRESSION_VALUE = "INFINITE_EXPRESSION_VALUE"
     SAMPLE_MISMATCH = "SAMPLE_MISMATCH"
+    NO_COMPLETE_GENE_ROWS = "NO_COMPLETE_GENE_ROWS"
     ZERO_TOTAL_VARIANCE = "ZERO_TOTAL_VARIANCE"
     NUMERICAL_RANGE_ERROR = "NUMERICAL_RANGE_ERROR"
     DECOMPOSITION_FAILED = "DECOMPOSITION_FAILED"
@@ -71,12 +72,25 @@ class SamplePcaResult:
 
     sample_count: int
     gene_count: int
+    genes_excluded_for_missing_values: int
     component_count: int
     metadata_order_matches_expression: bool
+    scale_to_unit_variance: bool
     total_variance: float
     zero_variance_gene_count: int
     score_table: pd.DataFrame
     variance_table: pd.DataFrame
+
+    @property
+    def complete_gene_count(self) -> int:
+        """Genes with no missing value among the included samples.
+
+        This is the number of gene rows actually used for the decomposition;
+        ``gene_count`` is the total supplied, before excluding any gene with
+        a missing value.
+        """
+
+        return self.gene_count - self.genes_excluded_for_missing_values
 
 
 SCORE_TABLE_FIXED_COLUMNS = ("sample_id", "condition")
@@ -109,23 +123,43 @@ _RELEVANT_VALIDATION_OBSERVATIONS = frozenset(
 def compute_sample_pca(
     expression: pd.DataFrame,
     metadata: pd.DataFrame,
+    *,
+    scale_to_unit_variance: bool = False,
 ) -> SamplePcaResult:
     """Calculate non-mutating descriptive PCA sample scores and variance.
 
     Samples are observations and genes are features. Each gene is
-    mean-centred across samples in a temporary numeric copy; genes are not
-    scaled to unit variance. Conditions are mapped by exact sample ID and are
-    never used to fit the components. Safely coercible numeric strings are
-    converted only in the temporary copy. Missing, blank, boolean, complex,
-    non-coercible, and infinite values cause a controlled error; no gene or
-    sample is filtered, trimmed, imputed, or reordered.
+    mean-centred across samples in a temporary numeric copy. Conditions are
+    mapped by exact sample ID and are never used to fit the components.
+    Safely coercible numeric strings are converted only in the temporary
+    copy.
+
+    By default (``scale_to_unit_variance=False``), genes are not scaled to
+    unit variance, so highly variable genes dominate the components exactly
+    as in the underlying supplied scale ("covariance-matrix" PCA). Passing
+    ``scale_to_unit_variance=True`` additionally divides each gene's
+    centred values by its own sample standard deviation ("correlation-
+    matrix" PCA), so every gene contributes equally to the total variance
+    regardless of its magnitude; a gene with exactly zero variance is kept
+    at exactly zero (its already-centred value) rather than divided by
+    zero. Both modes use the same complete-case gene exclusion and the same
+    error-priority order described below.
+
+    Principal component analysis requires a complete matrix: a gene with a
+    missing value in any included sample is excluded from this calculation
+    (never imputed), and the exact excluded count is reported on the
+    result. A sample column that is entirely missing, a non-coercible
+    value, an infinite value, or every gene being excluded for missing
+    values each cause a controlled error; no remaining gene or sample is
+    filtered, trimmed, imputed, or reordered.
 
     Expected input failures have a fixed priority: table types; expression
     row, column, and identifier structure; metadata columns, identifiers,
     and conditions; cross-table sample matching; then expression values in
-    missing/blank, boolean/complex, non-coercible, and infinite order; then
-    the zero-total-variance check; then numerical-range checks (finite
-    source values that cannot be safely represented through the float64
+    empty-column, boolean/complex, non-coercible, and infinite order; then
+    exhausting every gene to missing-value exclusion; then the
+    zero-total-variance check; then numerical-range checks (finite source
+    values that cannot be safely represented through the float64
     calculation, distinguished from zero variance using the already
     computed exact constant-gene count); then decomposition failure.
     """
@@ -191,6 +225,19 @@ def compute_sample_pca(
 
     gene_count = len(gene_ids)
     sample_count = len(sample_ids)
+
+    complete_gene_mask = ~numeric_expression.isna().any(axis=1)
+    genes_excluded_for_missing_values = int((~complete_gene_mask).sum())
+    numeric_expression = numeric_expression.loc[complete_gene_mask]
+    complete_gene_count = len(numeric_expression.index)
+    if complete_gene_count == 0:
+        raise PcaComputationError(
+            PcaErrorReason.NO_COMPLETE_GENE_ROWS,
+            "Every gene has at least one missing value among the included "
+            "samples, so no complete gene row remains for principal "
+            "component analysis.",
+        )
+
     zero_variance_gene_count = count_zero_variance_genes(numeric_expression)
 
     with np.errstate(over="ignore", invalid="ignore"):
@@ -199,7 +246,7 @@ def compute_sample_pca(
         )
     _require_finite_scalar(raw_total_variance)
     if raw_total_variance == 0.0:
-        if zero_variance_gene_count == gene_count:
+        if zero_variance_gene_count == complete_gene_count:
             raise PcaComputationError(
                 PcaErrorReason.ZERO_TOTAL_VARIANCE,
                 "Principal component analysis cannot produce informative "
@@ -224,9 +271,30 @@ def compute_sample_pca(
     _require_finite_array(gene_means)
     _require_finite_array(centered_matrix)
 
+    if scale_to_unit_variance:
+        with np.errstate(over="ignore", invalid="ignore"):
+            gene_stds = working_matrix.std(axis=0, ddof=1)
+            safe_stds = np.where(gene_stds > 0.0, gene_stds, 1.0)
+            decomposition_matrix = centered_matrix / safe_stds
+        _require_finite_array(gene_stds)
+        _require_finite_array(decomposition_matrix)
+        with np.errstate(over="ignore", invalid="ignore"):
+            decomposition_total_variance = float(
+                np.var(decomposition_matrix, axis=0, ddof=1).sum()
+            )
+        _require_finite_scalar(decomposition_total_variance)
+        if decomposition_total_variance <= 0.0:
+            raise PcaComputationError(
+                PcaErrorReason.NUMERICAL_RANGE_ERROR,
+                _NUMERICAL_RANGE_MESSAGE,
+            )
+    else:
+        decomposition_matrix = centered_matrix
+        decomposition_total_variance = raw_total_variance
+
     try:
         left_vectors, singular_values, _right_vectors = np.linalg.svd(
-            centered_matrix,
+            decomposition_matrix,
             full_matrices=False,
         )
     except np.linalg.LinAlgError as exc:
@@ -237,7 +305,7 @@ def compute_sample_pca(
         ) from exc
     _require_finite_array(singular_values)
 
-    component_count = min(sample_count - 1, gene_count)
+    component_count = min(sample_count - 1, complete_gene_count)
     left_vectors_k = left_vectors[:, :component_count]
     singular_values_k = singular_values[:component_count].copy()
 
@@ -245,7 +313,7 @@ def compute_sample_pca(
         # Multiply the (small) dimension/epsilon factor first to reduce the
         # risk of unnecessary intermediate overflow when the largest
         # singular value is itself large but still finite.
-        dimension_scale = max(sample_count, gene_count) * np.finfo(float).eps
+        dimension_scale = max(sample_count, complete_gene_count) * np.finfo(float).eps
         tolerance = float(singular_values.max()) * dimension_scale
     _require_finite_scalar(tolerance)
     singular_values_snapped = np.where(
@@ -285,7 +353,7 @@ def compute_sample_pca(
 
     _verify_variance_totals(
         reported_total_variance,
-        raw_total_variance,
+        decomposition_total_variance,
         ratio_sum,
     )
     _verify_ratio_bounds(explained_variance_ratio)
@@ -317,10 +385,12 @@ def compute_sample_pca(
     return SamplePcaResult(
         sample_count=sample_count,
         gene_count=gene_count,
+        genes_excluded_for_missing_values=genes_excluded_for_missing_values,
         component_count=component_count,
         metadata_order_matches_expression=(
             metadata_sample_ids == sample_ids
         ),
+        scale_to_unit_variance=scale_to_unit_variance,
         total_variance=reported_total_variance,
         zero_variance_gene_count=zero_variance_gene_count,
         score_table=score_table,
@@ -335,11 +405,33 @@ def build_pca_observations(
     """Build exact observations without thresholds or quality classification."""
 
     observations: list[str] = []
+    if result.genes_excluded_for_missing_values:
+        observations.append(
+            f"{result.genes_excluded_for_missing_values} gene(s) had at "
+            "least one missing value among the included samples and were "
+            f"excluded from this calculation; the remaining "
+            f"{result.complete_gene_count} complete gene(s) were used. No "
+            "value was imputed."
+        )
     if result.zero_variance_gene_count:
+        contribution = (
+            "exactly zero after scaling, instead of the division by zero "
+            "that scaling by its own zero standard deviation would "
+            "otherwise require"
+            if result.scale_to_unit_variance
+            else "no variance"
+        )
         observations.append(
             f"{result.zero_variance_gene_count} gene(s) have exactly "
             "identical values across all samples and were retained. They "
-            "contribute no variance to the components."
+            f"contribute {contribution} to the components."
+        )
+    if result.scale_to_unit_variance:
+        observations.append(
+            "Each gene was additionally scaled to unit variance before "
+            "decomposition (in addition to mean-centring), so a highly "
+            "variable gene does not dominate the components solely because "
+            "of its magnitude on the supplied scale."
         )
     if not result.metadata_order_matches_expression:
         observations.append(
@@ -352,11 +444,11 @@ def build_pca_observations(
             "Exactly two samples are present, so only one principal "
             "component exists; a PC1-versus-PC2 plot is not available."
         )
-    if result.gene_count == 1:
+    if result.complete_gene_count == 1:
         observations.append(
-            "Only one gene is present; the single principal component "
-            "reproduces its centred values and no dimensionality reduction "
-            "occurs."
+            "Only one complete gene is available for this calculation; the "
+            "single principal component reproduces its centred values and "
+            "no dimensionality reduction occurs."
         )
     if result.component_count >= 2:
         second_component = result.variance_table.loc[
@@ -411,6 +503,42 @@ def build_score_plot_data(result: SamplePcaResult) -> pd.DataFrame:
     ].copy(deep=True)
 
 
+def build_grouped_score_plot_data(
+    result: SamplePcaResult,
+    metadata: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """Return a PC1-versus-PC2 plotting copy coloured by one metadata column.
+
+    ``group_column`` values are joined from ``metadata`` by exact sample ID,
+    for display only, exactly like the ``condition`` column already carried
+    on ``result.score_table``; they are never used to fit the components.
+    Requires two or more components; see :func:`build_score_plot_data`.
+    """
+
+    if group_column == "condition":
+        return build_score_plot_data(result)
+    if result.component_count < 2:
+        raise ValueError(
+            "A PC1-versus-PC2 plot requires at least two principal "
+            f"components; this result has {result.component_count}."
+        )
+    if not isinstance(metadata, pd.DataFrame) or "sample_id" not in metadata.columns:
+        raise ValueError("Sample metadata is missing required column 'sample_id'.")
+    if group_column not in metadata.columns:
+        raise ValueError(f"Sample metadata does not contain column '{group_column}'.")
+
+    lookup = {
+        str(sample_id): value
+        for sample_id, value in zip(
+            metadata["sample_id"], metadata[group_column], strict=True
+        )
+    }
+    plot_data = result.score_table.loc[:, ["sample_id", "pc1", "pc2"]].copy(deep=True)
+    plot_data[group_column] = plot_data["sample_id"].map(lookup)
+    return plot_data.loc[:, ["sample_id", group_column, "pc1", "pc2"]]
+
+
 def _require_finite_scalar(value: float) -> None:
     if not math.isfinite(value):
         raise PcaComputationError(
@@ -429,17 +557,18 @@ def _require_finite_array(values: np.ndarray) -> None:
 
 def _verify_variance_totals(
     reported_total_variance: float,
-    raw_total_variance: float,
+    expected_total_variance: float,
     ratio_sum: float,
 ) -> None:
     if not math.isclose(
         reported_total_variance,
-        raw_total_variance,
+        expected_total_variance,
         rel_tol=_TOTAL_VARIANCE_REL_TOLERANCE,
     ):
         raise RuntimeError(
             "Reported total variance does not closely match the "
-            "independently calculated raw total variance."
+            "independently calculated total variance of the matrix "
+            "actually decomposed."
         )
     if not math.isclose(
         ratio_sum,
@@ -598,18 +727,22 @@ def _numeric_expression_copy(
     missing_mask = working.apply(
         lambda column: column.map(_is_missing_or_blank)
     )
-    missing_count = int(missing_mask.sum().sum())
-    if missing_count:
+    empty_columns = [
+        sample_id
+        for column, sample_id in zip(sample_columns, sample_ids, strict=True)
+        if missing_mask[column].all()
+    ]
+    if empty_columns:
         raise PcaComputationError(
-            PcaErrorReason.MISSING_EXPRESSION_VALUE,
-            f"The expression matrix contains {missing_count} missing or blank "
-            "sample value(s).",
+            PcaErrorReason.EMPTY_EXPRESSION_SAMPLE_COLUMN,
+            "Sample column(s) contain only missing or blank values: "
+            + ", ".join(empty_columns) + ".",
         )
 
     boolean_mask = working.apply(lambda column: column.map(is_bool))
     complex_mask = working.apply(lambda column: column.map(is_complex))
-    boolean_count = int(boolean_mask.sum().sum())
-    complex_count = int(complex_mask.sum().sum())
+    boolean_count = int((boolean_mask & ~missing_mask).sum().sum())
+    complex_count = int((complex_mask & ~missing_mask).sum().sum())
     if boolean_count or complex_count:
         raise PcaComputationError(
             PcaErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,
@@ -622,7 +755,7 @@ def _numeric_expression_copy(
     numeric = working.apply(
         lambda column: pd.to_numeric(column, errors="coerce")
     )
-    non_coercible_count = int(numeric.isna().sum().sum())
+    non_coercible_count = int((numeric.isna() & ~missing_mask).sum().sum())
     if non_coercible_count:
         raise PcaComputationError(
             PcaErrorReason.NON_COERCIBLE_EXPRESSION_VALUE,

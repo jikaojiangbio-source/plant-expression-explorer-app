@@ -1,16 +1,20 @@
 """Smoke test for the Streamlit home page."""
 
+import base64
 import csv
 import io
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+import pytest
 from streamlit.testing.v1 import AppTest
 
 import plant_expression_explorer.exports as exports_module
 from plant_expression_explorer.consistency import validate_input_tables
 from plant_expression_explorer.dataset import (
+    ACTIVE_GROUP_COLUMN_KEY,
     CURRENT_DATASET_KEY,
     DE_RESULTS_UPLOAD_KEY,
     DEMO_SOURCE_LABEL,
@@ -25,6 +29,11 @@ from plant_expression_explorer.exports import (
     CsvExportError,
     CsvExportErrorReason,
     build_csv_export,
+)
+from plant_expression_explorer.provenance import (
+    DEMO_PROVENANCE,
+    NOT_SUPPLIED,
+    DatasetProvenance,
 )
 from plant_expression_explorer.validation import (
     IssueCode,
@@ -64,6 +73,43 @@ def _demo_bundle() -> DatasetBundle:
         source="demo",
         source_label=DEMO_SOURCE_LABEL,
         report=candidate.report,
+        checksums=candidate.checksums,
+    )
+
+
+def _without_de_bundle(
+    provenance: DatasetProvenance | None = None,
+) -> DatasetBundle:
+    bundle = _uploaded_bundle()
+    report = validate_input_tables(bundle.expression, bundle.metadata, None)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (bundle.expression, bundle.metadata, None),
+        source="uploaded",
+        source_label="Expression and metadata only",
+        report=report,
+        provenance=provenance,
+    )
+
+
+def _provenance_bundle() -> DatasetBundle:
+    bundle = _uploaded_bundle()
+    provenance = DatasetProvenance(
+        dataset_title="  盐胁迫 RNA-seq  ",
+        organism="Solanum lycopersicum 🍅",
+        expression_scale_description="log2(TPM + 1)",
+        upstream_normalization_method="TMM + exact supplied wording",
+        reference_genome_annotation="SL4.0 / ITAG4.1",
+        feature_level="gene",
+        de_contrast_description="treated - control; control reference",
+        notes="\t**display as text, not Markdown**  ",
+    )
+    return build_dataset_bundle(
+        (bundle.expression, bundle.metadata, bundle.de_results),
+        source=bundle.source,
+        source_label=bundle.source_label,
+        report=bundle.validation_report,
+        provenance=provenance,
     )
 
 
@@ -95,6 +141,19 @@ def _uploaded_bundle(*, one_gene: bool = False) -> DatasetBundle:
         source="uploaded",
         source_label="User-uploaded CSV tables (test inputs)",
         report=ValidationReport(),
+    )
+
+
+def _uploaded_bundle_with_genotype() -> DatasetBundle:
+    bundle = _uploaded_bundle()
+    metadata = bundle.metadata.assign(genotype=["WT", "mutant"])
+    report = validate_input_tables(bundle.expression, metadata, bundle.de_results)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (bundle.expression, metadata, bundle.de_results),
+        source=bundle.source,
+        source_label=bundle.source_label,
+        report=report,
     )
 
 
@@ -311,6 +370,13 @@ def _run_pca_page(bundle: DatasetBundle | None = None) -> AppTest:
     return app.run()
 
 
+def _run_report_page(bundle: DatasetBundle | None = None) -> AppTest:
+    app = AppTest.from_file("pages/8_Report_Export.py")
+    if bundle is not None:
+        app.session_state[CURRENT_DATASET_KEY] = bundle
+    return app.run()
+
+
 def _de_uploaded_bundle(*, gene_mismatch: bool = False) -> DatasetBundle:
     expression_gene_ids = ["g1", "g2", "g3", "g4", "g5"]
     de_gene_ids = (
@@ -511,6 +577,31 @@ def _numerical_range_gene_bundle() -> DatasetBundle:
     )
 
 
+def _large_gene_bundle(gene_count: int) -> DatasetBundle:
+    gene_ids = [f"GENE_{index:04d}" for index in range(gene_count)]
+    expression = pd.DataFrame(
+        {
+            "gene_id": gene_ids,
+            "sample_a": list(range(gene_count)),
+            "sample_b": list(range(gene_count)),
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b"],
+            "condition": ["control", "treated"],
+        }
+    )
+    report = validate_input_tables(expression, metadata, None)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (expression, metadata, None),
+        source="uploaded",
+        source_label="Large synthetic gene list (test input)",
+        report=report,
+    )
+
+
 def _run_gene_page(bundle: DatasetBundle | None = None) -> AppTest:
     app = AppTest.from_file("pages/6_Gene_Expression.py")
     if bundle is not None:
@@ -535,14 +626,20 @@ def _pca_session_keys(app: AppTest) -> list[str]:
     ]
 
 
+def _plotly_figures(app: AppTest) -> list[dict]:
+    return [json.loads(chart.proto.spec) for chart in app.get("plotly_chart")]
+
+
+def _decode_plotly_array(value: object) -> list:
+    """Decode a Plotly trace field that may use the binary 'bdata'/'dtype' form."""
+    if isinstance(value, dict) and "bdata" in value and "dtype" in value:
+        raw = base64.b64decode(value["bdata"])
+        return np.frombuffer(raw, dtype=value["dtype"]).tolist()
+    return list(value)
+
+
 def _pca_scatter_chart_count(app: AppTest) -> int:
-    # st.bar_chart also renders as a vega_lite_chart element (mark "bar");
-    # the PC1-versus-PC2 scatter is the only one using a "circle" mark.
-    return sum(
-        1
-        for chart in app.get("vega_lite_chart")
-        if '"circle"' in chart.proto.spec
-    )
+    return len(_plotly_figures(app))
 
 
 def test_home_page_loads_and_describes_scope() -> None:
@@ -555,6 +652,20 @@ def test_home_page_loads_and_describes_scope() -> None:
     )
     assert "preprocessed plant transcriptomics data" in visible_text
     assert "does not process FASTQ files" in visible_text
+
+
+def test_home_page_renders_hero_illustration_and_capability_chips() -> None:
+    app = AppTest.from_file("app.py").run()
+
+    assert not app.exception
+    html_bodies = [element.proto.body for element in app.get("html")]
+    assert any(
+        element.value.strip().startswith("<svg") for element in app.markdown
+    )
+    assert any("pee-eyebrow" in body for body in html_bodies)
+    assert any('class="pee-chip"' in body for body in html_bodies)
+    assert any("<style>" in body for body in html_bodies)
+    assert "Browse pages" in _visible_text(app)
 
 
 def test_home_page_workflow_order_matches_sidebar_page_sequence() -> None:
@@ -624,10 +735,11 @@ def test_home_page_analysis_link_order_includes_phase_9_gene_expression() -> Non
         "Sample_Correlation",
         "Differential_Expression",
         "Gene_Expression",
+        "Report_Export",
     ]
 
 
-def test_home_page_lists_phase_10_contextual_csv_exports_as_available() -> None:
+def test_home_page_lists_phase_12_scientific_context_as_available() -> None:
     app = AppTest.from_file("app.py").run()
 
     workflow_markdown = next(
@@ -651,10 +763,14 @@ def test_home_page_lists_phase_10_contextual_csv_exports_as_available() -> None:
 
     info_text = " ".join(element.value for element in app.info).lower()
     assert "differential-expression exploration" not in info_text
-    assert "volcano plots" in info_text
+    assert "volcano plot" in info_text
+    assert "clustering" in info_text
     assert "dedicated exports" not in info_text
     assert "gene lookup" not in info_text
-    assert "phase 10" in _visible_text(app).lower()
+    visible_text = _visible_text(app).lower()
+    assert "phase 12" in visible_text
+    assert "differential-expression results are now optional" in visible_text
+    assert "descriptive dataset context" in visible_text
 
 
 def test_upload_page_initial_state_and_synthetic_disclaimer() -> None:
@@ -668,8 +784,45 @@ def test_upload_page_initial_state_and_synthetic_disclaimer() -> None:
     assert "gene IDs are fictional" in visible_text
     assert "p-values are constructed" in visible_text
     assert "DESeq2" in visible_text
+    assert "replicate noise is balanced within each condition" in visible_text
+    assert "neither pattern is guaranteed in real experiments" in visible_text
+    assert "differential-expression file is optional" in visible_text
+    assert len(app.text_input) == 7
+    assert len(app.text_area) == 1
     assert "Sample Quality Control, PCA, and Sample Correlation are available" in visible_text
     assert "single-gene expression lookup" in visible_text
+
+
+def test_upload_page_splits_demo_and_upload_flows_into_tabs() -> None:
+    app = AppTest.from_file("pages/1_Upload_Data.py").run()
+
+    assert not app.exception
+    tab_labels = [tab.label for tab in app.tabs]
+    assert tab_labels == ["Use demo data", "Upload my own data"]
+    demo_tab, upload_tab = app.tabs
+    assert any(
+        "values are synthetic" in str(getattr(element, "value", ""))
+        for element in demo_tab.children.values()
+    )
+    assert any(
+        "Required: gene_id" in str(getattr(element, "help", ""))
+        for element in upload_tab.children.values()
+    )
+
+
+def test_upload_page_offers_example_csv_template_downloads() -> None:
+    app = AppTest.from_file("pages/1_Upload_Data.py").run()
+
+    assert not app.exception
+    template_buttons = app.get("download_button")
+    assert [button.label for button in template_buttons] == [
+        "Expression matrix template",
+        "Sample metadata template",
+        "DE results template",
+    ]
+    visible_text = _visible_text(app)
+    assert "fabricated placeholder values" in visible_text
+    assert "never loaded as a dataset" in visible_text
 
 
 def test_upload_page_lists_phase_8_exploration_as_available() -> None:
@@ -689,7 +842,8 @@ def test_upload_page_lists_phase_8_exploration_as_available() -> None:
     assert "supplied, precomputed differential-expression results" in visible_text
     assert "exact, descriptive single-gene expression lookup" in visible_text
     assert "Dedicated CSV downloads of current descriptive result tables" in visible_text
-    assert "Differential-expression modelling and volcano plots are not implemented" in visible_text
+    assert "including a descriptive volcano plot" in visible_text
+    assert "Differential-expression modelling and clustering are not implemented" in visible_text
 
 
 def test_upload_page_demo_load_and_reset_are_repeatable() -> None:
@@ -704,10 +858,18 @@ def test_upload_page_demo_load_and_reset_are_repeatable() -> None:
     assert bundle.gene_count == 120
     assert bundle.sample_count == 6
     assert bundle.de_row_count == 120
+    assert bundle.has_de_results is True
+    assert bundle.provenance == DEMO_PROVENANCE
     visible_text = _visible_text(app)
     assert "A validated dataset is active" in visible_text
     assert "Bundled synthetic demonstration data" in visible_text
-    assert "120 genes, 6 samples" in visible_text
+    overview_metrics = {metric.label: metric.value for metric in app.metric}
+    assert overview_metrics["Genes"] == "120"
+    assert overview_metrics["Samples"] == "6"
+    assert overview_metrics["DE rows"] == "120"
+    assert DEMO_PROVENANCE.expression_scale_description in [
+        element.value for element in app.get("code")
+    ]
 
     app.button[1].click().run()
 
@@ -723,6 +885,43 @@ def test_upload_page_demo_load_and_reset_are_repeatable() -> None:
 
     assert not app.exception
     assert CURRENT_DATASET_KEY not in app.session_state
+
+
+def test_upload_page_overview_card_shows_shape_and_condition_distribution() -> None:
+    app = AppTest.from_file("pages/1_Upload_Data.py")
+    app.session_state[CURRENT_DATASET_KEY] = _uploaded_bundle()
+    app.run()
+
+    assert not app.exception
+    overview_metrics = {metric.label: metric.value for metric in app.metric}
+    assert overview_metrics["Genes"] == "4"
+    assert overview_metrics["Samples"] == "2"
+    condition_chart = next(
+        chart for chart in app.get("vega_lite_chart") if '"bar"' in chart.proto.spec
+    )
+    assert '"field": "condition"' in condition_chart.proto.spec
+    assert '"field": "sample_count"' in condition_chart.proto.spec
+
+
+def test_upload_page_overview_card_reports_de_not_supplied_when_omitted() -> None:
+    bundle = _uploaded_bundle()
+    metadata = bundle.metadata
+    expression = bundle.expression
+    report = validate_input_tables(expression, metadata, None)
+    assert not report.has_errors
+    without_de = build_dataset_bundle(
+        (expression, metadata, None),
+        source=bundle.source,
+        source_label=bundle.source_label,
+        report=report,
+    )
+    app = AppTest.from_file("pages/1_Upload_Data.py")
+    app.session_state[CURRENT_DATASET_KEY] = without_de
+    app.run()
+
+    assert not app.exception
+    overview_metrics = {metric.label: metric.value for metric in app.metric}
+    assert overview_metrics["DE rows"] == "Not supplied"
 
 
 def test_qc_page_no_data_state_is_clear_and_does_not_create_dataset_state() -> None:
@@ -822,6 +1021,78 @@ def test_qc_page_one_gene_state_displays_na_without_mutating_result_source() -> 
     pd.testing.assert_frame_equal(bundle.expression, original_expression)
 
 
+def test_qc_page_collapses_limitations_into_an_expander() -> None:
+    app = _run_qc_page(_demo_bundle())
+
+    assert not app.exception
+    expander_labels = [element.label for element in app.get("expander")]
+    assert "Scientific and statistical limitations" in expander_labels
+    visible_text = _visible_text(app)
+    assert "scale-dependent meanings" in visible_text
+
+
+def test_qc_page_offers_no_grouping_selector_without_additional_metadata() -> None:
+    app = _run_qc_page(_uploaded_bundle())
+
+    assert not app.exception
+    assert len(app.selectbox) == 0
+    assert app.dataframe[1].value["condition"].tolist() == ["treated", "control"]
+
+
+def test_qc_page_grouping_selector_relabels_summaries_without_recomputation() -> None:
+    bundle = _uploaded_bundle_with_genotype()
+
+    app = _run_qc_page(bundle)
+    assert len(app.selectbox) == 1
+    selector = app.selectbox[0]
+    assert selector.options == ["condition", "genotype"]
+    assert selector.value == "condition"
+
+    app.selectbox[0].select("genotype").run()
+
+    assert not app.exception
+    per_sample = app.dataframe[1].value
+    assert "genotype" in per_sample.columns
+    assert "condition" not in per_sample.columns
+    assert dict(zip(per_sample["sample_id"], per_sample["genotype"])) == {
+        "sample_a": "WT",
+        "sample_b": "mutant",
+    }
+    visible_text = _visible_text(app)
+    assert "Grouped by metadata column 'genotype'" in visible_text
+
+
+def test_group_by_selection_persists_from_pca_to_qc_page() -> None:
+    bundle = _colinear_pca_bundle_with_genotype()
+
+    pca_app = _run_pca_page(bundle)
+    pca_app.selectbox[0].select("genotype").run()
+    assert not pca_app.exception
+    shared_choice = pca_app.session_state[ACTIVE_GROUP_COLUMN_KEY]
+    assert shared_choice == "genotype"
+
+    qc_app = AppTest.from_file("pages/2_Sample_Quality_Control.py")
+    qc_app.session_state[CURRENT_DATASET_KEY] = bundle
+    qc_app.session_state[ACTIVE_GROUP_COLUMN_KEY] = shared_choice
+    qc_app.run()
+
+    assert not qc_app.exception
+    assert qc_app.selectbox[0].value == "genotype"
+    assert "genotype" in qc_app.dataframe[1].value.columns
+
+
+def test_group_by_selection_falls_back_to_condition_for_an_unrelated_dataset() -> None:
+    app = AppTest.from_file("pages/2_Sample_Quality_Control.py")
+    app.session_state[CURRENT_DATASET_KEY] = _uploaded_bundle()
+    app.session_state[ACTIVE_GROUP_COLUMN_KEY] = "genotype"
+
+    app.run()
+
+    assert not app.exception
+    assert len(app.selectbox) == 0
+    assert app.dataframe[1].value["condition"].tolist() == ["treated", "control"]
+
+
 def test_qc_page_shows_only_controlled_qc_error_without_traceback() -> None:
     app = _run_qc_page(_invalid_qc_bundle())
 
@@ -878,7 +1149,7 @@ def test_correlation_page_demo_renders_matrix_heatmap_and_summaries() -> None:
         ["Control", "High_nitrate"],
         ["High_nitrate", "High_nitrate"],
     ]
-    assert len(app.get("vega_lite_chart")) == 1
+    assert len(app.get("plotly_chart")) == 1
     assert "values are synthetic" in visible_text
     assert "gene IDs are fictional" in visible_text
     assert "p-values are constructed" in visible_text
@@ -923,11 +1194,136 @@ def test_correlation_page_uploaded_maps_conditions_and_preserves_bundle() -> Non
         ["treated", "control"],
         ["control", "control"],
     ]
-    assert len(app.get("vega_lite_chart")) == 1
+    assert len(app.get("plotly_chart")) == 1
     assert "values are synthetic" not in visible_text
     pd.testing.assert_frame_equal(bundle.expression, original_expression)
     pd.testing.assert_frame_equal(bundle.metadata, original_metadata)
     assert _correlation_session_keys(app) == []
+
+
+def test_correlation_page_collapses_method_and_limitations_into_expanders() -> None:
+    app = _run_correlation_page(_demo_bundle())
+
+    assert not app.exception
+    expander_labels = [element.label for element in app.get("expander")]
+    assert "Method" in expander_labels
+    assert "Scientific and statistical limitations" in expander_labels
+    visible_text = _visible_text(app)
+    assert "Pearson correlation is calculated between every sample pair" in visible_text
+    assert "does not prove replicate validity" in visible_text
+
+
+def test_correlation_page_offers_no_grouping_selector_without_additional_metadata() -> (
+    None
+):
+    app = _run_correlation_page(_uploaded_bundle())
+
+    assert not app.exception
+    # Only the always-present "Correlation method" selector; no group-by
+    # selector without additional metadata columns.
+    assert len(app.selectbox) == 1
+    assert app.selectbox[0].label == "Correlation method"
+
+
+def test_correlation_page_grouping_selector_relabels_summaries_without_recomputation() -> (
+    None
+):
+    bundle = _uploaded_bundle_with_genotype()
+
+    app = _run_correlation_page(bundle)
+    assert len(app.selectbox) == 2
+    selector = next(
+        box for box in app.selectbox if box.label == "Group summaries by"
+    )
+    assert selector.options == ["condition", "genotype"]
+    assert selector.value == "condition"
+
+    selector.select("genotype").run()
+
+    assert not app.exception
+    pair_summary = app.dataframe[2].value
+    assert "genotype_a" in pair_summary.columns
+    assert "genotype_b" in pair_summary.columns
+    assert "condition_a" not in pair_summary.columns
+    assert pair_summary[["genotype_a", "genotype_b"]].values.tolist() == [
+        ["mutant", "WT"]
+    ]
+    condition_pair_summary = app.dataframe[3].value
+    assert "genotype_a" in condition_pair_summary.columns
+    visible_text = _visible_text(app)
+    assert "Grouped by metadata column 'genotype'" in visible_text
+
+
+def test_correlation_page_method_selector_defaults_to_pearson_and_switches() -> None:
+    app = _run_correlation_page(_uploaded_bundle())
+    method_selector = next(
+        box for box in app.selectbox if box.label == "Correlation method"
+    )
+    assert method_selector.value == "Pearson (linear)"
+    pearson_visible_text = _visible_text(app)
+    assert "Computing Pearson correlations" not in pearson_visible_text
+    assert "Pearson correlation is calculated" in pearson_visible_text
+    assert "Spearman" not in pearson_visible_text
+
+    method_selector.select("Spearman (rank)").run()
+
+    assert not app.exception
+    spearman_visible_text = _visible_text(app)
+    assert "Spearman correlation is calculated" in spearman_visible_text
+    assert "Pearson" not in spearman_visible_text
+    download_labels = _download_labels(app)
+    assert "Download correlation matrix in long form (CSV)" in download_labels
+
+
+def _interleaved_condition_correlation_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "sample_x": [1, 2],
+            "sample_y": [2, 5],
+            "sample_z": [3, 6],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_x", "sample_y", "sample_z"],
+            "condition": ["control", "treated", "control"],
+        }
+    )
+    de_results = pd.DataFrame(
+        {
+            "gene_id": ["g1", "g2"],
+            "log2FoldChange": [0.0, 0.0],
+            "pvalue": [0.5, 0.5],
+            "padj": [0.5, 0.5],
+        }
+    )
+    report = validate_input_tables(expression, metadata, de_results)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (expression, metadata, de_results),
+        source="uploaded",
+        source_label="Interleaved-condition correlation bundle (test input)",
+        report=report,
+    )
+
+
+def test_correlation_page_heatmap_sort_checkbox_groups_samples_by_label() -> None:
+    bundle = _interleaved_condition_correlation_bundle()
+
+    app = _run_correlation_page(bundle)
+    assert len(app.checkbox) == 1
+    heatmap_before = _plotly_figures(app)[0]
+    assert heatmap_before["data"][0]["x"] == ["sample_x", "sample_y", "sample_z"]
+    assert heatmap_before["data"][0]["y"] == ["sample_x", "sample_y", "sample_z"]
+
+    app.checkbox[0].set_value(True).run()
+
+    assert not app.exception
+    heatmap_after = _plotly_figures(app)[0]
+    assert heatmap_after["data"][0]["x"] == ["sample_x", "sample_z", "sample_y"]
+    assert heatmap_after["data"][0]["y"] == ["sample_x", "sample_z", "sample_y"]
+    assert "not a clustering or dendrogram-based reordering" in app.checkbox[0].help
 
 
 def test_correlation_page_constant_sample_retains_undefined_values() -> None:
@@ -974,7 +1370,7 @@ def test_correlation_page_all_constant_state_renders_without_exception() -> None
     assert app.dataframe[0].value.eq("N/A").all().all()
     assert app.dataframe[1].value["defined_pair_count"].eq(0).all()
     assert app.dataframe[1].value["undefined_pair_count"].eq(2).all()
-    assert len(app.get("vega_lite_chart")) == 1
+    assert len(app.get("plotly_chart")) == 1
     assert _correlation_session_keys(app) == []
 
 
@@ -1081,6 +1477,30 @@ def test_pca_page_uploaded_maps_conditions_preserves_bundle_and_omits_scatter() 
     assert _pca_session_keys(app) == []
 
 
+def test_pca_page_scale_checkbox_changes_results_and_is_disclosed() -> None:
+    bundle = _demo_bundle()
+    app = _run_pca_page(bundle)
+    unscaled_score_table = app.dataframe[1].value
+
+    app.checkbox[0].check().run()
+
+    assert not app.exception
+    scaled_score_table = app.dataframe[1].value
+    assert not unscaled_score_table["pc1"].equals(scaled_score_table["pc1"])
+    visible_text = _visible_text(app)
+    assert "additionally scaled to unit variance" in visible_text
+    assert "divided by its own sample standard deviation" in visible_text
+
+
+def test_pca_page_scale_checkbox_defaults_to_off() -> None:
+    app = _run_pca_page(_demo_bundle())
+
+    assert not app.exception
+    assert app.checkbox[0].value is False
+    visible_text = _visible_text(app)
+    assert "Genes are not scaled to unit variance" in visible_text
+
+
 def test_pca_page_all_genes_zero_variance_shows_only_controlled_error() -> None:
     bundle = _all_genes_constant_bundle()
     original_expression = bundle.expression.copy(deep=True)
@@ -1129,7 +1549,7 @@ def test_pca_page_one_gene_renders_with_observation_not_error() -> None:
     assert not app.exception
     assert len(app.error) == 0
     visible_text = _visible_text(app)
-    assert "Only one gene is present" in visible_text
+    assert "Only one complete gene is available" in visible_text
     assert len(app.dataframe) == 2
     assert _pca_session_keys(app) == []
 
@@ -1184,6 +1604,63 @@ def test_pca_page_component2_zero_variance_shows_plot_with_observation() -> None
     assert _pca_session_keys(app) == []
 
 
+def _colinear_pca_bundle_with_genotype() -> DatasetBundle:
+    bundle = _colinear_pca_bundle()
+    metadata = bundle.metadata.assign(genotype=["WT", "mutant", "mutant"])
+    report = validate_input_tables(bundle.expression, metadata, bundle.de_results)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (bundle.expression, metadata, bundle.de_results),
+        source=bundle.source,
+        source_label=bundle.source_label,
+        report=report,
+    )
+
+
+def test_pca_page_collapses_method_and_limitations_into_expanders() -> None:
+    app = _run_pca_page(_demo_bundle())
+
+    assert not app.exception
+    expander_labels = [element.label for element in app.get("expander")]
+    assert "Method" in expander_labels
+    assert "Scientific and statistical limitations" in expander_labels
+    visible_text = _visible_text(app)
+    assert "mean-centred across samples" in visible_text
+    assert "does not calculate a hypothesis" in visible_text
+
+
+def test_pca_page_offers_no_grouping_selector_without_additional_metadata() -> None:
+    app = _run_pca_page(_colinear_pca_bundle())
+
+    assert not app.exception
+    assert len(app.selectbox) == 0
+    assert _pca_scatter_chart_count(app) == 1
+
+
+def test_pca_page_grouping_selector_defaults_to_condition() -> None:
+    app = _run_pca_page(_colinear_pca_bundle_with_genotype())
+
+    assert not app.exception
+    assert len(app.selectbox) == 1
+    selector = app.selectbox[0]
+    assert selector.options == ["condition", "genotype"]
+    assert selector.value == "condition"
+    figure = _plotly_figures(app)[0]
+    assert {trace["name"] for trace in figure["data"]} == {"control", "treated"}
+    assert figure["layout"]["legend"]["title"]["text"] == "Condition"
+
+
+def test_pca_page_grouping_selector_switches_chart_colour_field() -> None:
+    app = _run_pca_page(_colinear_pca_bundle_with_genotype())
+
+    app.selectbox[0].select("genotype").run()
+
+    assert not app.exception
+    figure = _plotly_figures(app)[0]
+    assert {trace["name"] for trace in figure["data"]} == {"WT", "mutant"}
+    assert figure["layout"]["legend"]["title"]["text"] == "Genotype"
+
+
 def test_pca_page_has_no_prohibited_classification_wording() -> None:
     for bundle in (
         _demo_bundle(),
@@ -1217,6 +1694,132 @@ def test_de_page_no_data_state_is_clear_and_creates_no_analysis_state() -> None:
     assert CURRENT_DATASET_KEY not in app.session_state
     assert len(app.number_input) == 0
     assert len(app.dataframe) == 0
+
+
+def test_de_page_without_optional_results_has_truthful_empty_state() -> None:
+    bundle = _without_de_bundle()
+
+    app = _run_de_page(bundle)
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "No differential-expression results were supplied" in visible_text
+    assert "Sample Quality Control, PCA, Sample Correlation, and Gene Expression" in visible_text
+    assert len(app.error) == 0
+    assert len(app.number_input) == 0
+    assert len(app.dataframe) == 0
+    assert _download_labels(app) == []
+    assert app.session_state[CURRENT_DATASET_KEY] is bundle
+
+
+def test_de_page_collapses_limitations_into_an_expander() -> None:
+    app = _run_de_page(_demo_bundle())
+
+    assert not app.exception
+    expander_labels = [element.label for element in app.get("expander")]
+    assert "Scientific and statistical limitations" in expander_labels
+    visible_text = _visible_text(app)
+    assert "does not calculate, adjust, replace, or modify p-values" in visible_text
+
+
+def test_expression_pages_compute_the_same_results_without_optional_de() -> None:
+    with_de = _uploaded_bundle()
+    without_de = _without_de_bundle()
+    originals = (
+        without_de.expression.copy(deep=True),
+        without_de.metadata.copy(deep=True),
+    )
+
+    page_pairs = (
+        (_run_qc_page(with_de), _run_qc_page(without_de)),
+        (_run_correlation_page(with_de), _run_correlation_page(without_de)),
+        (_run_pca_page(with_de), _run_pca_page(without_de)),
+        (
+            _run_selected_gene_page(_gene_uploaded_bundle(), "GeneA"),
+            _run_selected_gene_page(
+                build_dataset_bundle(
+                    (
+                        _gene_uploaded_bundle().expression,
+                        _gene_uploaded_bundle().metadata,
+                        None,
+                    ),
+                    source="uploaded",
+                    source_label="Gene expression without DE",
+                    report=validate_input_tables(
+                        _gene_uploaded_bundle().expression,
+                        _gene_uploaded_bundle().metadata,
+                        None,
+                    ),
+                ),
+                "GeneA",
+            ),
+        ),
+    )
+
+    for with_de_app, without_de_app in page_pairs:
+        assert not with_de_app.exception
+        assert not without_de_app.exception
+        assert len(with_de_app.dataframe) == len(without_de_app.dataframe)
+        for with_table, without_table in zip(
+            with_de_app.dataframe,
+            without_de_app.dataframe,
+            strict=True,
+        ):
+            pd.testing.assert_frame_equal(
+                with_table.value,
+                without_table.value,
+                check_exact=True,
+            )
+        assert _download_labels(with_de_app) == _download_labels(without_de_app)
+
+    pd.testing.assert_frame_equal(without_de.expression, originals[0], check_exact=True)
+    pd.testing.assert_frame_equal(without_de.metadata, originals[1], check_exact=True)
+
+
+def test_dataset_context_is_rendered_verbatim_on_every_analysis_page() -> None:
+    bundle = _provenance_bundle()
+    apps = (
+        _run_qc_page(bundle),
+        _run_pca_page(bundle),
+        _run_correlation_page(bundle),
+        _run_de_page(bundle),
+        _run_gene_page(bundle),
+    )
+    expected_values = {
+        value
+        for value in (
+            bundle.provenance.dataset_title,
+            bundle.provenance.organism,
+            bundle.provenance.expression_scale_description,
+            bundle.provenance.upstream_normalization_method,
+            bundle.provenance.reference_genome_annotation,
+            bundle.provenance.feature_level,
+            bundle.provenance.de_contrast_description,
+            bundle.provenance.notes,
+        )
+        if value is not None
+    }
+
+    for app in apps:
+        assert not app.exception
+        rendered_values = {element.value for element in app.get("code")}
+        assert expected_values <= rendered_values
+        assert "not scientifically verified" in _visible_text(app)
+
+
+def test_missing_dataset_context_is_explicit_on_every_analysis_page() -> None:
+    bundle = _uploaded_bundle()
+
+    for app in (
+        _run_qc_page(bundle),
+        _run_pca_page(bundle),
+        _run_correlation_page(bundle),
+        _run_de_page(bundle),
+        _run_gene_page(bundle),
+    ):
+        assert not app.exception
+        values = [element.value for element in app.get("code")]
+        assert values.count(NOT_SUPPLIED) == 8
 
 
 def test_de_page_blocks_aggregate_validation_errors_before_controls() -> None:
@@ -1370,6 +1973,40 @@ def test_de_page_repeated_runs_preserve_active_bundle_and_all_input_tables() -> 
         pd.testing.assert_frame_equal(actual, expected, check_exact=True)
 
 
+def test_de_page_ma_plot_renders_with_mean_expression_and_status_colours() -> None:
+    app = _run_de_page(_de_uploaded_bundle())
+
+    assert not app.exception
+    figures = _plotly_figures(app)
+    ma_figure = next(
+        figure
+        for figure in figures
+        if figure["layout"]["xaxis"]["title"]["text"]
+        == "Mean supplied expression value"
+    )
+    trace_names = {trace["name"] for trace in ma_figure["data"]}
+    assert trace_names == {
+        "Positive fold-change rows meeting both thresholds",
+        "Negative fold-change rows meeting both thresholds",
+        "Evaluable rows that do not meet both thresholds",
+    }
+    visible_text = _visible_text(app)
+    assert "no statistic is calculated, adjusted, or inferred here" in visible_text
+    assert "excluded from this plot because their exact gene_id" not in visible_text
+    assert "excluded from this plot because every supplied" not in visible_text
+
+
+def test_de_page_ma_plot_discloses_genes_absent_from_expression() -> None:
+    app = _run_de_page(_de_uploaded_bundle(gene_mismatch=True))
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert (
+        "excluded from this plot because their exact gene_id has no "
+        "unambiguous match" in visible_text
+    )
+
+
 def test_de_page_has_required_scientific_wording_and_no_later_features() -> None:
     for bundle in (_demo_bundle(), _de_uploaded_bundle()):
         app = _run_de_page(bundle)
@@ -1384,14 +2021,16 @@ def test_de_page_has_required_scientific_wording_and_no_later_features() -> None
         assert "positive and negative labels refer only to the sign" in lower_text
         assert "missing adjusted p-values remain missing" in lower_text
         assert "not a claim of statistical significance" in lower_text
-        assert "no volcano plot or gene lookup" in lower_text
+        assert "no single-gene lookup" in lower_text
         assert "threshold matches are not claims of statistical significance" in lower_text
+        assert "does not fit a model, calculate a" in lower_text
         assert "upregulated" not in lower_text
         assert "downregulated" not in lower_text
         assert "deseq2 was run" not in lower_text
         assert "fastq processing is available" not in lower_text
         assert len(app.button) == 0
-        assert len(app.get("vega_lite_chart")) == 0
+        # Volcano plot and MA plot.
+        assert len(app.get("plotly_chart")) == 2
 
 
 def test_gene_page_no_data_state_is_clear_and_has_no_analysis_side_effects() -> None:
@@ -1532,20 +2171,15 @@ def test_gene_page_uploaded_selection_preserves_values_and_visual_order() -> Non
     ]
     assert condition_summary["standard_deviation"].tolist()[1] == "N/A"
 
-    charts = app.get("vega_lite_chart")
-    assert len(charts) == 1
-    chart_spec = json.loads(charts[0].proto.spec)
-    assert chart_spec["mark"]["type"] == "point"
-    assert chart_spec["encoding"]["x"]["sort"] == [
+    figures = _plotly_figures(app)
+    assert len(figures) == 1
+    figure = figures[0]
+    assert figure["layout"]["xaxis"]["categoryarray"] == [
         "sample_b",
         "sample_a",
         "sample_c",
     ]
-    assert chart_spec["encoding"]["order"] == {
-        "field": "sample_position",
-        "type": "quantitative",
-    }
-    assert "line" not in chart_spec["mark"]
+    assert all(trace["mode"] == "markers" for trace in figure["data"])
 
     app.selectbox[0].select("genea").run()
     app.selectbox[0].select("GeneA").run()
@@ -1592,7 +2226,341 @@ def test_gene_page_demo_selection_has_exact_options_and_synthetic_disclaimer() -
     assert "gene IDs are fictional" in visible_text
     assert "does not support conclusions about tomato biology" in visible_text
     assert len(app.dataframe[0].value.index) == 6
-    assert len(app.get("vega_lite_chart")) == 1
+    assert len(app.get("plotly_chart")) == 1
+
+
+def test_gene_page_omits_search_box_below_the_gene_count_threshold() -> None:
+    app = _run_gene_page(_demo_bundle())
+
+    assert not app.exception
+    assert len(app.text_input) == 0
+    assert len(app.selectbox[0].options) == 120
+
+
+def test_gene_page_search_box_narrows_options_above_the_threshold() -> None:
+    bundle = _large_gene_bundle(250)
+
+    app = _run_gene_page(bundle)
+
+    assert not app.exception
+    assert len(app.text_input) == 1
+    assert len(app.selectbox[0].options) == 250
+
+    app.text_input[0].set_value("0007").run()
+
+    assert not app.exception
+    assert app.selectbox[0].options == ["GENE_0007"]
+
+    app.selectbox[0].select("GENE_0007").run()
+
+    assert not app.exception
+    assert len(app.dataframe) >= 1
+
+
+def test_gene_page_search_box_shows_no_match_message() -> None:
+    bundle = _large_gene_bundle(250)
+
+    app = _run_gene_page(bundle)
+    app.text_input[0].set_value("nonexistent").run()
+
+    assert not app.exception
+    assert app.selectbox[0].options == []
+    assert "No supplied gene ID contains that text" in _visible_text(app)
+
+
+def _species_reference_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["AT1G65480", "NOT_A_REAL_GENE", "AT1G65480.1"],
+            "sample_a": ["1.0", "2.0", "5.0"],
+            "sample_b": ["3.0", "4.0", "6.0"],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_a", "sample_b"],
+            "condition": ["control", "treated"],
+        }
+    )
+    report = validate_input_tables(expression, metadata, None)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (expression, metadata, None),
+        source="uploaded",
+        source_label="Species reference test bundle",
+        report=report,
+    )
+
+
+def test_gene_page_species_reference_shows_a_matching_annotation() -> None:
+    app = _run_gene_page(_species_reference_bundle())
+    app.selectbox[0].select("AT1G65480").run()
+
+    species_selector = next(
+        box for box in app.selectbox if box.label == "Species reference (optional)"
+    )
+    species_selector.select("Arabidopsis thaliana").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "FT" in visible_text
+    assert "PEBP" in visible_text
+    assert "Ensembl Plants REST API" in visible_text
+
+
+def test_gene_page_species_reference_reports_no_entry_for_an_unmatched_gene() -> None:
+    app = _run_gene_page(_species_reference_bundle())
+    app.selectbox[0].select("NOT_A_REAL_GENE").run()
+
+    species_selector = next(
+        box for box in app.selectbox if box.label == "Species reference (optional)"
+    )
+    species_selector.select("Arabidopsis thaliana").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "No entry for 'NOT_A_REAL_GENE'" in visible_text
+    assert "version suffix" not in visible_text
+    assert "MSU/TIGR" not in visible_text
+
+
+def test_gene_page_species_reference_hints_at_a_recognised_alternate_id_shape() -> None:
+    app = _run_gene_page(_species_reference_bundle())
+    app.selectbox[0].select("AT1G65480.1").run()
+
+    species_selector = next(
+        box for box in app.selectbox if box.label == "Species reference (optional)"
+    )
+    species_selector.select("Arabidopsis thaliana").run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "No entry for 'AT1G65480.1'" in visible_text
+    assert "version suffix" in visible_text
+    assert "never rewritten or searched under any other form" in visible_text
+
+
+def test_gene_page_custom_annotation_upload_shows_a_matching_entry() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    csv_bytes = (
+        b"gene_id,symbol,description,source\n"
+        b"g1,MySymbol,My custom description,lab notes\n"
+    )
+    app.file_uploader[0].set_value(
+        ("custom_annotation.csv", csv_bytes, "text/csv")
+    ).run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "MySymbol" in visible_text
+    assert "My custom description" in visible_text
+    assert "lab notes" in visible_text
+
+
+def test_gene_page_custom_annotation_upload_reports_no_entry() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    csv_bytes = b"gene_id,symbol,description\nother_gene,Sym,Desc\n"
+    app.file_uploader[0].set_value(
+        ("custom_annotation.csv", csv_bytes, "text/csv")
+    ).run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "No entry for 'g1' in the uploaded annotation file" in visible_text
+    assert "1 gene ID(s) loaded" in visible_text
+
+
+def test_gene_page_custom_annotation_upload_without_source_uses_disclosed_label() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    csv_bytes = b"gene_id,symbol,description\ng1,MySymbol,My custom description\n"
+    app.file_uploader[0].set_value(
+        ("custom_annotation.csv", csv_bytes, "text/csv")
+    ).run()
+
+    assert not app.exception
+    visible_text = _visible_text(app)
+    assert "not independently verified by this application" in visible_text
+
+
+def test_gene_page_custom_annotation_upload_reports_a_controlled_parse_error() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    csv_bytes = b"gene_id,symbol\ng1,MySymbol\n"
+    app.file_uploader[0].set_value(
+        ("custom_annotation.csv", csv_bytes, "text/csv")
+    ).run()
+
+    assert not app.exception
+    assert app.error
+    error_text = " ".join(element.value for element in app.error)
+    assert "MISSING_REQUIRED_COLUMN" in error_text
+    assert "description" in error_text
+
+
+def test_gene_page_multi_gene_panel_is_absent_without_additional_genes() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    assert not app.exception
+    assert len(app.multiselect) == 1
+    assert app.multiselect[0].value == []
+    assert len(app.dataframe) == 2  # sample values + condition summary only
+
+
+def test_gene_page_multi_gene_panel_shows_a_combined_chart_and_wide_table() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+    assert app.multiselect[0].options == ["g2", "g3", "g4"]
+
+    app.multiselect[0].select("g2").run()
+
+    assert not app.exception
+    assert len(app.dataframe) == 3
+    wide_table = app.dataframe[0].value
+    assert list(wide_table.columns) == ["sample_id", "condition", "g1", "g2"]
+    assert len(wide_table.index) == 2
+    panel_figure = next(
+        figure
+        for figure in _plotly_figures(app)
+        if figure["layout"].get("legend", {}).get("title", {}).get("text") == "Gene ID"
+    )
+    assert {trace["name"] for trace in panel_figure["data"]} == {"g1", "g2"}
+    download_labels = [button.label for button in app.get("download_button")]
+    assert "Download multi-gene panel values (CSV)" in download_labels
+
+
+def test_gene_page_multi_gene_panel_excludes_the_primary_gene_from_options() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    assert "g1" not in app.multiselect[0].options
+
+
+def _gene_time_series_bundle() -> DatasetBundle:
+    expression = pd.DataFrame(
+        {
+            "gene_id": ["g1"],
+            "sample_x": [10.0],
+            "sample_y": [20.0],
+            "sample_z": [30.0],
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "sample_id": ["sample_x", "sample_y", "sample_z"],
+            "condition": ["control", "control", "control"],
+            "day": [5, 1, 3],
+        }
+    )
+    report = validate_input_tables(expression, metadata, None)
+    assert not report.has_errors
+    return build_dataset_bundle(
+        (expression, metadata, None),
+        source="uploaded",
+        source_label="Gene time-series test bundle",
+        report=report,
+    )
+
+
+def test_gene_page_time_series_axis_reorders_the_chart_by_numeric_value() -> None:
+    app = _run_gene_page(_gene_time_series_bundle())
+    app.selectbox[0].select("g1").run()
+
+    axis_selector = next(
+        box for box in app.selectbox if box.label == "Chart x-axis"
+    )
+    assert axis_selector.options == [
+        "Sample (upload order)",
+        "Numeric time/order: day",
+    ]
+
+    axis_selector.select("Numeric time/order: day").run()
+
+    assert not app.exception
+    figure = next(
+        fig
+        for fig in _plotly_figures(app)
+        if fig["layout"]["xaxis"]["title"]["text"] == "day"
+    )
+    trace = figure["data"][0]
+    assert _decode_plotly_array(trace["x"]) == [1, 3, 5]
+    assert _decode_plotly_array(trace["y"]) == [20.0, 30.0, 10.0]
+
+
+def test_gene_page_time_series_axis_reports_a_non_numeric_column() -> None:
+    app = _run_gene_page(_uploaded_bundle_with_genotype())
+    app.selectbox[0].select("g1").run()
+
+    axis_selector = next(
+        box for box in app.selectbox if box.label == "Chart x-axis"
+    )
+    assert axis_selector.options == [
+        "Sample (upload order)",
+        "Numeric time/order: genotype",
+    ]
+
+    axis_selector.select("Numeric time/order: genotype").run()
+
+    assert not app.exception
+    assert not _plotly_figures(app)
+    assert (
+        "'genotype' cannot be used as a numeric time axis"
+        in app.error[0].value
+    )
+
+
+def test_gene_page_offers_no_grouping_selector_without_additional_metadata() -> None:
+    app = _run_gene_page(_uploaded_bundle())
+    app.selectbox[0].select("g1").run()
+
+    assert not app.exception
+    # Exact gene ID + species reference selectors only; no group-by selector.
+    assert len(app.selectbox) == 2
+
+
+def test_gene_page_grouping_selector_relabels_plot_and_summary() -> None:
+    bundle = _uploaded_bundle_with_genotype()
+
+    app = _run_gene_page(bundle)
+    app.selectbox[0].select("g1").run()
+    # Exact gene ID, species reference, group-by, and chart x-axis selectors.
+    assert len(app.selectbox) == 4
+    group_selector = app.selectbox[2]
+    assert group_selector.options == ["condition", "genotype"]
+    assert group_selector.value == "condition"
+
+    app.selectbox[2].select("genotype").run()
+
+    assert not app.exception
+    summary = app.dataframe[1].value
+    assert "genotype" in summary.columns
+    assert "condition" not in summary.columns
+    by_genotype = summary.set_index("genotype")
+    assert by_genotype.loc["WT", "mean_expression"] == 1.0
+    assert by_genotype.loc["mutant", "mean_expression"] == 2.0
+    visible_text = _visible_text(app)
+    assert "Grouped by metadata column 'genotype'" in visible_text
+    figure = _plotly_figures(app)[0]
+    assert {trace["name"] for trace in figure["data"]} == {"WT", "mutant"}
+    assert figure["layout"]["legend"]["title"]["text"] == "Genotype"
+
+
+def test_gene_page_collapses_limitations_into_an_expander() -> None:
+    app = _run_gene_page(_demo_bundle())
+    app.selectbox[0].select("SYN_Solyc_0001").run()
+
+    assert not app.exception
+    expander_labels = [element.label for element in app.get("expander")]
+    assert "Scientific and statistical limitations" in expander_labels
+    visible_text = _visible_text(app)
+    assert "Condition labels provide display context only" in visible_text
 
 
 def test_gene_page_one_sample_has_table_summary_and_truthful_no_chart_state() -> None:
@@ -2033,6 +3001,140 @@ def test_phase_10_download_wording_discloses_csv_boundaries() -> None:
     assert "gene id is added as an explicit context column" in gene_text
 
 
+def test_report_page_prompts_for_upload_when_no_dataset_is_active() -> None:
+    app = _run_report_page()
+
+    assert not app.exception
+    assert app.get("download_button") == []
+    assert (
+        "No validated dataset is currently loaded"
+        in _visible_text(app)
+    )
+
+
+def test_report_page_shows_all_sections_and_a_download_button_for_the_demo() -> None:
+    app = _run_report_page(_demo_bundle())
+
+    assert not app.exception
+    assert not app.error
+    assert [subheader.value for subheader in app.subheader] == [
+        "Dataset summary",
+        "Dataset context",
+        "Sample quality control — condition summary",
+        "PCA — explained variance",
+        "Sample correlation — condition-pair summary",
+        "Differential expression — category summary",
+    ]
+    assert len(app.dataframe) == 6
+    assert [button.label for button in app.get("download_button")] == [
+        "Download descriptive report (PDF)"
+    ]
+
+
+def test_report_page_dataset_summary_shows_sha256_checksums_for_the_demo() -> None:
+    bundle = _demo_bundle()
+    assert bundle.checksums is not None
+
+    app = _run_report_page(bundle)
+
+    assert not app.exception
+    dataset_summary = app.dataframe[0].value.set_index("Field")["Value"]
+    assert dataset_summary["Expression file SHA-256"] == (
+        bundle.checksums.expression_sha256
+    )
+    assert dataset_summary["Metadata file SHA-256"] == bundle.checksums.metadata_sha256
+    assert dataset_summary["Differential-expression file SHA-256"] == (
+        bundle.checksums.de_results_sha256
+    )
+    visible_text = _visible_text(app)
+    assert "confirm this report was generated from a specific" in visible_text
+
+
+def test_report_page_dataset_summary_discloses_missing_checksums() -> None:
+    app = _run_report_page(_uploaded_bundle())
+
+    assert not app.exception
+    dataset_summary = app.dataframe[0].value.set_index("Field")["Value"]
+    assert dataset_summary["Input file checksums"] == (
+        "Not available (this dataset predates checksum computation)"
+    )
+
+
+def test_report_page_notes_missing_differential_expression_when_not_supplied() -> None:
+    app = _run_report_page(_without_de_bundle())
+
+    assert not app.exception
+    assert not app.error
+    info_text = [info.value for info in app.info]
+    assert (
+        "Not included: no differential-expression results were supplied "
+        "for this dataset."
+        in info_text
+    )
+    assert len(app.dataframe) == 5
+    assert [button.label for button in app.get("download_button")] == [
+        "Download descriptive report (PDF)"
+    ]
+
+
+def test_report_page_uses_the_shared_group_by_selector() -> None:
+    app = _run_report_page(_uploaded_bundle_with_genotype())
+    group_selector = next(
+        box for box in app.selectbox if box.label == "Group report tables by"
+    )
+
+    group_selector.select("genotype").run()
+
+    assert not app.exception
+    qc_table = app.dataframe[2].value
+    correlation_table = app.dataframe[4].value
+    assert "genotype" in qc_table.columns
+    assert "genotype_a" in correlation_table.columns
+    assert "genotype_b" in correlation_table.columns
+
+
+def test_report_page_reflects_de_thresholds_set_on_the_de_page() -> None:
+    bundle = _uploaded_bundle_with_genotype()
+
+    baseline_app = AppTest.from_file("pages/8_Report_Export.py")
+    baseline_app.session_state[CURRENT_DATASET_KEY] = bundle
+    baseline_app.run()
+    baseline_text = _visible_text(baseline_app)
+    assert "padj <= 0.05" in baseline_text
+
+    report_app = AppTest.from_file("pages/8_Report_Export.py")
+    report_app.session_state[CURRENT_DATASET_KEY] = bundle
+    report_app.session_state["pee_de_adjusted_p_value_threshold"] = 0.9
+    report_app.run()
+
+    assert not report_app.exception
+    assert "padj <= 0.9" in _visible_text(report_app)
+
+
+def test_report_page_reports_a_controlled_error_and_no_download_button_when_pdf_assembly_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import plant_expression_explorer.report as report_module
+
+    def _boom(**kwargs: object) -> None:
+        raise report_module.ReportExportError(
+            report_module.ReportExportErrorReason.UNSUPPORTED_CHARACTER,
+            "forced failure for testing",
+        )
+
+    monkeypatch.setattr(report_module, "build_report_pdf", _boom)
+
+    app = AppTest.from_file("pages/8_Report_Export.py")
+    app.session_state[CURRENT_DATASET_KEY] = _demo_bundle()
+    app.run()
+
+    assert not app.exception
+    assert app.get("download_button") == []
+    assert any(
+        "forced failure for testing" in error.value for error in app.error
+    )
+
+
 def test_phase_11_navigation_and_documentation_keep_later_work_planned() -> None:
     home = AppTest.from_file("app.py").run()
     page_links = home.get("page_link")
@@ -2043,6 +3145,7 @@ def test_phase_11_navigation_and_documentation_keep_later_work_planned() -> None
         "Sample_Correlation",
         "Differential_Expression",
         "Gene_Expression",
+        "Report_Export",
     ]
     matching = [link for link in page_links if link.proto.page == "Gene_Expression"]
     assert len(matching) == 1
@@ -2057,9 +3160,10 @@ def test_phase_11_navigation_and_documentation_keep_later_work_planned() -> None
     assert "Phase 10 descriptive result exports" in readme
     assert "exact adjusted-p-value and absolute log2-fold-change thresholds" in readme
     assert "Phase 11 GitHub release readiness" in readme
-    assert "As of Phase 11" in guide
+    assert "Phase 12 real-world usability" in readme
+    assert "As of Phase 12" in guide
     for text in (readme, guide):
         normalized = " ".join(text.split())
-        assert "volcano plots" in normalized
+        assert "volcano plot" in normalized
         assert "UTF-8 CSV" in normalized
     assert "no partial set of download buttons" in " ".join(readme.split())
