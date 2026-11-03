@@ -1,0 +1,111 @@
+{
+  "atlas_comparison": {
+    "deg_atlas": 4934,
+    "deg_both": 4628,
+    "deg_jaccard": 0.9273,
+    "deg_ours": 4685,
+    "genes_with_both_lfc": 19522,
+    "lfc_pearson": 0.9998,
+    "lfc_spearman": 0.9992,
+    "shared_genes": 19522
+  },
+  "atlas_pvalue_scale_check": {
+    "fraction_atlas_ge_pvalue": 0.9723,
+    "genes": 19498,
+    "median_abs_log10_diff_vs_padj": 0.1026,
+    "median_abs_log10_diff_vs_pvalue": 0.3683
+  },
+  "design_coefficients": [
+    "Intercept",
+    "condition[T.jasmonate]"
+  ],
+  "family_enrichment_lfc1": {
+    "1R-MYB (MYB-related)": {
+      "down": 0,
+      "p_enriched_down": 1.0,
+      "p_enriched_up": 0.7849907001915705,
+      "tested": 91,
+      "up": 4
+    },
+    "3R-MYB": {
+      "down": 0,
+      "p_enriched_down": 0.9999999999712734,
+      "p_enriched_up": 0.999999999992349,
+      "tested": 4,
+      "up": 0
+    },
+    "6R-MYB": {
+      "down": 0,
+      "p_enriched_down": 1.0,
+      "p_enriched_up": 0.05835040983598446,
+      "tested": 1,
+      "up": 1
+    },
+    "JAZ": {
+      "down": 0,
+      "p_enriched_down": 1.0,
+      "p_enriched_up": 2.553239179134708e-09,
+      "tested": 16,
+      "up": 10
+    },
+    "JAZ (Chini et al. 2017 list)": {
+      "down": 0,
+      "p_enriched_down": 0.9999999999972649,
+      "p_enriched_up": 4.593641887914132e-12,
+      "tested": 11,
+      "up": 10
+    },
+    "R2R3-MYB": {
+      "down": 2,
+      "p_enriched_down": 0.862703247249388,
+      "p_enriched_up": 0.00017956471738490683,
+      "tested": 70,
+      "up": 13
+    },
+    "TPS": {
+      "down": 0,
+      "p_enriched_down": 1.0,
+      "p_enriched_up": 4.6849699871105736e-05,
+      "tested": 13,
+      "up": 6
+    }
+  },
+  "gene_models": 34658,
+  "genes_tested": 19522,
+  "lfc1_test": {
+    "down": 954,
+    "tested": 19520,
+    "up": 1139
+  },
+  "library_sizes": {
+    "jasmonate_1": 16222513,
+    "jasmonate_2": 18056266,
+    "jasmonate_3": 15686595,
+    "mock_1": 18232700,
+    "mock_2": 19613795,
+    "mock_3": 18262396
+  },
+  "positive_control_jaz": {
+    "domain_rule_calls": 17,
+    "literature_genes": 13,
+    "recovered_by_domain_rule": 12,
+    "status_counts": {
+      "below expression filter": 2,
+      "not significant": 1,
+      "up": 10
+    }
+  },
+  "size_factors": {
+    "jasmonate_1": 0.818347,
+    "jasmonate_2": 0.907278,
+    "jasmonate_3": 0.787226,
+    "mock_1": 1.190389,
+    "mock_2": 1.266552,
+    "mock_3": 1.158299
+  },
+  "standard_test": {
+    "padj_lt_0.05": 11387,
+    "padj_missing": 2,
+    "pvalue_missing": 2
+  }
+}

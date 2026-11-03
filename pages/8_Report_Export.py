@@ -282,6 +282,13 @@ else:
             "its p-values are constructed. This report does not support real "
             "tomato nitrate-response conclusions."
         )
+    elif current.source == "case_study":
+        st.info(
+            "This report summarises the bundled public case study. Its "
+            "differential-expression statistics were computed offline with "
+            "pyDESeq2; see analysis/tomato_ja_hairy_roots/README.md for methods "
+            "and limitations."
+        )
 
     with st.expander("Scientific and statistical limitations"):
         st.info(

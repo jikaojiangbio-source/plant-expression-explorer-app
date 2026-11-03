@@ -10,6 +10,7 @@ from plant_expression_explorer.dataset import (
     DATASET_TITLE_KEY,
     DE_CONTRAST_KEY,
     DE_RESULTS_UPLOAD_KEY,
+    CASE_STUDY_SOURCE_LABEL,
     DEMO_SOURCE_LABEL,
     EXPRESSION_SCALE_KEY,
     EXPRESSION_UPLOAD_KEY,
@@ -26,6 +27,7 @@ from plant_expression_explorer.dataset import (
     clear_legacy_data_state,
     clear_uploader_state,
     get_current_dataset,
+    load_case_study_candidate,
     load_demo_candidate,
     load_uploaded_candidate,
     record_candidate_failure,
@@ -36,6 +38,7 @@ from plant_expression_explorer.dataset import (
 )
 from plant_expression_explorer.exports import CSV_MEDIA_TYPE
 from plant_expression_explorer.provenance import (
+    CASE_STUDY_PROVENANCE,
     DEMO_PROVENANCE,
     DatasetProvenance,
     provenance_display_rows,
@@ -73,6 +76,30 @@ def _activate_demo() -> None:
         st.session_state,
         source="demo",
         source_label=DEMO_SOURCE_LABEL,
+        report=candidate.report,
+    )
+
+
+def _activate_case_study() -> None:
+    candidate = load_case_study_candidate()
+    if candidate.status == "valid":
+        bundle = build_dataset_bundle(
+            candidate.tables,
+            source="case_study",
+            source_label=CASE_STUDY_SOURCE_LABEL,
+            report=candidate.report,
+            provenance=CASE_STUDY_PROVENANCE,
+            checksums=candidate.checksums,
+        )
+        set_current_dataset(st.session_state, bundle)
+        clear_uploader_state(st.session_state)
+        clear_dataset_context_state(st.session_state)
+        return
+
+    record_candidate_failure(
+        st.session_state,
+        source="case_study",
+        source_label=CASE_STUDY_SOURCE_LABEL,
         report=candidate.report,
     )
 
@@ -252,7 +279,9 @@ st.write(
 
 status_container = st.container()
 
-demo_tab, upload_tab = st.tabs(["Use demo data", "Upload my own data"])
+demo_tab, case_study_tab, upload_tab = st.tabs(
+    ["Use demo data", "Real case study", "Upload my own data"]
+)
 
 with demo_tab:
     st.warning(
@@ -267,6 +296,27 @@ with demo_tab:
         "Load synthetic demo data",
         key="pee_load_demo",
         on_click=_activate_demo,
+    )
+
+with case_study_tab:
+    st.info(
+        "Real, public RNA-seq data: tomato hairy roots treated with 50 µM "
+        "jasmonate or mock for 24 h (three biological replicates each, "
+        "Expression Atlas E-MTAB-11876). The differential-expression table was "
+        "computed offline with pyDESeq2 by the reproducible script in "
+        "analysis/tomato_ja_hairy_roots/, and cross-checked against Expression "
+        "Atlas's own DESeq2 analysis. This application only reads, validates and "
+        "explores those precomputed results; it fits no model itself."
+    )
+    st.caption(
+        "Tip: on the Gene Expression page, upload "
+        "data/case_studies/tomato_ja_hairy_roots/gene_annotation.csv to see "
+        "terpene synthase, MYB and JAZ family labels."
+    )
+    case_study_requested = st.button(
+        "Load real case study",
+        key="pee_load_case_study",
+        on_click=_activate_case_study,
     )
 
 with upload_tab:
@@ -424,9 +474,9 @@ if missing_uploads:
         + ", ".join(missing_uploads)
         + ". The differential-expression file is optional."
     )
-    if not demo_requested:
+    if not (demo_requested or case_study_requested):
         clear_candidate_feedback(st.session_state)
-elif not demo_requested:
+elif not (demo_requested or case_study_requested):
     upload_label = uploaded_source_label(*uploaded_sources)
     with st.spinner("Validating uploaded files…"):
         uploaded_candidate = load_uploaded_candidate(*uploaded_sources)

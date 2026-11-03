@@ -1,0 +1,85 @@
+{
+  "inputs": {
+    "atlas_analytics": {
+      "bytes": 1254777,
+      "sha256": "9a024d2f28df6a0209ccd83f8daa23c9cfa1dbc0e566fde42bf9272efb188e6b",
+      "url": "https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments/E-MTAB-11876/E-MTAB-11876-analytics.tsv"
+    },
+    "configuration": {
+      "bytes": 930,
+      "sha256": "864071d545391bb651492121b13c51f9dfbca445bb95c9e04a8ae1a811beb2f1",
+      "url": "https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments/E-MTAB-11876/E-MTAB-11876-configuration.xml"
+    },
+    "idf": {
+      "bytes": 6385,
+      "sha256": "e5bfe9ab115386ceda9931a54dbb5e8f62e659dbc3adfae3cf55f755d87f9085",
+      "url": "https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments/E-MTAB-11876/E-MTAB-11876.idf.txt"
+    },
+    "pfam_PF00249": {
+      "bytes": 5716,
+      "sha256": "c6aadf1f9b223be395075d0c424f00ffb9b8e310b290b55e565a24d6f3ceb338",
+      "url": "https://www.ebi.ac.uk/interpro/api/entry/pfam/PF00249?annotation=hmm"
+    },
+    "pfam_PF01397": {
+      "bytes": 20250,
+      "sha256": "cc4d059204d137a54b888f8042ee1fbca7c9b7a33d5f247153d546d6f0ff878d",
+      "url": "https://www.ebi.ac.uk/interpro/api/entry/pfam/PF01397?annotation=hmm"
+    },
+    "pfam_PF03936": {
+      "bytes": 25006,
+      "sha256": "9bc54859503cbf5c08180d3376d998d50e405708c8de005efab1baa3eea8302a",
+      "url": "https://www.ebi.ac.uk/interpro/api/entry/pfam/PF03936?annotation=hmm"
+    },
+    "pfam_PF06200": {
+      "bytes": 3817,
+      "sha256": "1eff206458517ca25d8b458535f1555c84172a90952fc20ec5d557d0d6d94be7",
+      "url": "https://www.ebi.ac.uk/interpro/api/entry/pfam/PF06200?annotation=hmm"
+    },
+    "pfam_PF09425": {
+      "bytes": 3480,
+      "sha256": "8fe3d27fe7817f92a6f7b7469e7baa050bf74c08b7495e68e38a754eb3aa7428",
+      "url": "https://www.ebi.ac.uk/interpro/api/entry/pfam/PF09425?annotation=hmm"
+    },
+    "proteome": {
+      "bytes": 8872723,
+      "sha256": "20913dac2521d9482e616a6caefaee6c1da4cfd95d55577cc3a850fcaf1c14e5",
+      "url": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-53/fasta/solanum_lycopersicum/pep/Solanum_lycopersicum.SL3.0.pep.all.fa.gz"
+    },
+    "raw_counts": {
+      "bytes": 1310354,
+      "sha256": "fa78daea4dfa0285ea4b24fcbe3acf6ba5a68cfd7772dd9f8b87861249137644",
+      "url": "https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments/E-MTAB-11876/E-MTAB-11876-raw-counts.tsv"
+    },
+    "sdrf": {
+      "bytes": 2484,
+      "sha256": "888314c4993039b8fbb4b76212b326fbc20789cfa88c195e8750869cc59bfae4",
+      "url": "https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments/E-MTAB-11876/E-MTAB-11876.condensed-sdrf.tsv"
+    }
+  },
+  "packages": {
+    "matplotlib": "3.11.2",
+    "numpy": "2.5.3",
+    "pandas": "2.3.3",
+    "pydeseq2": "0.5.4",
+    "pyhmmer": "0.12.3",
+    "scipy": "1.18.1"
+  },
+  "parameters": {
+    "alpha": 0.05,
+    "design": "~condition",
+    "hmm_cutoff": "Pfam gathering (GA) thresholds",
+    "lfc_threshold": 1.0,
+    "min_count": 10,
+    "min_samples": 3,
+    "reference_level": "mock"
+  },
+  "pfam_versions": {
+    "PF00249": "PF00249.38",
+    "PF01397": "PF01397.28",
+    "PF03936": "PF03936.22",
+    "PF06200": "PF06200.20",
+    "PF09425": "PF09425.16"
+  },
+  "python": "3.13.9",
+  "run_utc": "2026-11-03T07:00:20Z"
+}

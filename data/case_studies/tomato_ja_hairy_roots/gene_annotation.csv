@@ -1,0 +1,1136 @@
+gene_id,symbol,description,source
+Solyc00g006800.3,TAL,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc00g006810.3,FKBP19,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc00g007200.3,MLO,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc00g007270.3,EIF6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc00g136565.1,Sl6585,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g005000.3,GAD3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g005020.3,sos1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g005440.3,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g005620.3,ACI36,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g006510.3,SDH,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g007740.3,2-CP2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g007860.3,Uev1C,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g007910.3,SCOA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g008110.3,CYP51,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g008230.3,TCP15,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g008950.3,CaM1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g008960.3,AGO4A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g009010.3,ispE,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g009070.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g009860.3,unknown,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g010970.3,AGO7,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g011000.3,eIF-5A3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g011340.3,PP2Ac2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g011350.3,FSB1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g011510.3,ADH3F1a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g056340.3,Det1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g056720.3,SIP2-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g057000.3,USP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g057910.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g058140.3,sfr2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g059870.3,PHYB1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g059965.1,GluB,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g060130.3,SAR2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g065540.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g067560.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g067660.3,bmy3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g067710.3,nhx3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g067740.3,SODCC.1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g073640.3,yfe37,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g073950.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g079200.3,GA2ox3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g079210.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g079480.3,bZIP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g079570.3,Arf/Xyl2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g079790.3,agpL3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g079870.3,CIP2b,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g080010.2,Xegip,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g080150.3,IPT3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g080280.3,GS2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g081380.3,NMP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g086960.3,SAP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g087130.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g087250.3,CCD1A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g087260.3,CCD1B,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g087640.3,ADH,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g087820.2,sbt4b,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g087850.2,sbt3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g089970.3,NDK,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g090460.3,THOM1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g091220.3,ACI39,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g091630.3,CD2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g094030.3,CLB1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g094370.3,rem-2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g094690.3,Aqp2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g094910.3,FRO1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g094960.3,MAPK5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g095030.3,ARS1,1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g095080.3,ACS2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g095140.3,ER5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g095150.3,LEA14,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g095370.3,HWS,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g095630.3,WRKY41,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g096050.3,MTB1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g096190.3,LCA1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g096475.1,CITRX,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g096630.3,ACI112,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g096700.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g096810.3,EIL3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g097240.3,PR-P2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g097340.3,GME1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g097770.3,PHOT2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g097810.3,zds,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g097980.3,TCTR2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g098190.3,nhx4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g098390.3,GID1ac,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g098500.3,SFP5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g099410.3,HTA6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g099630.3,XTH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g099740.3,LSM4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g099770.3,TCTP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g099790.3,AdBiL,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g100200.3,GRAS4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g100460.3,abz1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g100490.3,CHLN,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g100510.3,KN4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g100520.3,clpP2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g100600.3,LTM,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g102340.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g102580.3,Cel3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g102760.3,fin1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g103050.3,ARF1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g103370.3,Rab1B,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g103390.3,opr2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g103600.3,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g104510.3,MSI1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g104590.3,RPL3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g104740.3,ER24,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g104970.3,SERK3B,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g105030.3,CAB-10A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g105050.3,LHCP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g105070.3,cevi16,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g105120.3,LNK1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g105310.3,MCA2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g105550.1,AT1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g105560.3,ribA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g105590.2,AT3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g105710.3,FKBP12,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g105880.3,TPS,"TPS: N-terminal + metal-binding domains (PF01397, PF03936)","Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g105920.3,TPS7,"TPS: N-terminal + metal-binding domains (PF01397, PF03936)","Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g105940.3,TPS,"TPS: N-terminal + metal-binding domains (PF01397, PF03936)","Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g106030.3,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g106040.3,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g106480.3,gMDH,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g106940.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g107170.2,ZF2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g107730.3,cycd3c2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g108250.3,Dem2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g108300.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g108630.3,nii1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g109140.3,DES,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g109300.3,HDR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g109460.3,PMT5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g109510.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g109655.1,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g109710.3,RD2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g109790.3,AgpL1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g109880.3,ZIP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g109940.3,RPT4a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g110290.3,SQS1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g110360.3,FBA1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g110440.3,ADC,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g110540.3,Aucsia-2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g111170.3,CyP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g111310.3,LAX2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g111450.3,PAD1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g111500.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc01g111660.3,PIP2-7,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc01g112000.3,EXLA1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g005200.3,TAB2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g021240.3,OPT1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g021550.3,eIF4E2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g022920.1,ERN1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g031980.3,ureD,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g032330.3,HSD1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g036350.3,ACO6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g036370.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g038740.3,HMG2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g062560.3,Tm-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g062740.3,DRM5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g062950.3,GBF12,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g062970.3,app2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g063070.3,tft4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g063150.3,rbcS1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g064595.1,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g064960.3,AP2b,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g065400.3,PSBO,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g065520.1,LYK10,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g067030.3,SNF1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g067180.3,CGS,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g068180.3,ABCI3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g069260.3,AGO2A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g069310.3,NML1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g069490.3,SSR2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g069800.1,Lehsr203,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g070580.1,CYP710A11,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g071210.3,COR413IM1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g071260.3,PHYE,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g076670.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g077250.2,TCP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g077290.2,GLR1.2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g077370.1,PTI5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g077560.3,ARF3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g078260.3,rpb2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g078910.3,tbn1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g079220.3,ht1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g079280.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g079290.3,SP2G,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g079840.2,TPS38,"TPS: N-terminal + metal-binding domains (PF01397, PF03936)","Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g079930.3,PSR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g079950.3,PsbQ,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g080370.3,TH3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g080890.3,WRKY6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g081170.3,ChrC,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g081190.3,ACO4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g081330.3,PSY2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g081550.3,ftsH6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g081640.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g081730.3,HSD2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g082260.3,HMGR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g082360.3,EIF6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g082480.3,GLR3.5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g082760.3,CAT2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g082820.3,CycB2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g082920.3,CHI3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g082930.3,CHI17,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g083270.3,VKOR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g083860.3,F3H,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g084030.3,MSRA5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g084440.3,FBA3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g084630.3,TDR6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g084720.3,TBG6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g084850.3,TAS14,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g084870.3,MAPK8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g084980.3,GolS2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g085520.3,PURA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g085730.3,AOC,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g085870.3,CER6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g086180.3,C5-SD,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g086880.3,fdh,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g086930.3,hb-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g087180.3,MED4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g087210.3,SAP11,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g087870.3,MDR1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g088100.3,EXP5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g088180.3,NAC2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g088190.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g088345.1,WRKY3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g089160.3,CYP85A1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g089190.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g089540.3,CO1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g089620.3,PDH,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g090400.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g090680.3,krp4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g090730.3,fw2.2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g090820.3,HSTF24,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g091490.3,FRK3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g091510.3,GGP2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g091840.3,SlpCLV1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g091980.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g091990.3,ACS3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g092110.3,PSK4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g092120.3,PSK2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g092930.1,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g092980.3,cycD3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g093050.3,WRKYIId-4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g093150.3,AP2c,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g093300.3,DNApolalpha,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g093520.3,RFP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g093740.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc02g094120.3,SO,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc02g094500.3,stv3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g005570.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g005870.3,eIF4E1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g006150.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g006800.1,TCP21,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g006830.3,FYFL,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g006840.3,TRM25,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g006860.3,Frk1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g006880.3,GA20ox1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g006970.1,SBT2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g007240.3,SPM1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g007260.3,CNGC6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g007960.3,CrtR-b2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g019790.3,AGAL,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g019820.3,TIP3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g019890.3,TBG7,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g020010.1,Lemir,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g020050.3,cevi57,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g025170.1,GRAS10,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g025320.3,AAT2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g025560.3,CPT3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g025850.3,rem-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g025870.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g026250.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g031670.3,cpk1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g031860.3,Psy1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g032040.3,TMT1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g034220.3,RBCS2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g043710.1,LecRK,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g044300.3,AP2a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g044380.3,EZ2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g058910.3,LAT56,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g059490.1,SlmRPK2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g065340.3,PHO1a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g071720.3,VTE5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g078000.3,VGT1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g078400.3,ACT,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g079880.3,XSP10,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g080190.3,DMR6-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g082600.3,CB5-A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g083530.3,ACI39,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g093130.3,XTH3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g093470.3,APS-AA2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g093610.1,ERF-A2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g093690.3,MSRA4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g093890.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g093930.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g095770.3,WRKY80,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g096070.3,PLC7,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g096290.3,PIP1-7,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g096350.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g096380.3,ProT2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g096390.3,ProT1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g096670.3,PP2C-2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g096730.3,GMP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g096820.3,ALMT4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g096870.3,cdc20-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g096920.3,Xpo1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g097270.3,LTC,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g097450.3,SWI3A,1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g097910.3,PYD1A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g097920.1,MKK4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g098050.3,CaM6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g098100.3,AKR4B,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g098210.3,CNGC15,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g098240.3,LeGAD1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g098260.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g098320.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g098460.3,FEY,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g111050.3,CIP5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g111720.3,MSRA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g111730.3,CysEP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g112310.1,LecRK,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g112390.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g113120.3,WRKY72A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g113270.3,VAHOX1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g113620.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g113800.3,amadh2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g114030.3,Per1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g114150.3,ALDH2B7a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g114340.3,DXR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g114600.3,Asc1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g114960.3,ABCB21,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g115650.3,eIF-5A1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g115890.3,EXPA10,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g116100.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g116320.3,TCP16,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g116910.3,CCR2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g117810.3,ABCI4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g117980.3,Wfi1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g118290.3,ARF2A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g118340.3,CD4A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g118540.3,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g118740.3,PIN1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g119040.3,ArcA2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g119050.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g119060.3,alpha-DOX2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g119370.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g119490.3,MKK3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g119640.3,ALMT5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g119740.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g120380.3,IAA19,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g120475.1,TIP2-2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g120500.3,IAA27,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g121070.3,hxk1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g121210.3,MED6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g121540.3,TBG3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g121840.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g121990.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g122190.3,SLJAZ3,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc03g122340.3,loxD,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc03g123760.3,pds,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g005100.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g005610.3,NAP2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g005800.3,HZ24,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g007070.3,NRC4a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g007240.1,IPT2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g007260.3,MKS2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g007690.3,PIN3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g008050.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g008380.3,BBR/BPC1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g008480.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g008540.3,TH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g008870.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g009200.3,GSA-AT,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g009620.3,CS2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g009800.3,CDPK2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g009810.3,PELOTA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g009950.3,cdc5,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g010200.1,ABCG8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g010210.1,ABCG9,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g011360.3,ypt2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g011500.3,actin,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g011620.3,FKBP20-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g014470.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g014510.3,gts1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g014700.3,MED11,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g015040.3,FKBP16-3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g015290.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g015570.3,SAP13,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g015680.3,ide,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g016430.3,CKX5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g040190.1,LCY1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g045660.3,MLH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g049010.3,XRN4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g049070.3,gluII,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g049090.3,MLO,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g049120.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g049360.3,ADCS,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g050930.3,VDE,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g051190.3,CYP97A29,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g051510.1,CURL3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g051860.3,SK,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g054320.3,NITF,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g054690.3,AO,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g054710.3,PAT,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g054730.3,ST2.2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g055170.3,AN35,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g056270.3,ER66,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g056310.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g056390.3,IDI1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g056640.1,CLV2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g056650.3,ABCI5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g058100.3,MT3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g058150.3,MTA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g064540.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g064550.1,GRAS6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g071610.3,ASR1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g071880.3,LeVP3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g072160.3,DDTFR8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g072900.1,DREB3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g073990.3,AN34,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g074170.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g074700.3,h52,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g076360.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g076527.1,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g076850.3,IAA9,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g077210.3,KN1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g077260.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g077440.3,SQO1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g077490.3,ANT,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g077980.1,CZFP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g078420.1,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g078470.3,cycd3c3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g078690.3,ALC,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g078710.2,Phyt4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g078760.3,CIP4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g078840.3,AREB1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g078940.3,dem,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g079360.1,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g079600.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g079730.1,aos,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g079960.1,GGPS2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g079980.3,BZR1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g080160.3,CSN4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g080460.3,SFP4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g080610.3,OTC,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g080730.3,MPK9,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g081170.3,BBR/BPC4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g081190.3,vsf-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g081290.3,TLOG1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g081400.3,HXK4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g081490.3,TUB,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g081530.1,DNAJ,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g081870.3,exp11,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g082010.1,PETE,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g082030.1,ODC,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g082760.3,SWI3B,1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc04g082840.3,cdkB2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc04g082880.3,PFP-ALPHA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g005020.3,GWD,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g005490.3,ca1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g005700.3,ADH2B7d,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g005710.3,SPDSY,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g006590.3,PP2Ac1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g007100.3,WHY1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g007160.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g007180.3,LEJA1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g007510.3,RdRP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g007770.3,NAP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g007850.2,Bs4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g007890.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g007940.3,rnalx,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g008060.3,PIN4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g008180.3,qpt,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g009720.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g010280.3,ASCL,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g010420.2,SAMDC,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g012080.3,CB5-B,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g012090.3,HPPK-DHPS,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g012270.3,ASS,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g013290.1,fen,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g013320.1,Pto,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g014260.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g014290.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g014470.3,GAPC2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g017760.3,ACAT1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g021390.3,CYP716A44,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g023800.3,RAN1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g048760.3,PMM,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g049970.3,MAPK6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g050120.3,ME2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g050560.1,MTB2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g050940.3,GCP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g051060.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g051550.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g051660.1,ASH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g052030.1,ERF4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g052070.3,Rab1C,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g052610.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g052620.3,Coi1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g052850.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g053010.1,LecRK,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g053150.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g053330.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g054200.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g054210.3,PKE1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g054220.3,Sip1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g054390.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g054740.3,ST4.1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g054760.3,DHAR1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g055030.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g055220.1,OFP10,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g055230.2,RPS17,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g055240.3,LeMYBI,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g055310.3,CCH,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g055760.3,IDI2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g055940.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc05g056040.3,ARF24,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g056070.3,CAB6A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g056170.3,PAL2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc05g056295.1,BCCP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g005150.3,APX2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g005160.3,APX1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g005170.3,MPK3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g005310.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g005330.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g005470.3,MT2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g005500.3,TPK1b,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g005750.3,SMO4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g006080.3,THIC,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g007180.3,AS1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g007510.3,UBC3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g007520.3,ACI29,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g008010.3,MED18,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g008020.3,ZNHIT,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g008170.3,L23,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g008200.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g008400.2,Mi-1B,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g008450.3,Mi-1C,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g008590.3,IAA17,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g008610.3,WRKYIId,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g008790.3,Mi-1F,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g008800.2,Mi-1G,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g009130.3,MHX,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g009400.3,PIIGLB1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g010033.1,MLO,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g011350.3,PIP2-4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g034020.3,MSRA3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g034030.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g034110.3,APS1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g036260.3,CrtR-b1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g036290.3,HSP90,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g036305.1,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g043150.3,ccs52B,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g048540.3,ABCI6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g049050.3,EXP2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g050630.3,ncADH,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g050930.3,Endo-LE,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g051060.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g051400.3,Fad7,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g051750.3,CYP90A5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g051800.3,EXP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g053290.1,SAUR59,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g053610.3,MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g053710.3,ETR4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g053830.3,IAA7,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g053840.3,IAA4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g054010.3,5PT3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g054260.1,psaD,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g054270.3,STP11,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g059730.2,PIN6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g059740.3,ADH2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g059760.3,SEU1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g060010.3,TPS,TPS: N-terminal domain only (PF01397); possibly partial,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g060013.1,TPS,TPS: metal-binding domain only (PF03936); possibly partial,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g060110.3,AAP2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g060120.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g060230.3,NAM1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g060250.3,ALD3H1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g060760.3,TIP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g061030.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g063070.3,JERF1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g065100.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g065190.1,TCP13,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g065240.3,FUT13,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g065430.3,CYP716E26,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g065475.1,RBM8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g065680.3,CycA2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g065820.3,ERF-H1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g066180.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g066340.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g066370.3,WRKY31,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g066440.3,Hxk2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g068090.3,PLDa1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g068160.3,SNF4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g068440.3,CCR1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g068460.3,WRKY40,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g068870.3,ICE1a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g068930.2,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g069045.1,GST-T4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g069430.3,FUL1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g069760.3,Dof22,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g069850.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g070900.3,TCP17,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g070980.3,UBC1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g070990.3,WRKY72b,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g071000.3,ADH12A1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g071230.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g071680.3,HDA3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g071810.1,SOBIR1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g072370.3,BBR/BPC5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g072380.3,dhbK,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g073180.3,CIP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g073190.3,FRK2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g073320.3,GGP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g073390.3,FTA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g073640.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g073730.2,EIL4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g074090.3,DWF5-2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g074120.3,BL2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g074350.3,SP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g074730.3,AGO5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g074740.3,tVPS41,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g074820.3,TIP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g074910.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g074940.3,ABCF2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g075000.3,FERN,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g075150.3,ARF10B,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g075650.3,TIP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g075660.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g076020.3,Hsc70.1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g076140.3,MT4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g076220.3,exp18,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g076270.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g076350.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g076660.3,pcna,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g076770.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g082440.1,CIPK11,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g082460.1,OFP14,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g082510.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g082590.1,PTI6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g082600.3,UBC3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g082980.3,HYD1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g083230.3,GCH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g083780.3,L23,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g083900.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc06g083980.2,MTB3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g084070.3,IAA2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc06g084120.3,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc07g005210.3,TIL',Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g005390.3,ALDH11A3a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g005560.3,eIF-5A2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g005760.3,hqt,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g006380.3,TPP3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g006500.3,TPS1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g006750.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc07g006900.2,PIN2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g007120.3,T12,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g007250.3,mcpi,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g007600.3,VP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g007750.3,TGAS118,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g007760.3,DEFL1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g007790.3,sps,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g007870.3,opr3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g008240.3,Glb1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g008340.3,ABCE1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g008620.1,Eix1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g008630.1,Eix2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g008660.3,rps16,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g008670.3,TRM5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g009380.3,XET2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g015860.3,PDF1A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g016150.3,DDTFR10,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g016180.3,ARF19A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g017780.3,LHA4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g018270.3,VIN3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g018300.3,RPA32a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g019440.3,AGP-S2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g020860.3,TPx1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g026650.3,ACO5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g026675.1,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc07g032640.2,OEE1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g040690.3,NPR1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g040910.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc07g040960.1,SRG2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g042170.3,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc07g042250.3,Cpn21,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g042550.3,sus3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g043310.3,GABA-TP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g043420.3,gad2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g043460.3,GAME6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g043490.1,GAME1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g044860.3,PSBP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g044980.3,NML2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g045000.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc07g045160.3,PFK,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g045480.3,PHYF,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g047610.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc07g047740.3,TPX2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g047780.3,CIP6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g049280.3,PFP-BETA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g049310.3,pGlcT4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g049500.3,AGO6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g049530.3,ACO1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g049550.3,EFE,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g049690.3,HPL,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g052980.3,XTH16,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g053260.3,tft9,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g053630.3,GLK1,1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc07g054210.3,POR2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g054880.3,MKS1e,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g055290.3,Rab11a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g055860.3,PP5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g056350.3,MAPK12,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g056570.1,NCED1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g056580.3,ETR2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g056670.3,GA2ox2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g061720.3,GA2ox4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g061730.3,GA2ox5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g061990.3,SppS,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g062270.3,GGH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g062400.3,MBF1c,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g062530.3,ppc2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g062570.3,Fni3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g062650.3,mMDH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g062970.3,DIG3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g063260.3,MLO,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g063410.3,JA2L,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g063420.3,NAC4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g063940.2,GRAS2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g064090.3,FIE,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g064600.3,CHRDi,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g064610.3,CDPK1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g064680.3,ATG8a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g064890.1,ERF7,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g064950.3,TIG,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g065210.3,TKR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g065610.1,LecRK,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g065820.3,CBL2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g065840.2,HSC80,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g065980.3,SIP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g066220.3,WRKY2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g066260.3,Pic1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g066310.3,PSBR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g066480.3,FLACCA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g066580.3,MST1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc07g066670.3,TPS,TPS: metal-binding domain only (PF03936); possibly partial,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc07g066675.1,TPS,TPS: N-terminal domain only (PF01397); possibly partial,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g005010.3,G,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g005170.3,HsfA1a,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g005260.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g005610.3,CYP707A2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g005720.3,TPS,"TPS: N-terminal + metal-binding domains (PF01397, PF03936)","Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g006320.3,WRKYIId-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g006740.3,AADC2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g006960.3,CAC,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g007420.3,ldh2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g007790.3,HMGS2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g014000.3,LOX1.1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g014130.3,IPMS2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g015870.3,MLO2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g016720.1,NCED2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g021820.3,IAA29,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g023470.3,GPS,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g036640.3,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g036660.3,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g060810.3,EBF2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g060920.3,ail,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g061130.3,HY5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g061920.2,CKX3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g061930.3,CKX1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g061970.3,spe4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g062340.3,HSP17.4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g062660.3,RanBP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g062950.3,MAX1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g063080.3,SQD1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g065330.3,CBL10,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g065380.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g065610.3,VPE3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g066110.3,profilin,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g066190.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g067070.3,DNMT2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g067340.3,WRKY46,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g067360.3,WRKY45,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g068160.2,FZY2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g068180.3,RPL37,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g068320.3,3R-MYB,3R-MYB: 3 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g068680.3,AADC1A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g068700.1,THT7-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g068730.1,THT1-3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g074560.3,ABC1K1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g074580.3,NCS6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g075430.3,ABCG22,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g075760.3,Rmc,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g076010.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g076140.3,PMK2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g076230.1,BBR/BPC3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g076400.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g076460.3,DAD1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g076710.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g076930.1,MYC2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g077080.1,GAME3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g077210.3,5PT1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g077230.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g077770.3,CBL1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g078070.3,Rab1A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g078190.1,ERF-B13,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g078340.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g078695.1,MTSHP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g078800.2,HAM,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g078850.3,ldh1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g079080.3,lin9,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g079160.3,VPE4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g079270.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g079430.3,cuAO,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g079570.3,SMO1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g079830.3,CCS,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g080080.3,ccs52A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g080120.3,THox2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g080130.3,PLDb1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g080150.1,TCP20,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g080370.3,NAOAT,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g080580.3,3R-MYB,3R-MYB: 3 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g081010.3,GSH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g081190.3,PIP1-5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g081495.1,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g081530.3,MDHAR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g081540.3,ACS1B,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g081570.3,ISPF,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g081620.3,Cel1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g081690.3,RBOH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g082250.3,Cel8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g082820.3,BiP/grp78,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g082850.3,ABCF4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc08g082890.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc08g083210.3,cel5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g005000.1,LecRK,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g005030.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g005080.1,Ve2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g005620.3,GRX1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g007210.3,TOP6A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g007570.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g008000.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g008030.1,TCP19,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g008100.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g008250.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g008280.2,SAM3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g008650.3,FKBP16-4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g008670.3,TD2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g008920.3,GGPS,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g009020.3,PGH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g009040.3,HYD2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g009100.3,HSFA3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g009130.3,PSK1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g009170.3,ACI14,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g009260.3,FBA7,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g009390.3,AFRR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g009560.2,SP9D,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g009590.1,SAP8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g010180.3,spy,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g010210.3,Cel2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g010820.3,3R-MYB,3R-MYB: 3 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g010840.1,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g010860.3,EXPA4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g011760.3,TIM10,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g011780.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g011920.3,UCP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g014250.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g014350.3,GPAT6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g014380.3,LAX1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g015380.1,PYL9,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g015770.3,WRKY81,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g018220.2,tm-2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g018790.3,SSR1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g020110.3,RNaseLER,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g057670.3,FKBP15-2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g059040.3,FBA4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g059970.3,sumo,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g061280.3,krp2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g064370.3,ADH3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g065640.3,EOL1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g065900.3,GR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g065940.3,LSM4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g066410.2,Pht1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g072830.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g072870.3,L23,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g074270.3,GID1b-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g074830.3,wee1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g075210.3,TFHS1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g075360.3,cellulase,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g075420.3,ERF2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g075440.3,NR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g075820.3,ht2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g082690.3,ELIP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g082990.3,GME2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g083010.3,NTH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g083200.3,Lyk8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g089610.3,ETR6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g090100.3,CRY2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g090130.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g090330.3,HrBP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g090430.3,CYN,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g090580.3,eIF(iso)4E,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g090610.3,L23,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g090700.1,SSADH,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g090730.2,AMT1-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g090790.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g090840.3,GATB,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g090870.3,MSH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g090910.2,IAA13,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g091030.3,BAM1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g091565.1,COQ6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g091780.3,krp1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g091880.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g092170.2,TBG2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g092380.3,SAHH,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g092470.2,TPS14,"TPS: N-terminal + metal-binding domains (PF01397, PF03936)","Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc09g092520.3,BR1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g092690.3,FKBP65,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc09g098150.3,MCA1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g005060.3,CTOMT1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g005080.3,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g005240.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g005390.3,TPS,"TPS: N-terminal + metal-binding domains (PF01397, PF03936)","Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g005460.3,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g006130.1,ERF36,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g006290.3,CHRD,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g006580.3,RPL8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g006900.3,POR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g007260.3,Ubc13-2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g007550.3,DEAD31,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g007600.3,GLO2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g007690.3,CAB-8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g007960.1,AOS3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g008520.3,GH3-10,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g009110.1,ERF3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g018250.2,ACI39,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g039270.2,FKBP20-2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g044670.2,phyA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g047140.2,SERK3A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g047170.2,ST1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g047640.2,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g049360.2,CycA3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g052470.1,fsm1,1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g052660.2,RPS25,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g052745.1,TPS,TPS: metal-binding domain only (PF03936); possibly partial,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g054840.2,XIP1-1-beta,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g055260.2,LAX5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g055410.2,THM27,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g055630.2,PIP2-9,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g055810.2,CHI9,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g074500.2,ICDH1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g075100.2,ltpg1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g076460.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g076790.2,LAX4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g077010.2,CaM5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g077110.1,TFIIIA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g078190.2,DRM6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g078310.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g078370.2,PIN9,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g078430.2,DP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g078490.2,SIP1-3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g078720.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g078770.2,LE25,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g079080.2,SAP5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g079240.2,SUN,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g079470.3,gldh,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g079860.2,Q`b,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g080320.2,PURA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g080500.2,Tom52,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g080780.2,TGA2.3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g080880.2,PIN7,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g080960.1,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g081170.2,CaM2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g081190.2,LRP,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g081320.1,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g081510.2,ER69,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g081650.2,CRTISO,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g082020.2,LOG7,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g082030.2,2-CP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g083340.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g083460.1,SAP9,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g083795.1,CYP97C11,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g083900.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g084150.2,LOG6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g084250.1,LecRK-VIII,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g084370.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g084860.1,LecRK,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g085450.2,CIPK14,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g085620.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc10g085850.1,TPSI1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g086220.2,OPR1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g086410.3,Hsc70.2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g086500.1,det2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc10g086520.2,EXPA6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g005090.2,CycA1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g005620.1,NAGK,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g005670.2,ubq1-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g006000.2,MAPKKKalpha,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g006180.2,ETR5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g006350.1,pyrB,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g006720.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g007020.2,MDC,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g007830.2,ptpkis1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g007990.2,mdh,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g010470.2,TFT1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g010570.2,J,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g010660.2,SGT1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g010850.2,dxs2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g011030.2,Prg1,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g011050.2,THM16,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g011210.2,RSI-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g011260.1,GAI,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g011300.2,RGL,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g011770.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g011920.2,GAD2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g012410.2,IMP3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g012450.2,INT4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g012510.2,GRAS1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g013310.2,LAX3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g013480.2,ARF17,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g013810.2,NR,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g017300.2,csn5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g020040.2,HSP70,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g020670.1,TCP12,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g021060.2,ARPI,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g022470.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g030600.3,MET1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g033270.2,MAPKKKe,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g044320.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g044560.2,ABF4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g044910.2,Arf/Xyl1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g061770.2,SAP2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g065600.2,XET4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g065620.2,sir,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g065840.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g066390.2,SODCP.2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g066430.1,H2B-2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g066880.2,PSK3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g067280.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g068540.2,CPA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g068740.2,MBD5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g069030.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g069040.3,GLX1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g069190.2,ARF4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g069220.2,MLO,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g069260.2,ABCI9,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g069270.2,TBG5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g069380.2,HDS,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g069430.2,PIP2-6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g069500.2,ARF10A,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g069800.1,AOS2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g069850.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g071300.2,3R-MYB,3R-MYB: 3 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g071500.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g071680.2,tousled,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g072240.2,CaM5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g072260.2,ACI39,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g072300.2,ACI13,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g072310.2,20ox-3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g072320.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc11g072630.2,MAPK4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g072690.2,kdsA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g073050.2,ER43,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc11g073120.2,R2R3-MYB,R2R3-MYB: 2 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g005080.2,alpha-kGDH,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g005940.2,ACO2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g005950.2,COP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g006450.2,GABA-TP3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g006460.2,GAME4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g006470.2,GABA-TP2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g006570.2,TPS17,"TPS: N-terminal + metal-binding domains (PF01397, PF03936)","Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g006800.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g006850.2,LKT1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g006860.2,CYP734A8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g007230.2,IAA8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g008840.2,TBG4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g009020.2,mek1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g009090.2,MED20,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g009220.2,JAZ2,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g009470.2,HO1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g009560.2,EBF1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g010040.2,LAPA2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g010060.2,eIF-5A4,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g010130.1,CIPK6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g010320.2,TIL,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g010330.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g010860.2,tft8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g011270.2,ER49,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g011450.2,CAB13,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g013620.2,JA2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g014290.2,MBF1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g015860.2,FPPS1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g015880.2,Hsp90-1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g017240.2,tXET-B1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g017370.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g019460.2,mpka1;1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g019690.2,SIP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g040680.2,MAPK16,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g041880.2,NXD1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g044600.3,ME1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g044610.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g044630.2,PRO1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g044880.2,TBG1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g044910.2,copz2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g049070.1,ext1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g049400.2,JAZ,JAZ: tify (PF06200) + Jas (PF09425) on one isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g056220.2,PIP1-3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g056590.2,ERF-D2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g056790.2,SRN1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g056930.2,ST2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g057040.2,Cry1b,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g070100.2,MED25,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g087970.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g088670.2,CYP1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g089180.2,SFP6,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g089380.2,EXPA8,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g095860.2,cdc2A-2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g095910.2,VPE5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g096570.1,ARGOS,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g098160.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g098310.2,krp3,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g098350.1,infA,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g098370.2,1R-MYB (MYB-related),1R-MYB (MYB-related): 1 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g098980.2,Pti1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g099120.2,6R-MYB,6R-MYB: 6 MYB repeat(s) (PF00249) on best isoform,"Pfam HMM search (pyhmmer, gathering thresholds) of the Ensembl Plants release 53 tomato proteome; gene name from Expression Atlas where present"
+Solyc12g099190.1,VIF,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g099200.2,CIF1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g099490.2,cgi1,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g099700.2,LIP1P,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g099970.2,GAL83,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g099990.2,CaM5,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g100060.1,SAP10,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table
+Solyc12g100330.2,CMT2,Gene name from Expression Atlas (Ensembl Plants 53); no family call,Expression Atlas E-MTAB-11876 raw-counts table

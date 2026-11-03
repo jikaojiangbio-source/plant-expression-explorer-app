@@ -20,7 +20,8 @@ from plant_expression_explorer.validation import (
     ValidationReport,
 )
 
-DatasetSource: TypeAlias = Literal["demo", "uploaded"]
+DatasetSource: TypeAlias = Literal["demo", "case_study", "uploaded"]
+_SUPPORTED_SOURCES: tuple[str, ...] = ("demo", "case_study", "uploaded")
 CandidateStatus: TypeAlias = Literal["incomplete", "invalid", "valid"]
 CsvSource: TypeAlias = str | Path | IO[Any]
 DatasetTables: TypeAlias = tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]
@@ -74,6 +75,13 @@ APPLICATION_DATA_KEYS = (
 
 DEMO_DIRECTORY = Path(__file__).resolve().parents[1] / "data" / "demo"
 DEMO_SOURCE_LABEL = "Bundled synthetic demonstration data"
+CASE_STUDY_DIRECTORY = (
+    Path(__file__).resolve().parents[1] / "data" / "case_studies" / "tomato_ja_hairy_roots"
+)
+CASE_STUDY_SOURCE_LABEL = (
+    "Bundled real-data case study: tomato hairy roots, jasmonate vs mock "
+    "(Expression Atlas E-MTAB-11876)"
+)
 
 _TABLE_SPECS = (
     ("expression", "Expression matrix", "expression_matrix.csv"),
@@ -236,6 +244,47 @@ def load_demo_candidate(demo_dir: Path | None = None) -> CandidateResult:
     )
 
 
+def load_case_study_candidate(case_study_dir: Path | None = None) -> CandidateResult:
+    """Load and validate the committed real-data case-study tables.
+
+    The tables were produced offline by ``analysis/tomato_ja_hairy_roots``
+    (pyDESeq2 on public Expression Atlas counts). The application only reads
+    and validates them; it fits no model.
+    """
+
+    directory = CASE_STUDY_DIRECTORY if case_study_dir is None else Path(case_study_dir)
+    sources = tuple(
+        (key, table_name, directory / filename)
+        for key, table_name, filename in _TABLE_SPECS
+    )
+    missing_issues = tuple(
+        ValidationIssue(
+            code=IssueCode.DEMO_FILE_MISSING,
+            severity=Severity.ERROR,
+            table=table_name,
+            message=(
+                f"Required case-study file '{path.name}' is missing. Restore the "
+                "committed files or regenerate them with "
+                "analysis/tomato_ja_hairy_roots/run_case_study.py."
+            ),
+            example_values=(path.name,),
+        )
+        for _, table_name, path in sources
+        if not path.is_file()
+    )
+    if missing_issues:
+        return CandidateResult(
+            status="invalid",
+            tables=None,
+            report=ValidationReport(missing_issues),
+        )
+
+    return _load_and_validate_sources(
+        sources,
+        missing_code=IssueCode.DEMO_FILE_MISSING,
+    )
+
+
 def load_uploaded_candidate(
     expression_source: CsvSource | None,
     metadata_source: CsvSource | None,
@@ -277,7 +326,7 @@ def build_dataset_bundle(
 
     if report.has_errors:
         raise ValueError("Cannot build a dataset bundle from a report with Errors.")
-    if source not in ("demo", "uploaded"):
+    if source not in _SUPPORTED_SOURCES:
         raise ValueError(f"Unsupported dataset source: {source!r}.")
     if (
         len(tables) != 3
@@ -361,7 +410,7 @@ def record_candidate_failure(
 
     if not report.has_errors:
         raise ValueError("Candidate failure feedback requires at least one Error.")
-    if source not in ("demo", "uploaded"):
+    if source not in _SUPPORTED_SOURCES:
         raise ValueError(f"Unsupported candidate source: {source!r}.")
     if not source_label.strip():
         raise ValueError("Candidate failure feedback requires a source label.")

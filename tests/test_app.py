@@ -798,8 +798,8 @@ def test_upload_page_splits_demo_and_upload_flows_into_tabs() -> None:
 
     assert not app.exception
     tab_labels = [tab.label for tab in app.tabs]
-    assert tab_labels == ["Use demo data", "Upload my own data"]
-    demo_tab, upload_tab = app.tabs
+    assert tab_labels == ["Use demo data", "Real case study", "Upload my own data"]
+    demo_tab, _case_study_tab, upload_tab = app.tabs
     assert any(
         "values are synthetic" in str(getattr(element, "value", ""))
         for element in demo_tab.children.values()
@@ -849,7 +849,7 @@ def test_upload_page_lists_phase_8_exploration_as_available() -> None:
 def test_upload_page_demo_load_and_reset_are_repeatable() -> None:
     app = AppTest.from_file("pages/1_Upload_Data.py").run()
 
-    app.button[0].click().run()
+    app.button(key="pee_load_demo").click().run()
 
     assert not app.exception
     bundle = app.session_state[CURRENT_DATASET_KEY]
@@ -871,7 +871,7 @@ def test_upload_page_demo_load_and_reset_are_repeatable() -> None:
         element.value for element in app.get("code")
     ]
 
-    app.button[1].click().run()
+    app.button(key="pee_reset_data").click().run()
 
     assert not app.exception
     assert CURRENT_DATASET_KEY not in app.session_state
@@ -880,8 +880,8 @@ def test_upload_page_demo_load_and_reset_are_repeatable() -> None:
     assert app.session_state[DE_RESULTS_UPLOAD_KEY] is None
     assert "No validated dataset is currently active" in _visible_text(app)
 
-    app.button[0].click().run()
-    app.button[1].click().run()
+    app.button(key="pee_load_demo").click().run()
+    app.button(key="pee_reset_data").click().run()
 
     assert not app.exception
     assert CURRENT_DATASET_KEY not in app.session_state
@@ -3152,9 +3152,17 @@ def test_navigation_and_documentation_stay_accurate() -> None:
     assert matching[0].proto.label == "Explore Gene Expression"
 
     repository = Path(__file__).parents[1]
-    readme = (repository / "README.md").read_text(encoding="utf-8")
+    front_page = (repository / "README.md").read_text(encoding="utf-8")
+    # The detailed per-phase and per-page documentation moved from the README
+    # into docs/ (November 2026); the README must link to both files.
+    assert "docs/USER_GUIDE.md" in front_page
+    assert "docs/CHANGELOG.md" in front_page
+    readme = "\n".join(
+        (repository / name).read_text(encoding="utf-8")
+        for name in ("README.md", "docs/USER_GUIDE.md", "docs/CHANGELOG.md")
+    )
     guide = (repository / "AGENTS.md").read_text(encoding="utf-8")
-    assert "This application currently provides" in readme
+    assert "What the app does" in readme
     assert "Phase 8 descriptive differential-expression exploration" in readme
     assert "Phase 9 descriptive gene-expression lookup" in readme
     assert "Phase 10 descriptive result exports" in readme
@@ -3167,3 +3175,31 @@ def test_navigation_and_documentation_stay_accurate() -> None:
         assert "volcano plot" in normalized
         assert "UTF-8 CSV" in normalized
     assert "no partial set of download buttons" in " ".join(readme.split())
+
+
+def test_de_page_status_plots_use_polarity_colours_with_grey_context_underneath() -> None:
+    app = _run_de_page(_de_uploaded_bundle())
+
+    assert not app.exception
+    expected = {
+        "Positive fold-change rows meeting both thresholds": "#e34948",
+        "Negative fold-change rows meeting both thresholds": "#2a78d6",
+        "Evaluable rows that do not meet both thresholds": "#b4b3ad",
+    }
+    status_figures = [
+        figure
+        for figure in _plotly_figures(app)
+        if {trace.get("name") for trace in figure["data"]} <= set(expected)
+        and figure["data"]
+    ]
+    assert len(status_figures) == 2  # volcano and MA plot
+    for figure in status_figures:
+        for trace in figure["data"]:
+            assert trace["marker"]["color"] == expected[trace["name"]]
+        below = [
+            index
+            for index, trace in enumerate(figure["data"])
+            if trace["name"] == "Evaluable rows that do not meet both thresholds"
+        ]
+        if below:
+            assert below == [0]

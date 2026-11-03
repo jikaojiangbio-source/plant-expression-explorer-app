@@ -1,0 +1,505 @@
+# Development history
+
+This file preserves, verbatim, the phase-by-phase development notes that were
+previously in the README (phases 4 to 12). They document how each feature's
+scientific boundaries were decided. The current overview is in
+[`README.md`](../README.md); the feature reference is in
+[`USER_GUIDE.md`](USER_GUIDE.md).
+
+## Unreleased: real-data case study (November 2026)
+
+- Added `analysis/tomato_ja_hairy_roots/`: a reproducible offline re-analysis
+  of public tomato hairy-root RNA-seq (Expression Atlas E-MTAB-11876,
+  jasmonate vs mock, n = 3 per group) with pyDESeq2, Pfam-based TPS / MYB /
+  JAZ family calls, a literature positive control, and a cross-check against
+  Expression Atlas's own DESeq2 analysis.
+- Added the bundled case-study dataset (`data/case_studies/`) and a
+  "Real case study" tab on Upload Data; the application still fits no model.
+- Restructured the README; moved phase notes here and feature reference to
+  `docs/USER_GUIDE.md`; added a licence and an AI-assistance statement.
+- Drafted with Claude (Anthropic); see the README.
+
+## Phase 4 data-loading workflow
+
+The Upload Data page provides two routes:
+
+1. Load the three bundled synthetic demo CSV files.
+2. Supply an expression matrix, sample metadata, and precomputed
+   differential-expression results.
+
+Uploaded files are not fully validated until all three required sources are
+present. Both routes use the existing CSV reader and the same Phase 2 aggregate
+validation API. CSV and header failures are presented as structured Errors
+rather than raw exception tracebacks.
+
+After successful validation, the application stores one complete current
+dataset bundle containing the three DataFrames, their source and source label,
+and the complete validation report. A frozen dataclass prevents bundle fields
+from being rebound, but it does not make nested pandas DataFrames intrinsically
+immutable. Application helpers and rendering therefore do not modify these
+DataFrames in place.
+
+Validation outcomes control activation as follows:
+
+- Error — the candidate does not become the current dataset.
+- Warning — shown to the user but does not block activation.
+- Information — shown to the user and does not block activation.
+
+If a valid dataset is already active and a replacement candidate fails, the
+previous successfully validated bundle remains active. The failed candidate is
+reported separately so its filenames or source are never presented as the
+active dataset.
+
+**Reset Data** removes the current bundle, failed-candidate feedback, uploader
+widget values, and legacy application data keys from the active session. It
+does not delete user files or bundled demo files from disk. Uploaded tables are
+retained in the active Streamlit session for application use; the application
+does not intentionally write uploaded tables to project files.
+
+Phase 4 performs data loading and validation only. Phase 5 consumes its single
+active validated dataset bundle without creating another session-state copy.
+
+## Phase 5 descriptive sample quality control
+
+The Sample Quality Control page describes the active expression matrix and its
+sample metadata. It reports gene, sample, expression-cell, condition, missing,
+non-finite, zero, and negative-value counts; whether metadata and expression
+sample orders correspond; constant sample columns; and zero-variance genes.
+
+For every sample, in expression-column order, it reports the mapped condition,
+gene count, missing/non-finite/zero/negative counts, minimum, first quartile,
+median, arithmetic mean, third quartile, maximum, standard deviation, and
+interquartile range. Quartiles use pandas linear interpolation. Standard
+deviation uses pandas sample standard deviation with `ddof=1`, and IQR is
+`Q3 - Q1`. For a one-gene matrix, the `ddof=1` standard deviation is undefined:
+the computational result retains `NaN`, while the page displays `N/A` from a
+separate display copy.
+
+A constant sample is a sample column whose expression values are exactly
+identical across all genes. A zero-variance gene is a gene row whose expression
+values are exactly identical across all samples. Both use exact equality. They
+are reported but never removed.
+
+Safely coercible numeric strings are converted only in a temporary numeric
+copy used for calculation. The active expression and metadata DataFrames,
+including their values, dtypes, indices, row order, and column order, are not
+modified. Missing, non-coercible, and infinite expression cells produce a
+controlled QC error; cells, genes, and samples are never silently skipped,
+imputed, trimmed, transformed, or discarded.
+
+The result is held in a frozen dataclass. Freezing prevents result fields from
+being rebound, but it does not make nested pandas DataFrames intrinsically
+immutable.
+
+These summaries are descriptive and do not establish biological validity.
+Mean, standard deviation, median, IQR, zero values, and negative values have
+scale-dependent interpretations, and uploaded matrices may already have been
+filtered upstream. The page does not assign quality scores, classify unusual
+samples, recommend exclusion, or automatically filter data. It performs no
+normalisation, PCA, correlation, clustering, batch correction, hypothesis
+testing, or differential-expression inference.
+
+## Phase 6 descriptive sample correlation
+
+The Sample Correlation page calculates correlation between every pair of
+sample columns across the gene rows in the active expression matrix, using
+either Pearson (linear correlation; the default) or Spearman (rank
+correlation) — a user-selected, disclosed choice, never a silent default
+substitution — and never calculates correlation p-values or confidence
+intervals for either method.
+
+For `n` expression samples, the correlation matrix is `n × n`. Both axes follow
+the original expression sample-column order; the matrix is never clustered or
+reordered by similarity. Non-constant sample diagonal values are `1.0`.
+A constant sample has exactly identical expression values across every gene,
+so its correlations (Pearson or Spearman alike), including its diagonal, are
+undefined and remain `NaN` in the computational result. Undefined correlations
+are never replaced with zero or one.
+
+The unique sample-pair summary excludes the diagonal and contains each unordered
+pair exactly once, for `n(n-1)/2` rows. Its deterministic order follows
+expression-column combinations: `(0,1), (0,2), …, (0,n-1), (1,2), …`.
+Undefined pairs remain present and are marked as undefined.
+
+The per-sample summary excludes self-correlation. It reports defined and
+undefined non-self pair counts plus minimum, median, mean, and maximum
+correlation calculated only from defined pairs. When no defined pair exists,
+the numerical summaries remain `NaN`.
+
+Condition-pair summaries follow condition first-appearance order while walking
+the expression-matrix sample columns. Metadata row order does not control this
+order. A condition with `n` samples has `n(n-1)/2` possible within-condition
+pairs; two different conditions of sizes `n_a` and `n_b` have `n_a * n_b`
+possible between-condition pairs. Defined and undefined pairs are counted
+separately, and medians use defined correlations only. These summaries do not
+perform a condition-comparison test or validate the experimental design.
+
+A helper called directly with one non-constant sample and at least two gene
+rows returns a `1 × 1` matrix containing `1.0`; a single constant sample returns
+a `1 × 1` matrix containing `NaN`. In either case there are no unique non-self
+pairs and the per-sample correlation statistics remain undefined. Although the
+validated application input contract normally requires more than one sample,
+these behaviours make the pure computation API explicit. A one-gene matrix
+cannot support either correlation method and produces a controlled
+`INSUFFICIENT_GENE_ROWS` error.
+
+Safely coercible numeric strings are converted only in a temporary deep copy.
+Missing, blank, boolean, complex, non-coercible, or infinite expression cells
+produce a controlled correlation error; booleans are not treated as the numbers
+zero or one. No pairwise deletion, imputation, normalisation, gene filtering,
+sample filtering, or transformation is performed. Conditions are mapped by
+exact sample ID even when metadata row order differs from expression column
+order.
+
+Expected input failures have a fixed priority: table types; expression row,
+column, and identifier structure; metadata columns, identifiers, and conditions;
+cross-table sample matching; then expression values in missing/blank,
+boolean/complex, non-coercible, and infinite order. This keeps the reported
+`CorrelationErrorReason` deterministic when more than one defect is present.
+
+Heatmap data contain exactly `row_sample`, `column_sample`, `correlation`,
+`defined`, and `correlation_label`. Observations are deterministic structural
+facts only; they do not assign strength, quality, anomaly, rank, or exclusion
+labels.
+
+The active expression and metadata DataFrames retain their values, dtypes,
+indices, and order. Result tables are newly constructed. The frozen result
+dataclass prevents field rebinding but does not make nested pandas DataFrames
+deeply immutable. Matrix and summary rounding, plus display of undefined values
+as `N/A`, occur only on separate presentation copies.
+
+Pearson correlations are descriptive. Correlation does not establish biological
+validity and does not imply causation. Input scale, transformation, gene
+filtering, and gene selection affect the result. High correlation does not
+prove replicate validity, while low or negative correlation alone does not
+prove that a sample is unsuitable. Unusual relationships may warrant review but
+are not automatic exclusion criteria. No samples or genes are modified or
+removed, and Phase 6 performs no PCA, clustering, distance analysis, batch
+correction, hypothesis testing, or differential-expression inference.
+
+Phase 6 itself defines the correlation calculations and display contract.
+Phase 10 provides dedicated CSV downloads of the current correlation result
+tables without changing these calculations.
+
+The synthetic demo values, fictional gene IDs, and constructed p-values do not
+define real correlation thresholds or support tomato biological conclusions.
+
+## Phase 7 descriptive sample PCA
+
+The PCA page calculates a descriptive, unsupervised principal component
+analysis of the active expression matrix. Samples are PCA observations and
+genes are PCA features. Output sample order follows the original expression
+sample-column order; the matrix is never clustered or reordered. Sample
+conditions are mapped by exact `sample_id` and are shown only as visual
+colour coding; they are never used to fit the components.
+
+Each gene is mean-centred across samples in a temporary numeric copy before
+singular value decomposition (SVD); the active expression matrix is never
+rewritten. By default, genes are not scaled to unit variance. This preserves
+the relative variance structure of the supplied preprocessed matrix and
+avoids adding a separate standardization step. Genes with larger variance in
+the supplied matrix consequently contribute more strongly to the components;
+this is a disclosed analysis policy, not a claim that such genes are more
+biologically informative, and not a claim that this is a universally
+superior PCA method. Upstream normalization, transformation, filtering, and
+gene selection materially affect the result. No log transformation,
+normalisation, filtering, trimming, aggregation, reordering, or imputation is
+performed. All gene features are retained, including constant genes.
+
+A "Scale each gene to unit variance" checkbox (off by default) additionally
+divides each gene's centred values by its own sample standard deviation
+before decomposition ("correlation-matrix" PCA), so every non-constant gene
+contributes equally regardless of its magnitude on the supplied scale. A
+gene with exactly zero variance is kept at exactly zero rather than divided
+by zero. Neither mode is presented as universally superior; the choice and
+its effect on the result are both disclosed in the Method panel and the
+descriptive observations.
+
+PCA uses NumPy's singular value decomposition directly (`numpy.linalg.svd`).
+The component count is `min(sample_count - 1, gene_count)`. At least two
+sample columns are required to estimate variance; exactly one sample column
+produces a controlled `INSUFFICIENT_SAMPLE_COUNT` error rather than a
+degenerate result. Exactly two samples produce exactly one component, and no
+PC1-versus-PC2 plot is shown. One non-constant gene with at least two samples
+is permitted and proceeds with a descriptive observation that no
+dimensionality reduction occurs. Some constant genes are permitted and
+retained provided total variance remains positive, with a descriptive
+observation reporting their count; if every gene is constant across samples,
+the temporary centred matrix has no variation and PCA produces a controlled
+`ZERO_TOTAL_VARIANCE` error rather than an apparently successful result or
+arbitrary components. Rank-deficient matrices with positive total variance
+remain permitted. A trailing component with zero explained variance remains
+in the variance table rather than being dropped, and is distinct from the
+all-genes-constant case.
+
+Finite expression values are otherwise accepted regardless of magnitude, but
+if they cannot be safely represented through the float64 PCA calculation
+(for example, extremely large or extremely small magnitudes that overflow or
+underflow during variance, decomposition, or ratio calculations), PCA
+produces a controlled `NUMERICAL_RANGE_ERROR` rather than an uncontrolled
+failure, a misclassified `ZERO_TOTAL_VARIANCE` result, or non-finite scores
+or ratios. Values are never automatically rescaled, clipped, or rewritten;
+the source and temporary centred matrices are unchanged.
+
+Explained variance for component `j` is `singular_value_j**2 / (sample_count
+- 1)`. Explained-variance ratios use the sum of the reported components'
+explained variances as the denominator, so they sum to `1.0` within a small
+floating-point tolerance, not exactly. Singular values at or below a
+numerical-noise tolerance (scaled to the largest singular value, matrix
+dimensions, and floating-point precision) are reported as exactly `0.0` in
+the derived scores and explained variance; this is treatment of derived
+decomposition output only, never a change to the source or temporary centred
+expression matrix.
+
+Component ordering follows NumPy's SVD convention: singular values are
+non-increasing. When singular values are distinct, this defines component
+order unambiguously. When singular values are equal or numerically
+indistinguishable, the individual axes within that tied subspace are not
+uniquely identified: different NumPy, BLAS, or platform combinations may
+return a different, equally valid, orthonormal basis for the same tied
+subspace, even though the components' explained variance and the
+sample-to-sample distances they represent remain the same. A deterministic
+sign convention (the sample with the largest-magnitude score on a component
+is positive, ties broken by expression sample-column order) resolves the
+positive/negative ambiguity for a single non-degenerate component only; it
+does not identify axes inside a tied subspace, and pinning the NumPy version
+does not guarantee identical floating-point coordinates across platforms or
+BLAS implementations.
+
+The active expression and metadata DataFrames retain their values, dtypes,
+indices, and order. Result tables are newly constructed. The frozen result
+dataclass prevents field rebinding but does not make nested pandas DataFrames
+deeply immutable. Score and variance-table rounding for display occurs only
+on separate presentation copies.
+
+PCA is descriptive and unsupervised. Proximity in a PCA plot does not prove
+biological similarity or replicate validity, and separation between groups
+does not prove a condition effect or establish statistical significance.
+PCA does not identify failed or low-quality samples, does not calculate a
+hypothesis test, a confidence interval, or a correlation p-value, and does
+not perform clustering or differential-expression inference. No samples or
+genes are modified or removed. The synthetic demo values and fictional gene
+IDs do not define real PCA structure or support tomato biological
+conclusions.
+
+## Phase 8 descriptive differential-expression exploration
+
+The Differential Expression page displays the complete supplied, precomputed
+results table and assigns one exploratory status to every accepted row. Users
+choose an adjusted-p-value threshold in the inclusive range `[0, 1]` and an
+absolute `log2FoldChange` threshold strictly greater than zero. Comparisons are
+inclusive: positive matches require `padj` at or below the selected threshold
+and `log2FoldChange` at or above the positive threshold; negative matches use
+the corresponding negative boundary. Every other row with usable values is an
+other-evaluable row.
+
+A row is not evaluable when its supplied `padj` or `log2FoldChange` is missing
+or blank. Missing `pvalue` alone does not affect classification when the two
+classification fields are usable. Missing values remain missing, including
+`padj`; zero adjusted p-values remain valid zeros. Safely coercible numeric
+strings are converted only in temporary calculation Series. The original DEG
+table, its index, row and column order, values, dtypes, and additional columns
+are not rewritten. No identifier is trimmed, normalised, deduplicated, or
+silently intersected with expression data.
+
+These categories mean only that rows meet the current user-selected exploratory
+thresholds. Positive and negative labels refer solely to the sign of the
+supplied fold-change value because the application does not know the contrast
+direction or reference level. Threshold matches do not establish statistical
+significance or biological importance. Phase 8 does not calculate or modify
+p-values, run DESeq2 or another differential-expression model, process FASTQ
+files, create a volcano plot, or perform gene lookup. Phase 10 subsequently
+adds CSV downloads of the supplied and derived descriptive result tables; it
+does not change the Phase 8 classifications.
+
+## Phase 9 descriptive gene-expression lookup
+
+The Gene Expression page lets users select one exact `gene_id` supplied in the
+active expression matrix and inspect its preprocessed expression values across
+all samples. Gene options and result rows preserve expression-matrix order. No
+gene is selected by default, ranked, recommended, or looked up through aliases.
+
+Identifier matching follows the application's established contract: each
+validated source identifier is represented by exact `str(value)` for comparison
+and display. These representations are not trimmed, case-folded, normalized, or
+otherwise rewritten. The source DataFrames and their original scalar values,
+dtypes, indices, row order, and column order remain unchanged. The per-sample
+result table copies the original selected-row expression scalars; safely
+coercible numeric strings are converted only in independent numeric working
+data used for charting and descriptive summaries.
+
+Each result contains one row per expression sample column, in expression-column
+order. Conditions are mapped by exact sample ID even when metadata row order
+differs. A sample-set mismatch is a controlled error in both directions; Phase
+9 does not take an intersection, fill missing metadata, or reorder either source
+table.
+
+The per-sample chart contains unconnected points in explicit expression sample
+order. Condition colour provides context only. The condition-grouped table
+reports sample membership, count, minimum, median, arithmetic mean, maximum,
+and sample standard deviation (`ddof=1`) on the supplied scale. Standard
+deviation is undefined for a one-sample condition and is retained as `NaN` in
+the computational result while a separate display copy shows `N/A`. Derived
+statistics use scaled calculations to avoid overflowing intermediate sums. All
+returned statistics must be finite except that defined one-sample `NaN`; if a
+derived statistic cannot be represented safely as a finite float64 value, the
+lookup returns the controlled `NUMERICAL_RANGE_ERROR` and no partial summary.
+These are disclosed descriptive aggregations of the displayed values, not
+effect estimates, tests, confidence intervals, or evidence of biological
+replication.
+
+The pure lookup API defines a one-sample result, although the application's
+validated upload contract continues to require at least two expression sample
+columns. With one defensively supplied sample, the value and one-row condition
+summary remain available but an across-sample plot is omitted. One-condition
+data remain descriptive and do not create a between-condition comparison.
+
+Phase 9 performs no FASTQ processing, normalization, transformation, filtering,
+batch correction, imputation, statistical testing, differential-expression
+inference, contrast or reference-level interpretation, biological-importance
+classification, or volcano plotting. Phase 10 subsequently adds CSV downloads
+of the selected gene's descriptive results without changing lookup semantics.
+
+## Phase 10 descriptive result exports
+
+Each implemented analysis page provides dedicated downloads for its current
+successfully calculated descriptive result tables:
+
+- Sample Quality Control exports condition membership and per-sample statistics.
+- PCA exports full-precision explained variance and sample scores.
+- Sample Correlation exports the full matrix in ordered long form, plus
+  per-sample, unique-pair, and condition-pair summaries.
+- Differential Expression exports category counts and the complete supplied
+  results with the current exploratory status column. Both files include the
+  exact adjusted-p-value and absolute log2-fold-change thresholds applied to
+  every exported classification.
+- Gene Expression exports the selected gene's per-sample values and
+  condition-grouped descriptive summary; the exact selected `gene_id` is an
+  explicit column in both files.
+
+Downloads are built in memory and do not write files on the application server.
+They are generated from the underlying result DataFrames, not from rounded or
+`N/A`-formatted display copies. Result row and column order is retained and the
+active dataset and result objects are not mutated. Repeated export of the same
+result produces the same UTF-8 bytes with `\n` line endings.
+
+CSV is a serialized interchange format, not a lossless pandas archive. Exports
+do not include the pandas index or dtype metadata. Missing scalar values are
+written as empty fields, so CSV alone cannot distinguish a missing value from a
+source empty string. Tuple/list sample memberships are exported as compact JSON
+arrays in the `sample_ids` field, making exact membership boundaries explicit.
+No identifiers are placed unvalidated into filenames. Every download for a page
+is built before any download button is shown; unsupported objects, infinite
+values, invalid or conflicting columns, unsafe filenames, or serialization
+failures therefore produce one controlled error and no partial set of download
+buttons.
+
+CSV text cells are preserved without spreadsheet-specific prefixing. Some
+spreadsheet programs may interpret formula-like leading characters in untrusted
+text as formulas, so each download section tells users to review such content
+and import it as plain text when needed. The application does not silently alter
+identifiers or annotations to mitigate consumer-specific behaviour.
+
+These downloads do not recreate the original uploaded CSV bytes and are not
+described as backups of the source files. They do not add normalization,
+transformation, filtering, imputation, ranking, hypothesis testing,
+differential-expression inference, reference-level or contrast interpretation,
+biological-importance claims, chart-image export, Excel/ZIP packaging, or a
+combined report.
+
+## Phase 11 GitHub release readiness
+
+The repository pins Python 3.13.9 in `.python-version` and pins every direct
+Python dependency in `requirements.txt`. Continuous integration also pins the
+pip installer version. The `Tests` GitHub Actions workflow
+runs on pushes and pull requests targeting `main`, uses read-only repository
+contents permission, does not persist checkout credentials, pins third-party
+actions to immutable commit SHAs, installs the declared dependencies, runs
+`pip check`, and executes the complete pytest suite. Continuous integration is
+a second clean-room verification environment; the local `.venv` remains the
+acceptance environment used before commits.
+
+Contributor expectations, architecture boundaries, scientific wording rules,
+test requirements, and synthetic-fixture policy are documented in
+[`CONTRIBUTING.md`](../CONTRIBUTING.md).
+
+The workflow does not deploy the application, receive uploaded biological data,
+or use repository secrets. Creating a GitHub repository does not by itself make
+the Streamlit application publicly available. Any later hosted deployment must
+separately disclose its file-retention, logging, access-control, upload-size,
+and privacy policies before users submit non-demo data.
+
+## Phase 12 real-world usability
+
+Phase 12 makes precomputed differential-expression results optional. A dataset
+bundle with only a validated expression matrix and sample metadata is now
+active; Sample Quality Control, PCA, Sample Correlation, and Gene Expression do
+not require a differential-expression file, and the Differential Expression
+page explains that one was not supplied instead of blocking upload.
+
+Phase 12 also adds descriptive, optional dataset context (`DatasetProvenance`):
+a dataset title, organism/taxon, expression-scale description, upstream
+normalization method, reference genome/annotation, feature level, and a
+differential-expression contrast description, plus free-text notes. Every
+field is carried and displayed verbatim, in a fixed-width block that does not
+reinterpret whitespace, on every analysis page; it is never parsed, verified,
+or used in any calculation. The bundled synthetic demo dataset supplies its own
+fixed, disclosed context.
+
+Phase 12 improves CSV error clarity for common real-world upload mistakes
+without changing any validation rule's outcome:
+
+- A single-column CSV whose header contains `;`, a tab, or `|` is reported as a
+  likely delimiter mismatch (for example, a semicolon-separated European
+  spreadsheet export) instead of a confusing missing-column error.
+- A column pandas auto-names `Unnamed: N` (typically a spreadsheet export's
+  trailing empty column) is reported as a blank column header, naming the
+  likely cause.
+- A non-numeric expression or differential-expression value that looks like an
+  ad hoc missing-value placeholder (for example `-`, `.`, or `na`) receives an
+  added note to leave the cell blank instead, since such placeholders are not
+  treated as missing values automatically.
+
+Sample metadata may carry additional columns beyond `sample_id` and
+`condition` (for example `genotype`, `tissue`, `batch`, or
+`biological_replicate`); they are preserved and every analysis page that
+groups by condition (PCA, Sample Quality Control, Sample Correlation, Gene
+Expression) offers a "Group by" / "Colour points by" selector for any such
+column. This always relabels or rejoins already-computed results by exact
+sample ID, or recomputes only the same already-disclosed descriptive
+statistic (minimum/median/mean/maximum/standard deviation) for the new
+grouping; no PCA component or Pearson correlation is ever recalculated. The
+selected grouping column is shared across those four pages for the session
+(reset automatically to 'condition' whenever a new dataset is activated, or
+if the stored column does not exist on the active dataset's metadata).
+
+The Upload Data page shows an at-a-glance overview card (gene count, sample
+count, DE-row count or "Not supplied", and a samples-per-condition chart) as
+soon as a dataset is active; separates the demo and upload workflows into
+tabs; and offers example CSV templates (fabricated placeholder values only)
+showing the exact required column layout for each table. The maximum upload
+size is raised to 500 MB per file to accommodate genome-scale matrices, and
+uploaded-file validation runs under a progress spinner.
+
+Each analysis page's "Method" and "Scientific and statistical limitations"
+text is collapsed into an expander so descriptive results are not visually
+crowded by disclosures; the wording itself is unchanged and still applies in
+full. PCA, Sample Quality Control, and Sample Correlation show a spinner
+while their (potentially genome-scale) computation runs.
+
+The Gene Expression page's gene selector gains a case-insensitive substring
+search box once a dataset supplies more than 200 genes, keeping the
+underlying dropdown responsive; matches beyond 500 are truncated with an
+explicit count, and matching never trims, reorders, or aliases identifiers.
+
+The Sample Correlation heatmap offers a "sort by group" checkbox that groups
+samples sharing the same 'condition' (or selected metadata column) label
+together, preserving each group's original relative order. This computes no
+similarity or distance between samples; it is not a clustering or
+dendrogram-based reordering, and the page's disclosed scope is unchanged.
+
+The PCA sample plot, the Sample Correlation heatmap, the Gene Expression
+per-sample plot, and the Differential Expression volcano plot (below) are
+rendered with Plotly for built-in zoom, pan, box/lasso-select, and hover
+tooltips; QC/DE/PCA bar charts remain native Streamlit charts. No plotted
+value differs from its Vega-Lite predecessor.

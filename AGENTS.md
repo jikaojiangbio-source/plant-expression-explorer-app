@@ -108,4 +108,21 @@ from that gene's condition summary statistics. A sample column with no
 non-missing value at all remains a blocking Error.
 
 Differential-expression modelling and clustering remain intentionally
-deferred.
+deferred within the application.
+
+## Case-study boundary (November 2026)
+
+A third dataset source, `case_study`, loads committed tables from
+`data/case_studies/tomato_ja_hairy_roots/` through the same validation as
+uploads ("Real case study" tab on Upload Data). Those tables are produced
+offline by `analysis/tomato_ja_hairy_roots/run_case_study.py` (pyDESeq2 on
+public Expression Atlas counts). Rules for that workspace:
+
+- Model fitting is allowed only under `analysis/`, never in the app.
+- Every number quoted in a case-study report must be written to
+  `results/summary.json` by the script, not typed by hand.
+- Keep helpers in `case_study_lib.py` free of heavy dependencies so their
+  unit tests run in the app's pinned CI environment.
+- Re-running the script must reproduce outputs byte for byte (except the
+  provenance timestamp); check before committing regenerated files.
+- Record every downloaded input's URL and SHA-256 in `results/provenance.json`.
