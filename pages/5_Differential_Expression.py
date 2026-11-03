@@ -220,6 +220,15 @@ if current.source == "demo":
         "p-values are constructed. They do not measure uncertainty or support "
         "tomato biological conclusions."
     )
+elif current.source == "case_study":
+    st.info(
+        "Case study: these log2 fold changes and p-values are real pyDESeq2 "
+        "results computed offline (analysis/tomato_ja_hairy_roots/). The "
+        "thresholds below only filter them for display; the case-study report "
+        "defines responsive genes with DESeq2's thresholded test "
+        "(|log2FC| > 1, FDR < 0.05), which is stricter than filtering the "
+        "standard test by fold change after the fact."
+    )
 
 st.header("Exploratory thresholds")
 st.write(
@@ -324,6 +333,29 @@ category_order = [
     for status in DifferentialExpressionStatus
     if status is not DifferentialExpressionStatus.NOT_EVALUABLE
 ]
+# Polarity gets a diverging red/blue pair; rows outside the thresholds are
+# neutral grey context drawn underneath, so the eye is not pulled to them.
+_BELOW_THRESHOLD_LABEL = _CATEGORY_LABELS[
+    DifferentialExpressionStatus.DOES_NOT_MEET_COMBINED_THRESHOLDS.value
+]
+_CATEGORY_COLOURS = {
+    _CATEGORY_LABELS[DifferentialExpressionStatus.POSITIVE_THRESHOLD_MATCH.value]: "#e34948",
+    _CATEGORY_LABELS[DifferentialExpressionStatus.NEGATIVE_THRESHOLD_MATCH.value]: "#2a78d6",
+    _BELOW_THRESHOLD_LABEL: "#b4b3ad",
+}
+
+
+def _style_status_scatter(figure) -> None:
+    """Draw below-threshold rows first, smaller and lighter, as context."""
+
+    figure.update_traces(marker=dict(size=8, opacity=0.8, line=dict(width=0)))
+    figure.update_traces(
+        marker=dict(size=5, opacity=0.5),
+        selector=dict(name=_BELOW_THRESHOLD_LABEL),
+    )
+    figure.data = tuple(
+        sorted(figure.data, key=lambda trace: trace.name != _BELOW_THRESHOLD_LABEL)
+    )
 
 volcano = build_volcano_plot_data(result)
 if volcano.excluded_zero_padj_count:
@@ -345,6 +377,7 @@ else:
         y="neg_log10_padj",
         color="category",
         category_orders={"category": category_order},
+        color_discrete_map=_CATEGORY_COLOURS,
         hover_name="gene_id",
         hover_data={
             "log2FoldChange": ":.4f",
@@ -358,7 +391,7 @@ else:
             "category": "Exploratory status",
         },
     )
-    volcano_figure.update_traces(marker=dict(size=8, opacity=0.75, line=dict(width=0)))
+    _style_status_scatter(volcano_figure)
     volcano_figure.add_vline(
         x=result.absolute_log2_fold_change_threshold,
         line_dash="dash",
@@ -429,6 +462,7 @@ else:
         y="log2FoldChange",
         color="category",
         category_orders={"category": category_order},
+        color_discrete_map=_CATEGORY_COLOURS,
         hover_name="gene_id",
         hover_data={
             "mean_expression": ":.4f",
@@ -441,7 +475,7 @@ else:
             "category": "Exploratory status",
         },
     )
-    ma_figure.update_traces(marker=dict(size=8, opacity=0.75, line=dict(width=0)))
+    _style_status_scatter(ma_figure)
     ma_figure.add_hline(y=0.0, line_dash="dot", line_color="#bbbbbb")
     ma_figure.update_layout(
         height=440,

@@ -99,3 +99,38 @@ DEMO_PROVENANCE = DatasetProvenance(
         "biological conclusions"
     ),
 )
+
+
+CASE_STUDY_PROVENANCE = DatasetProvenance(
+    dataset_title=(
+        "Tomato (cv. Moneymaker) hairy roots expressing a GUS control construct, "
+        "50 µM jasmonate vs mock for 24 h, 3 biological replicates each "
+        "(Expression Atlas / ArrayExpress E-MTAB-11876)"
+    ),
+    organism="Solanum lycopersicum",
+    expression_scale_description=(
+        "log2(DESeq2 median-of-ratios normalised count + 1), computed offline "
+        "from Expression Atlas raw counts"
+    ),
+    upstream_normalization_method=(
+        "Expression Atlas iRAP pipeline (TopHat2 alignment, HTSeq counts); "
+        "DESeq2 median-of-ratios size factors in analysis/tomato_ja_hairy_roots"
+    ),
+    reference_genome_annotation="Ensembl Plants release 53, tomato assembly SL3.0",
+    feature_level=(
+        "Gene level; nuclear Solyc gene models with >= 10 reads in >= 3 samples "
+        "(19,522 of 34,658)"
+    ),
+    de_contrast_description=(
+        "pyDESeq2 0.5.4 Wald test, design ~condition, jasmonate vs mock "
+        "(reference); unshrunk maximum-likelihood log2 fold changes; "
+        "Benjamini-Hochberg padj with DESeq2 independent filtering"
+    ),
+    notes=(
+        "Real public data. Statistics were computed offline, not by this "
+        "application; see analysis/tomato_ja_hairy_roots/README.md for methods, "
+        "cross-checks against Expression Atlas and limitations. Gene-family "
+        "labels: upload data/case_studies/tomato_ja_hairy_roots/gene_annotation.csv "
+        "on the Gene Expression page."
+    ),
+)
