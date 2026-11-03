@@ -8,3 +8,6 @@ htmlcov/
 .streamlit/secrets.toml
 /.Rhistory
 /tmp/
+
+# Case-study download cache (inputs are re-fetched and checksum-recorded)
+analysis/*/.cache/

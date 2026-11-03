@@ -1,0 +1,10 @@
+pydeseq2==0.5.4
+pyhmmer==0.12.3
+pandas==2.3.3
+numpy==2.5.3
+scipy==1.18.1
+scikit-learn==1.9.1
+anndata==0.13.4
+formulaic==1.2.2
+matplotlib==3.11.2
+pytest==9.2.0

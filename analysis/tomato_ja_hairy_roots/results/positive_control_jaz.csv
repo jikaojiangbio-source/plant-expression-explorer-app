@@ -1,0 +1,14 @@
+symbol,gene_id,in_domain_call,mean_count_mock,mean_count_jasmonate,log2FoldChange,padj_lfc1,status
+SlJAZ1,Solyc07g042170.3,True,1401,8792,3.17904,5.70968e-71,up
+SlJAZ2,Solyc12g009220.2,True,58.67,1411.33,5.10862,1.56937e-10,up
+SlJAZ3,Solyc03g122190.3,True,58,1497,5.22491,7.40354e-130,up
+SlJAZ4,Solyc12g049400.2,True,9.67,155,4.5305,5.67542e-24,up
+SlJAZ5,Solyc03g118540.3,True,1517.67,2726,1.37333,0.0424729,up
+SlJAZ6,Solyc01g005440.3,True,1742.33,11309.7,3.22761,4.14887e-138,up
+SlJAZ7,Solyc11g011030.2,True,9.33,4006.33,9.26011,2.80776e-156,up
+SlJAZ8,Solyc06g068930.2,True,511.33,997,1.49266,0.000432195,up
+SlJAZ9,Solyc08g036640.3,True,0.33,221.33,9.80679,8.94034e-09,up
+SlJAZ10,Solyc08g036620.3,True,0,9.67,,,below expression filter
+SlJAZ11,Solyc08g036660.3,True,1.33,484.67,9.02833,7.0708e-26,up
+SlJAZ12,Solyc01g009740.2,False,0,0,,,below expression filter
+SlJAZ13,Solyc01g103600.3,True,12,18.67,1.16781,1,not significant
